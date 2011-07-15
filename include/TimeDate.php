@@ -1722,21 +1722,35 @@ class TimeDate
 	 */
     public function getDSTRange($year, $zone)
     {
-        $year_date = SugarDateTime::createFromFormat("Y", $year, self::$gmtTimezone);
-        $year_end = clone $year_date;
-        $year_end->setDate((int) $year, 12, 31);
-        $year_end->setTime(23, 59, 59);
-        $year_date->setDate((int) $year, 1, 1);
-        $year_date->setTime(0, 0, 0);
-        $tz = $this->_getUserTZ();
-        $transitions = $tz->getTransitions($year_date->getTimestamp(), $year_end->getTimestamp());
-        $idx = 0;
-        while (! $transitions[$idx]["isdst"])
-            $idx ++;
-        $startdate = new DateTime("@" . $transitions[$idx]["ts"], self::$gmtTimezone);
-        while ($transitions[$idx]["isdst"])
-            $idx ++;
-        $enddate = new DateTime("@" . $transitions[$idx]["ts"], self::$gmtTimezone);
+		$tz = $this->_getUserTZ();
+        if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
+            $year_date = SugarDateTime::createFromFormat("Y", $year, self::$gmtTimezone);
+            $year_end = clone $year_date;
+            $year_end->setDate((int) $year, 12, 31);
+            $year_end->setTime(23, 59, 59);
+            $year_date->setDate((int) $year, 1, 1);
+            $year_date->setTime(0, 0, 0);
+
+            $transitions = $tz->getTransitions($year_date->getTimestamp(), $year_end->getTimestamp());
+
+            $idx = 0;
+            while (! $transitions[$idx]["isdst"])
+                $idx ++;
+            $startdate = new DateTime("@" . $transitions[$idx]["ts"], self::$gmtTimezone);
+            while ($transitions[$idx]["isdst"])
+                $idx ++;
+            $enddate = new DateTime("@" . $transitions[$idx]["ts"], self::$gmtTimezone);
+        } else {
+            $transitions = $tz->getTransitions();
+
+            $idx = 0;
+            while (! $transitions[$idx]["isdst"] || intval(substr($transitions[$idx]["time"], 0, 4)) < intval(date("Y")))
+                $idx ++;
+            $startdate = new DateTime("@" . $transitions[$idx]["ts"], self::$gmtTimezone);
+            while ($transitions[$idx]["isdst"] || intval(substr($transitions[$idx]["time"], 0, 4)) < intval(date("Y")))
+                $idx ++;
+            $enddate = new DateTime("@" . $transitions[$idx]["ts"], self::$gmtTimezone);
+        }
         return array("start" => $this->asDb($startdate), "end" => $this->asDb($enddate));
     }
 
