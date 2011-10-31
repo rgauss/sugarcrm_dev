@@ -132,19 +132,36 @@ function populateFromPost($prefix, &$focus, $skipRetrieve=false) {
 }
 
 
+function add_hidden_elements($key, $value) {
+
+    $elements = '';
+
+    // if it's an array, we need to loop into the array and use square brackets []
+    if (is_array($value)) {
+        foreach ($value as $k=>$v) {
+            $elements .= "<input type='hidden' name='$key"."[$k]' value='$v'>\n";
+        }
+    } else {
+        $elements = "<input type='hidden' name='$key' value='$value'>\n";
+    }
+
+    return $elements;
+}
+
+
 function getPostToForm($ignore='', $isRegularExpression=false)
 {
 	$fields = '';
 	if(!empty($ignore) && $isRegularExpression) {
 		foreach ($_POST as $key=>$value){
 			if(!preg_match($ignore, $key)) {
-				$fields.= "<input type='hidden' name='$key' value='$value'>\n";
+                                $fields .= add_hidden_elements($key, $value);
 			}
 		}	
 	} else {
 		foreach ($_POST as $key=>$value){
 			if($key != $ignore) {
-			   $fields.= "<input type='hidden' name='$key' value='$value'>\n";
+                                $fields .= add_hidden_elements($key, $value);
 			}
 		}
 	}
@@ -181,7 +198,15 @@ function handleRedirect($return_id='', $return_module='')
 		exit;
 	}
 
-	if(isset($_REQUEST['return_module']) && $_REQUEST['return_module'] != "")
+	$url = buildRedirectURL($return_id, $return_module);
+	header($url);
+	exit;	
+}
+
+//eggsurplus: abstract to simplify unit testing
+function buildRedirectURL($return_id='', $return_module='') 
+{
+    if(isset($_REQUEST['return_module']) && $_REQUEST['return_module'] != "")
 	{
 		$return_module = $_REQUEST['return_module'];
 	}
@@ -206,7 +231,7 @@ function handleRedirect($return_id='', $return_module='')
             // END Meeting Integration
         } 
 		// if we create a new record "Save", we want to redirect to the DetailView
-		else if($_REQUEST['action'] == "Save" 
+		else if(isset($_REQUEST['action']) && $_REQUEST['action'] == "Save" 
 			&& $_REQUEST['return_module'] != 'Activities'
 			&& $_REQUEST['return_module'] != 'Home' 
 			&& $_REQUEST['return_module'] != 'Forecasts' 
@@ -238,7 +263,12 @@ function handleRedirect($return_id='', $return_module='')
     
     if (!isset($isDuplicate) || !$isDuplicate)
     {
-        header("Location: index.php?action=$return_action&module=$return_module&record=$return_id&return_module=$return_module&return_action=$return_action");
+        //eggsurplus Bug 23816: maintain VCR after an edit/save. If it is a duplicate then don't worry about it. The offset is now worthless.
+        $redirect_url = "Location: index.php?action=$return_action&module=$return_module&record=$return_id&return_module=$return_module&return_action=$return_action";
+        if(isset($_REQUEST['offset']) && empty($_REQUEST['duplicateSave'])) {
+            $redirect_url .= "&offset=".$_REQUEST['offset'];
+        }
+        return $redirect_url;
     } else {
     	$standard = "action=$return_action&module=$return_module&record=$return_id&isDuplicate=true&return_module=$return_module&return_action=$return_action&status=$status";
    		$add = '';
@@ -254,9 +284,8 @@ function handleRedirect($return_id='', $return_module='')
     	if(!empty($add)) {
     		$add = "&" . $add;
     	}
-        header("Location: index.php?{$standard}{$add}");
+        return "Location: index.php?{$standard}{$add}";
     }
-	exit;
 }
 
 function getLikeForEachWord($fieldname, $value, $minsize=4)

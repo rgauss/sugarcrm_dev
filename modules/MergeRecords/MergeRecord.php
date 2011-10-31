@@ -275,7 +275,9 @@ class MergeRecord extends SugarBean {
             //Must do the same for pulling values in js dropdown
             if (isset ($vDefArray['search_type']) && $vDefArray['search_type'] == 'like') {
                 if ($merge_field != "email1" && $merge_field != "email2" && $merge_field !="release_name") {
-	                array_push($where_clauses, $table_name.".".$merge_field." LIKE '%".$GLOBALS['db']->quote($vDefArray['value'])."%'");
+                	if ($vDefArray['value'] != '') {
+	                	array_push($where_clauses, $table_name.".".$merge_field." LIKE '%".$GLOBALS['db']->quote($vDefArray['value'])."%'");
+                	}
                 }
                 elseif($merge_field =="release_name"){
                     if(isset($vDefArray['value'])){

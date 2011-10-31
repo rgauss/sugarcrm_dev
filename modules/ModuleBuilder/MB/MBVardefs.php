@@ -70,6 +70,12 @@ class MBVardefs{
 				}
 			}
 		}
+        //Bug40450 - Extra 'Name' field in a File type module in module builder
+        if(array_key_exists('file', $this->templates))
+        {
+            unset($this->vardefs['fields']['name']);
+            unset($this->vardefs['fields']['file']['name']);
+        }
 
 	}
 

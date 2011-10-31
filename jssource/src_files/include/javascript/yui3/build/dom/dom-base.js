@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dom-base', function(Y) {
 
@@ -14,6 +14,7 @@ YUI.add('dom-base', function(Y) {
  * for other common tasks. 
  * @module dom
  * @submodule dom-base
+ * @for DOM
  *
  */
 
@@ -24,6 +25,7 @@ YUI.add('dom-base', function(Y) {
  */
 var NODE_TYPE = 'nodeType',
     OWNER_DOCUMENT = 'ownerDocument',
+    DOCUMENT_ELEMENT = 'documentElement',
     DEFAULT_VIEW = 'defaultView',
     PARENT_WINDOW = 'parentWindow',
     TAG_NAME = 'tagName',
@@ -33,12 +35,29 @@ var NODE_TYPE = 'nodeType',
     NEXT_SIBLING = 'nextSibling',
     CONTAINS = 'contains',
     COMPARE_DOCUMENT_POSITION = 'compareDocumentPosition',
+    EMPTY_STRING = '',
+    EMPTY_ARRAY = [],
 
-    documentElement = document.documentElement,
+    documentElement = Y.config.doc.documentElement,
 
-    re_tag = /<([a-z]+)/i;
+    re_tag = /<([a-z]+)/i,
 
-Y.DOM = {
+    createFromDIV = function(html, tag) {
+        var div = Y.config.doc.createElement('div'),
+            ret = true;
+
+        div.innerHTML = html;
+        if (!div.firstChild || div.firstChild.tagName !== tag.toUpperCase()) {
+            ret = false;
+        }
+
+        return ret;
+    },
+
+    addFeature = Y.Features.add,
+    testFeature = Y.Features.test,
+    
+Y_DOM = {
     /**
      * Returns the HTMLElement with the given ID (Wrapper for document.getElementById).
      * @method byId         
@@ -47,31 +66,8 @@ Y.DOM = {
      * @return {HTMLElement | null} The HTMLElement with the id, or null if none found. 
      */
     byId: function(id, doc) {
-        doc = doc || Y.config.doc;
-        // TODO: IE Name
-        return doc.getElementById(id);
-    },
-
-    // @deprecated
-    children: function(node, tag) {
-        var ret = [];
-        if (node) {
-            tag = tag || '*';
-            ret = Y.Selector.query('> ' + tag, node); 
-        }
-        return ret;
-    },
-
-    // @deprecated
-    firstByTag: function(tag, root) {
-        var ret;
-        root = root || Y.config.doc;
-
-        if (tag && root.getElementsByTagName) {
-            ret = root.getElementsByTagName(tag)[0];
-        }
-
-        return ret || null;
+        // handle dupe IDs and IE name collision
+        return Y_DOM.allById(id, doc)[0] || null;
     },
 
     /**
@@ -90,7 +86,7 @@ Y.DOM = {
         } : function(element) {
             var ret = '';
             if (element) {
-                ret = element.innerText;
+                ret = element.innerText || element.nodeValue; // might be a textNode
             }
             return ret || '';
         },
@@ -107,55 +103,54 @@ Y.DOM = {
                 element.textContent = content;
             }
         } : function(element, content) {
-            if (element) {
+            if ('innerText' in element) {
                 element.innerText = content;
+            } else if ('nodeValue' in element) {
+                element.nodeValue = content;
             }
+
         },
-
-    /*
-     * Finds the previous sibling of the element.
-     * @method previous
-     * @deprecated Use elementByAxis
-     * @param {HTMLElement} element The html element.
-     * @param {Function} fn optional An optional boolean test to apply.
-     * The optional function is passed the current DOM node being tested as its only argument.
-     * If no function is given, the first sibling is returned.
-     * @param {Boolean} all optional Whether all node types should be scanned, or just element nodes.
-     * @return {HTMLElement | null} The matching DOM node or null if none found. 
-     */
-    previous: function(element, fn, all) {
-        return Y.DOM.elementByAxis(element, PREVIOUS_SIBLING, fn, all);
-    },
-
-    /*
-     * Finds the next sibling of the element.
-     * @method next
-     * @deprecated Use elementByAxis
-     * @param {HTMLElement} element The html element.
-     * @param {Function} fn optional An optional boolean test to apply.
-     * The optional function is passed the current DOM node being tested as its only argument.
-     * If no function is given, the first sibling is returned.
-     * @param {Boolean} all optional Whether all node types should be scanned, or just element nodes.
-     * @return {HTMLElement | null} The matching DOM node or null if none found. 
-     */
-    next: function(element, fn, all) {
-        return Y.DOM.elementByAxis(element, NEXT_SIBLING, fn, all);
-    },
 
     /*
      * Finds the ancestor of the element.
      * @method ancestor
-     * @deprecated Use elementByAxis
      * @param {HTMLElement} element The html element.
      * @param {Function} fn optional An optional boolean test to apply.
      * The optional function is passed the current DOM node being tested as its only argument.
      * If no function is given, the parentNode is returned.
-     * @param {Boolean} all optional Whether all node types should be scanned, or just element nodes.
+     * @param {Boolean} testSelf optional Whether or not to include the element in the scan 
      * @return {HTMLElement | null} The matching DOM node or null if none found. 
      */
-     // TODO: optional stopAt node?
-    ancestor: function(element, fn, all) {
-        return Y.DOM.elementByAxis(element, PARENT_NODE, fn, all);
+    ancestor: function(element, fn, testSelf) {
+        var ret = null;
+        if (testSelf) {
+            ret = (!fn || fn(element)) ? element : null;
+
+        }
+        return ret || Y_DOM.elementByAxis(element, PARENT_NODE, fn, null);
+    },
+
+    /*
+     * Finds the ancestors of the element.
+     * @method ancestors
+     * @param {HTMLElement} element The html element.
+     * @param {Function} fn optional An optional boolean test to apply.
+     * The optional function is passed the current DOM node being tested as its only argument.
+     * If no function is given, all ancestors are returned.
+     * @param {Boolean} testSelf optional Whether or not to include the element in the scan 
+     * @return {Array} An array containing all matching DOM nodes.
+     */
+    ancestors: function(element, fn, testSelf) {
+        var ancestor = Y_DOM.ancestor.apply(Y_DOM, arguments),
+            ret = (ancestor) ? [ancestor] : [];
+
+        while ((ancestor = Y_DOM.ancestor(ancestor, fn))) {
+            if (ancestor) {
+                ret.unshift(ancestor);
+            }
+        }
+
+        return ret;
     },
 
     /**
@@ -194,7 +189,7 @@ Y.DOM = {
             if (Y.UA.opera || needle[NODE_TYPE] === 1) { // IE & SAF contains fail if needle not an ELEMENT_NODE
                 ret = element[CONTAINS](needle);
             } else {
-                ret = Y.DOM._bruteContains(element, needle); 
+                ret = Y_DOM._bruteContains(element, needle); 
             }
         } else if (element[COMPARE_DOCUMENT_POSITION]) { // gecko
             if (element === needle || !!(element[COMPARE_DOCUMENT_POSITION](needle) & 16)) { 
@@ -213,56 +208,118 @@ Y.DOM = {
      * @return {Boolean} Whether or not the element is attached to the document. 
      */
     inDoc: function(element, doc) {
-        doc = doc || element[OWNER_DOCUMENT];
-        var id = element.id;
-        if (!id) { // TODO: remove when done?
-            id = element.id = Y.guid();
+        var ret = false,
+            rootNode;
+
+        if (element && element.nodeType) {
+            (doc) || (doc = element[OWNER_DOCUMENT]);
+
+            rootNode = doc[DOCUMENT_ELEMENT];
+
+            // contains only works with HTML_ELEMENT
+            if (rootNode && rootNode.contains && element.tagName) {
+                ret = rootNode.contains(element);
+            } else {
+                ret = Y_DOM.contains(rootNode, element);
+            }
         }
 
-        return !! (doc.getElementById(id));
+        return ret;
+
     },
+
+   allById: function(id, root) {
+        root = root || Y.config.doc;
+        var nodes = [],
+            ret = [],
+            i,
+            node;
+
+        if (root.querySelectorAll) {
+            ret = root.querySelectorAll('[id="' + id + '"]');
+        } else if (root.all) {
+            nodes = root.all(id);
+
+            if (nodes) {
+                // root.all may return HTMLElement or HTMLCollection.
+                // some elements are also HTMLCollection (FORM, SELECT).
+                if (nodes.nodeName) {
+                    if (nodes.id === id) { // avoid false positive on name
+                        ret.push(nodes);
+                        nodes = EMPTY_ARRAY; // done, no need to filter
+                    } else { //  prep for filtering
+                        nodes = [nodes];
+                    }
+                }
+
+                if (nodes.length) {
+                    // filter out matches on node.name
+                    // and element.id as reference to element with id === 'id'
+                    for (i = 0; node = nodes[i++];) {
+                        if (node.id === id  || 
+                                (node.attributes && node.attributes.id &&
+                                node.attributes.id.value === id)) { 
+                            ret.push(node);
+                        }
+                    }
+                }
+            }
+        } else {
+            ret = [Y_DOM._getDoc(root).getElementById(id)];
+        }
+    
+        return ret;
+   },
 
     /**
      * Creates a new dom node using the provided markup string. 
      * @method create
      * @param {String} html The markup used to create the element
      * @param {HTMLDocument} doc An optional document context 
+     * @return {HTMLElement|DocumentFragment} returns a single HTMLElement 
+     * when creating one node, and a documentFragment when creating
+     * multiple nodes.
      */
     create: function(html, doc) {
         if (typeof html === 'string') {
             html = Y.Lang.trim(html); // match IE which trims whitespace from innerHTML
-        }
 
-        if (!doc && Y.DOM._cloneCache[html]) {
-            return Y.DOM._cloneCache[html].cloneNode(true); // NOTE: return
         }
 
         doc = doc || Y.config.doc;
         var m = re_tag.exec(html),
-            create = Y.DOM._create,
-            custom = Y.DOM.creators,
+            create = Y_DOM._create,
+            custom = Y_DOM.creators,
             ret = null,
+            creator,
             tag, nodes;
 
-        if (m && custom[m[1]]) {
-            if (typeof custom[m[1]] === 'function') {
-                create = custom[m[1]];
-            } else {
-                tag = custom[m[1]];
+        if (html != undefined) { // not undefined or null
+            if (m && m[1]) {
+                creator = custom[m[1].toLowerCase()];
+                if (typeof creator === 'function') {
+                    create = creator; 
+                } else {
+                    tag = creator;
+                }
+            }
+
+            nodes = create(html, doc, tag).childNodes;
+
+            if (nodes.length === 1) { // return single node, breaking parentNode ref from "fragment"
+                ret = nodes[0].parentNode.removeChild(nodes[0]);
+            } else if (nodes[0] && nodes[0].className === 'yui3-big-dummy') { // using dummy node to preserve some attributes (e.g. OPTION not selected)
+                if (nodes.length === 2) {
+                    ret = nodes[0].nextSibling;
+                } else {
+                    nodes[0].parentNode.removeChild(nodes[0]); 
+                     ret = Y_DOM._nl2frag(nodes, doc);
+                }
+            } else { // return multiple nodes as a fragment
+                 ret = Y_DOM._nl2frag(nodes, doc);
             }
         }
 
-        nodes = create(html, doc, tag).childNodes;
-
-        if (nodes.length === 1) { // return single node, breaking parentNode ref from "fragment"
-            ret = nodes[0].parentNode.removeChild(nodes[0]);
-        } else { // return multiple nodes as a fragment
-             ret = Y.DOM._nl2frag(nodes, doc);
-        }
-
-        if (ret) {
-            Y.DOM._cloneCache[html] = ret.cloneNode(true);
-        }
         return ret;
     },
 
@@ -297,13 +354,13 @@ Y.DOM = {
     /**
      * Provides a normalized attribute interface. 
      * @method setAttibute
-     * @param {String | HTMLElement} el The target element for the attribute.
+     * @param {HTMLElement} el The target element for the attribute.
      * @param {String} attr The attribute to set.
      * @param {String} val The value of the attribute.
      */
     setAttribute: function(el, attr, val, ieAttr) {
-        if (el && el.setAttribute) {
-            attr = Y.DOM.CUSTOM_ATTRIBUTES[attr] || attr;
+        if (el && attr && el.setAttribute) {
+            attr = Y_DOM.CUSTOM_ATTRIBUTES[attr] || attr;
             el.setAttribute(attr, val, ieAttr);
         }
     },
@@ -312,15 +369,15 @@ Y.DOM = {
     /**
      * Provides a normalized attribute interface. 
      * @method getAttibute
-     * @param {String | HTMLElement} el The target element for the attribute.
+     * @param {HTMLElement} el The target element for the attribute.
      * @param {String} attr The attribute to get.
      * @return {String} The current value of the attribute. 
      */
     getAttribute: function(el, attr, ieAttr) {
         ieAttr = (ieAttr !== undefined) ? ieAttr : 2;
         var ret = '';
-        if (el && el.getAttribute) {
-            attr = Y.DOM.CUSTOM_ATTRIBUTES[attr] || attr;
+        if (el && attr && el.getAttribute) {
+            attr = Y_DOM.CUSTOM_ATTRIBUTES[attr] || attr;
             ret = el.getAttribute(attr, ieAttr);
 
             if (ret === null) {
@@ -331,21 +388,19 @@ Y.DOM = {
     },
 
     isWindow: function(obj) {
-        return obj.alert && obj.document;
+        return !!(obj && obj.alert && obj.document);
     },
 
-    _fragClones: {
-        div: document.createElement('div')
-    },
+    _fragClones: {},
 
     _create: function(html, doc, tag) {
         tag = tag || 'div';
 
-        var frag = Y.DOM._fragClones[tag];
+        var frag = Y_DOM._fragClones[tag];
         if (frag) {
             frag = frag.cloneNode(false);
         } else {
-            frag = Y.DOM._fragClones[tag] = doc.createElement(tag);
+            frag = Y_DOM._fragClones[tag] = doc.createElement(tag);
         }
         frag.innerHTML = html;
         return frag;
@@ -357,36 +412,50 @@ Y.DOM = {
         }
     },
 
-    _cloneCache: {},
-
     /**
      * Inserts content in a node at the given location 
      * @method addHTML
      * @param {HTMLElement} node The node to insert into
-     * @param {String} content The content to be inserted 
-     * @param {String} where Where to insert the content; default is after lastChild 
+     * @param {HTMLElement | Array | HTMLCollection} content The content to be inserted 
+     * @param {HTMLElement} where Where to insert the content
+     * If no "where" is given, content is appended to the node
+     * Possible values for "where"
+     * <dl>
+     * <dt>HTMLElement</dt>
+     * <dd>The element to insert before</dd>
+     * <dt>"replace"</dt>
+     * <dd>Replaces the existing HTML</dd>
+     * <dt>"before"</dt>
+     * <dd>Inserts before the existing HTML</dd>
+     * <dt>"before"</dt>
+     * <dd>Inserts content before the node</dd>
+     * <dt>"after"</dt>
+     * <dd>Inserts content after the node</dd>
+     * </dl>
      */
     addHTML: function(node, content, where) {
-        if (typeof content === 'string') {
-            content = Y.Lang.trim(content); // match IE which trims whitespace from innerHTML
-        }
-
-        var newNode = Y.DOM._cloneCache[content],
-            nodeParent = node.parentNode;
+        var nodeParent = node.parentNode,
+            i = 0,
+            item,
+            ret = content,
+            newNode;
             
-        if (newNode) {
-            newNode = newNode.cloneNode(true);
-        } else {
-            if (content.nodeType) { // domNode
+
+        if (content != undefined) { // not null or undefined (maybe 0)
+            if (content.nodeType) { // DOM node, just add it
                 newNode = content;
-            } else { // create from string and cache
-                newNode = Y.DOM.create(content);
+            } else if (typeof content == 'string' || typeof content == 'number') {
+                ret = newNode = Y_DOM.create(content);
+            } else if (content[0] && content[0].nodeType) { // array or collection 
+                newNode = Y.config.doc.createDocumentFragment();
+                while ((item = content[i++])) {
+                    newNode.appendChild(item); // append to fragment for insertion
+                }
             }
         }
 
         if (where) {
             if (where.nodeType) { // insert regardless of relationship to node
-                // TODO: check if node.contains(where)?
                 where.parentNode.insertBefore(newNode, where);
             } else {
                 switch (where) {
@@ -394,7 +463,9 @@ Y.DOM = {
                         while (node.firstChild) {
                             node.removeChild(node.firstChild);
                         }
-                        node.appendChild(newNode);
+                        if (newNode) { // allow empty content to clear node
+                            node.appendChild(newNode);
+                        }
                         break;
                     case 'before':
                         nodeParent.insertBefore(newNode, node);
@@ -410,11 +481,11 @@ Y.DOM = {
                         node.appendChild(newNode);
                 }
             }
-        } else {
+        } else if (newNode) {
             node.appendChild(newNode);
         }
 
-        return newNode;
+        return ret;
     },
 
     VALUE_SETTERS: {},
@@ -426,13 +497,19 @@ Y.DOM = {
             getter;
 
         if (node && node[TAG_NAME]) {
-            getter = Y.DOM.VALUE_GETTERS[node[TAG_NAME].toLowerCase()];
+            getter = Y_DOM.VALUE_GETTERS[node[TAG_NAME].toLowerCase()];
 
             if (getter) {
                 ret = getter(node);
             } else {
                 ret = node.value;
             }
+        }
+
+        // workaround for IE8 JSON stringify bug
+        // which converts empty string values to null
+        if (ret === EMPTY_STRING) {
+            ret = EMPTY_STRING; // for real
         }
 
         return (typeof ret === 'string') ? ret : '';
@@ -442,7 +519,7 @@ Y.DOM = {
         var setter;
 
         if (node && node[TAG_NAME]) {
-            setter = Y.DOM.VALUE_SETTERS[node[TAG_NAME].toLowerCase()];
+            setter = Y_DOM.VALUE_SETTERS[node[TAG_NAME].toLowerCase()];
 
             if (setter) {
                 setter(node, val);
@@ -450,6 +527,26 @@ Y.DOM = {
                 node.value = val;
             }
         }
+    },
+
+    siblings: function(node, fn) {
+        var nodes = [],
+            sibling = node;
+
+        while ((sibling = sibling[PREVIOUS_SIBLING])) {
+            if (sibling[TAG_NAME] && (!fn || fn(sibling))) {
+                nodes.unshift(sibling);
+            }
+        }
+
+        sibling = node;
+        while ((sibling = sibling[NEXT_SIBLING])) {
+            if (sibling[TAG_NAME] && (!fn || fn(sibling))) {
+                nodes.push(sibling);
+            }
+        }
+
+        return nodes;
     },
 
     /**
@@ -482,11 +579,11 @@ Y.DOM = {
      */
     _getRegExp: function(str, flags) {
         flags = flags || '';
-        Y.DOM._regexCache = Y.DOM._regexCache || {};
-        if (!Y.DOM._regexCache[str + flags]) {
-            Y.DOM._regexCache[str + flags] = new RegExp(str, flags);
+        Y_DOM._regexCache = Y_DOM._regexCache || {};
+        if (!Y_DOM._regexCache[str + flags]) {
+            Y_DOM._regexCache[str + flags] = new RegExp(str, flags);
         }
-        return Y.DOM._regexCache[str + flags];
+        return Y_DOM._regexCache[str + flags];
     },
 
 // TODO: make getDoc/Win true privates?
@@ -498,12 +595,15 @@ Y.DOM = {
      * @return {Object} The document for the given element or the default document. 
      */
     _getDoc: function(element) {
-        element = element || {};
-
-        return (element[NODE_TYPE] === 9) ? element : // element === document
+        var doc = Y.config.doc;
+        if (element) {
+            doc = (element[NODE_TYPE] === 9) ? element : // element === document
                 element[OWNER_DOCUMENT] || // element === DOM node
                 element.document || // element === window
                 Y.config.doc; // default
+        }
+
+        return doc;
     },
 
     /**
@@ -514,98 +614,186 @@ Y.DOM = {
      * @return {Object} The window for the given element or the default window. 
      */
     _getWin: function(element) {
-        var doc = Y.DOM._getDoc(element);
+        var doc = Y_DOM._getDoc(element);
         return doc[DEFAULT_VIEW] || doc[PARENT_WINDOW] || Y.config.win;
     },
 
     _batch: function(nodes, fn, arg1, arg2, arg3, etc) {
-        fn = (typeof name === 'string') ? Y.DOM[fn] : fn;
+        fn = (typeof fn === 'string') ? Y_DOM[fn] : fn;
         var result,
-            ret = [];
+            args = Array.prototype.slice.call(arguments, 2),
+            i = 0,
+            node,
+            ret;
 
         if (fn && nodes) {
-            Y.each(nodes, function(node) {
-                if ((result = fn.call(Y.DOM, node, arg1, arg2, arg3, etc)) !== undefined) {
-                    ret[ret.length] = result;
+            while ((node = nodes[i++])) {
+                result = result = fn.call(Y_DOM, node, arg1, arg2, arg3, etc);
+                if (typeof result !== 'undefined') {
+                    (ret) || (ret = []);
+                    ret.push(result);
                 }
-            });
+            }
         }
 
-        return ret.length ? ret : nodes;
+        return (typeof ret !== 'undefined') ? ret : nodes;
     },
 
-    _testElement: function(element, tag, fn) {
-        tag = (tag && tag !== '*') ? tag.toUpperCase() : null;
-        return (element && element[TAG_NAME] &&
-                (!tag || element[TAG_NAME].toUpperCase() === tag) &&
-                (!fn || fn(element)));
+    wrap: function(node, html) {
+        var parent = Y.DOM.create(html),
+            nodes = parent.getElementsByTagName('*');
+
+        if (nodes.length) {
+            parent = nodes[nodes.length - 1];
+        }
+
+        if (node.parentNode) { 
+            node.parentNode.replaceChild(parent, node);
+        }
+        parent.appendChild(node);
     },
 
-    creators: {},
+    unwrap: function(node) {
+        var parent = node.parentNode,
+            lastChild = parent.lastChild,
+            node = parent.firstChild,
+            next = node,
+            grandparent;
 
-    _IESimpleCreate: function(html, doc) {
-        doc = doc || Y.config.doc;
-        return doc.createElement(html);
-    }
+        if (parent) {
+            grandparent = parent.parentNode;
+            if (grandparent) {
+                while (node !== lastChild) {
+                    next = node.nextSibling;
+                    grandparent.insertBefore(node, parent);
+                    node = next;
+                }
+                grandparent.replaceChild(lastChild, parent);
+            } else {
+                parent.removeChild(node);
+            }
+        }
+    },
+
+    generateID: function(el) {
+        var id = el.id;
+
+        if (!id) {
+            id = Y.stamp(el);
+            el.id = id; 
+        }   
+
+        return id; 
+    },
+
+    creators: {}
 };
 
+addFeature('innerhtml', 'table', {
+    test: function() {
+        var node = Y.config.doc.createElement('table');
+        try {
+            node.innerHTML = '<tbody></tbody>';
+        } catch(e) {
+            return false;
+        }
+        return (node.firstChild && node.firstChild.nodeName === 'TBODY');
+    }
+});
+
+addFeature('innerhtml-div', 'tr', {
+    test: function() {
+        return createFromDIV('<tr></tr>', 'tr');
+    }
+});
+
+addFeature('innerhtml-div', 'script', {
+    test: function() {
+        return createFromDIV('<script></script>', 'script');
+    }
+});
+
+addFeature('value-set', 'select', {
+    test: function() {
+        var node = Y.config.doc.createElement('select');
+        node.innerHTML = '<option>1</option><option>2</option>';
+        node.value = '2';
+        return (node.value && node.value === '2');
+    }
+});
 
 (function(Y) {
-    var creators = Y.DOM.creators,
-        create = Y.DOM.create,
+    var creators = Y_DOM.creators,
+        create = Y_DOM.create,
         re_tbody = /(?:\/(?:thead|tfoot|tbody|caption|col|colgroup)>)+\s*<tbody/,
 
         TABLE_OPEN = '<table>',
         TABLE_CLOSE = '</table>';
 
-    if (Y.UA.ie) {
-        Y.mix(creators, {
+    if (!testFeature('innerhtml', 'table')) {
         // TODO: thead/tfoot with nested tbody
             // IE adds TBODY when creating TABLE elements (which may share this impl)
-            tbody: function(html, doc) {
-                var frag = create(TABLE_OPEN + html + TABLE_CLOSE, doc),
-                    tb = frag.children.tags('tbody')[0];
+        creators.tbody = function(html, doc) {
+            var frag = create(TABLE_OPEN + html + TABLE_CLOSE, doc),
+                tb = frag.children.tags('tbody')[0];
 
-                if (frag.children.length > 1 && tb && !re_tbody.test(html)) {
-                    tb[PARENT_NODE].removeChild(tb); // strip extraneous tbody
-                }
-                return frag;
-            },
-
-            script: function(html, doc) {
-                var frag = doc.createElement('div');
-
-                frag.innerHTML = '-' + html;
-                frag.removeChild(frag[FIRST_CHILD]);
-                return frag;
+            if (frag.children.length > 1 && tb && !re_tbody.test(html)) {
+                tb[PARENT_NODE].removeChild(tb); // strip extraneous tbody
             }
-
-        }, true);
-
-        Y.mix(Y.DOM.VALUE_GETTERS, {
-            button: function(node) {
-                return (node.attributes && node.attributes.value) ? node.attributes.value.value : '';
-            }
-        });
-
-        Y.mix(Y.DOM.VALUE_SETTERS, {
-            // IE: node.value changes the button text, which should be handled via innerHTML
-            button: function(node, val) {
-                var attr = node.attributes.value;
-                if (!attr) {
-                    attr = node[OWNER_DOCUMENT].createAttribute('value');
-                    node.setAttributeNode(attr);
-                }
-
-                attr.value = val;
-            }
-        });
+            return frag;
+        };
     }
 
-    if (Y.UA.gecko || Y.UA.ie) {
+    if (!testFeature('innerhtml-div', 'script')) {
+        creators.script = function(html, doc) {
+            var frag = doc.createElement('div');
+
+            frag.innerHTML = '-' + html;
+            frag.removeChild(frag[FIRST_CHILD]);
+            return frag;
+        }
+
+        Y_DOM.creators.link = Y_DOM.creators.style = Y_DOM.creators.script;
+    }
+
+    
+    if (!testFeature('value-set', 'select')) {
+        Y_DOM.VALUE_SETTERS.select = function(node, val) {
+            for (var i = 0, options = node.getElementsByTagName('option'), option;
+                    option = options[i++];) {
+                if (Y_DOM.getValue(option) === val) {
+                    option.selected = true;
+                    //Y_DOM.setAttribute(option, 'selected', 'selected');
+                    break;
+                }
+            }
+        }
+    }
+
+    Y.mix(Y_DOM.VALUE_GETTERS, {
+        button: function(node) {
+            return (node.attributes && node.attributes.value) ? node.attributes.value.value : '';
+        }
+    });
+
+    Y.mix(Y_DOM.VALUE_SETTERS, {
+        // IE: node.value changes the button text, which should be handled via innerHTML
+        button: function(node, val) {
+            var attr = node.attributes.value;
+            if (!attr) {
+                attr = node[OWNER_DOCUMENT].createAttribute('value');
+                node.setAttributeNode(attr);
+            }
+
+            attr.value = val;
+        }
+    });
+
+
+    if (!testFeature('innerhtml-div', 'tr')) {
         Y.mix(creators, {
             option: function(html, doc) {
-                return create('<select>' + html + '</select>', doc);
+                return create('<select><option class="yui3-big-dummy" selected></option>' + html + '</select>', doc);
             },
 
             tr: function(html, doc) {
@@ -616,9 +804,11 @@ Y.DOM = {
                 return create('<tr>' + html + '</tr>', doc);
             }, 
 
-            tbody: function(html, doc) {
-                return create(TABLE_OPEN + html + TABLE_CLOSE, doc);
-            }
+            col: function(html, doc) {
+                return create('<colgroup>' + html + '</colgroup>', doc);
+            }, 
+
+            tbody: 'table'
         });
 
         Y.mix(creators, {
@@ -628,12 +818,11 @@ Y.DOM = {
             tfoot: creators.tbody,
             caption: creators.tbody,
             colgroup: creators.tbody,
-            col: creators.tbody,
             optgroup: creators.option
         });
     }
 
-    Y.mix(Y.DOM.VALUE_GETTERS, {
+    Y.mix(Y_DOM.VALUE_GETTERS, {
         option: function(node) {
             var attrs = node.attributes;
             return (attrs.value && attrs.value.specified) ? node.value : node.text;
@@ -643,10 +832,11 @@ Y.DOM = {
             var val = node.value,
                 options = node.options;
 
-            if (options && val === '') {
+            if (options && options.length) {
+                // TODO: implement multipe select
                 if (node.multiple) {
                 } else {
-                    val = Y.DOM.getValue(options[node.selectedIndex], 'value');
+                    val = Y_DOM.getValue(options[node.selectedIndex]);
                 }
             }
 
@@ -655,6 +845,7 @@ Y.DOM = {
     });
 })(Y);
 
+Y.DOM = Y_DOM;
 })(Y);
 var addClass, hasClass, removeClass;
 
@@ -662,6 +853,7 @@ Y.mix(Y.DOM, {
     /**
      * Determines whether a DOM element has the given className.
      * @method hasClass
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {String} className the class name to search for
      * @return {Boolean} Whether or not the element has the given class. 
@@ -674,6 +866,7 @@ Y.mix(Y.DOM, {
     /**
      * Adds a class name to a given DOM element.
      * @method addClass         
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {String} className the class name to add to the class attribute
      */
@@ -686,6 +879,7 @@ Y.mix(Y.DOM, {
     /**
      * Removes a class name from a given element.
      * @method removeClass         
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {String} className the class name to remove from the class attribute
      */
@@ -704,26 +898,33 @@ Y.mix(Y.DOM, {
      * Replace a class with another class for a given element.
      * If no oldClassName is present, the newClassName is simply added.
      * @method replaceClass  
-     * @param {HTMLElement} element The DOM element. 
+     * @for DOM
+     * @param {HTMLElement} element The DOM element 
      * @param {String} oldClassName the class name to be replaced
      * @param {String} newClassName the class name that will be replacing the old class name
      */
     replaceClass: function(node, oldC, newC) {
+        removeClass(node, oldC); // remove first in case oldC === newC
         addClass(node, newC);
-        removeClass(node, oldC);
     },
 
     /**
      * If the className exists on the node it is removed, if it doesn't exist it is added.
      * @method toggleClass  
-     * @param {HTMLElement} element The DOM element. 
+     * @for DOM
+     * @param {HTMLElement} element The DOM element
      * @param {String} className the class name to be toggled
+     * @param {Boolean} addClass optional boolean to indicate whether class
+     * should be added or removed regardless of current state
      */
-    toggleClass: function(node, className) {
-        if (hasClass(node, className)) {
-            removeClass(node, className);
-        } else {
+    toggleClass: function(node, className, force) {
+        var add = (force !== undefined) ? force :
+                !(hasClass(node, className));
+
+        if (add) {
             addClass(node, className);
+        } else {
+            removeClass(node, className);
         }
     }
 });
@@ -732,6 +933,49 @@ hasClass = Y.DOM.hasClass;
 removeClass = Y.DOM.removeClass;
 addClass = Y.DOM.addClass;
 
+Y.mix(Y.DOM, {
+    /**
+     * Sets the width of the element to the given size, regardless
+     * of box model, border, padding, etc.
+     * @method setWidth
+     * @param {HTMLElement} element The DOM element. 
+     * @param {String|Int} size The pixel height to size to
+     */
+
+    setWidth: function(node, size) {
+        Y.DOM._setSize(node, 'width', size);
+    },
+
+    /**
+     * Sets the height of the element to the given size, regardless
+     * of box model, border, padding, etc.
+     * @method setHeight
+     * @param {HTMLElement} element The DOM element. 
+     * @param {String|Int} size The pixel height to size to
+     */
+
+    setHeight: function(node, size) {
+        Y.DOM._setSize(node, 'height', size);
+    },
+
+    _setSize: function(node, prop, val) {
+        val = (val > 0) ? val : 0;
+        var size = 0;
+
+        node.style[prop] = val + 'px';
+        size = (prop === 'height') ? node.offsetHeight : node.offsetWidth;
+
+        if (size > val) {
+            val = val - (size - val);
+
+            if (val < 0) {
+                val = 0;
+            }
+
+            node.style[prop] = val + 'px';
+        }
+    }
+});
 
 
-}, '3.0.0' ,{requires:['oop']});
+}, '3.3.0' ,{requires:['oop']});

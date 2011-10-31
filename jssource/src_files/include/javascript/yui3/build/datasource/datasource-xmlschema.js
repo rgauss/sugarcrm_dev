@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('datasource-xmlschema', function(Y) {
 
@@ -91,7 +91,7 @@ Y.extend(DataSourceXMLSchema, Y.Plugin.Base, {
      */
     _beforeDefDataFn: function(e) {
         var data = (Y.DataSource.IO && (this.get("host") instanceof Y.DataSource.IO) && e.data.responseXML && (e.data.responseXML.nodeType === 9)) ? e.data.responseXML : e.data,
-            response = Y.DataSchema.XML.apply(this.get("schema"), data);
+            response = Y.DataSchema.XML.apply.call(this, this.get("schema"), data);
             
         // Default
         if(!response) {
@@ -110,4 +110,4 @@ Y.namespace('Plugin').DataSourceXMLSchema = DataSourceXMLSchema;
 
 
 
-}, '3.0.0' ,{requires:['plugin', 'datasource-local', 'dataschema-xml']});
+}, '3.3.0' ,{requires:['datasource-local', 'plugin', 'dataschema-xml']});

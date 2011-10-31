@@ -124,6 +124,8 @@ class Call extends SugarBean
 			$this->field_name_map[$field['name']] = $field;
 		}
 
+		
+		
 
          if(!empty($GLOBALS['app_list_strings']['duration_intervals']))
         	$this->minutes_values = $GLOBALS['app_list_strings']['duration_intervals'];
@@ -424,18 +426,12 @@ class Call extends SugarBean
 
 		//make sure we grab the localized version of the contact name, if a contact is provided
 		if (!empty($this->contact_id)) {
-			global $locale;
-			$query  = "SELECT first_name, last_name, salutation, title FROM contacts ";
-			$query .= "WHERE id='$this->contact_id' AND deleted=0";
-			$result = $this->db->limitQuery($query,0,1,true," Error filling in contact name fields: ");
-
-			// Get the contact name.
-			$row = $this->db->fetchByAssoc($result);
-
-			if($row != null)
-			{
-				$this->contact_name = $locale->getLocaleFormattedName($row['first_name'], $row['last_name'], $row['salutation'], $row['title']);
-			}
+		    global $locale;
+           // Bug# 46125 - make first name, last name, salutation and title of Contacts respect field level ACLs
+            $contact_temp = new Contact();
+            $contact_temp->retrieve($this->contact_id);
+            $contact_temp->_create_proper_name_field();
+            $this->contact_name = $contact_temp->full_name;
 		}
 
         $call_fields['CONTACT_ID'] = $this->contact_id;

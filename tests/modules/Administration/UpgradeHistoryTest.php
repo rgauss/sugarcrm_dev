@@ -58,4 +58,13 @@ class UpgradeHistoryTest extends Sugar_PHPUnit_Framework_TestCase
     	$GLOBALS['db']->query("delete from upgrade_history where id='444'");
    		$GLOBALS['db']->query("delete from upgrade_history where id='555'");
     }
+    
+    /**
+     * @ticket 44075
+     */
+    public function testTrackerVisibilityBug44075()
+    {
+        $uh = new UpgradeHistory();
+        $this->assertFalse($uh->tracker_visibility);
+    }
 }

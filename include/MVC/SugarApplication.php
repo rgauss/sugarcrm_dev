@@ -281,7 +281,7 @@ class SugarApplication
 	 * Handles everything related to authorization.
 	 */
 	function handleAccessControl(){
-		if(is_admin($GLOBALS['current_user']) || is_admin_for_any_module($GLOBALS['current_user']))
+		if($GLOBALS['current_user']->isDeveloperForAnyModule())
 			return;
 	    if(!empty($_REQUEST['action']) && $_REQUEST['action']=="RetrieveEmail")
             return;
@@ -510,7 +510,7 @@ class SugarApplication
 	protected function checkHTTPReferer($dieIfInvalid = true)
 	{
 		global $sugar_config;
-		$whiteListActions = (!empty($sugar_config['http_referer']['actions']))?$sugar_config['http_referer']['actions']:array('index', 'ListView', 'DetailView', 'EditView','oauth', 'Authenticate', 'Login');
+		$whiteListActions = (!empty($sugar_config['http_referer']['actions']))?$sugar_config['http_referer']['actions']:array('index', 'ListView', 'DetailView', 'EditView','oauth', 'Authenticate', 'Login', 'SupportPortal');
 
 		$strong = empty($sugar_config['http_referer']['weak']);
 

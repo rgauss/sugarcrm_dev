@@ -53,4 +53,3 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 	$mod_strings = return_module_language($current_language,$temp_module);
 	$currentModule = $_REQUEST['module'];
 ?>
-

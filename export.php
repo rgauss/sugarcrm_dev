@@ -70,7 +70,7 @@ header("Content-transfer-encoding: binary");
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT" );
 header("Last-Modified: " . TimeDate::httpTime() );
 header("Cache-Control: post-check=0, pre-check=0", false );
-header("Content-Length: ".strlen($content));
+header("Content-Length: ".mb_strlen($GLOBALS['locale']->translateCharset($content, 'UTF-8', $GLOBALS['locale']->getExportCharset())));
 
 print $GLOBALS['locale']->translateCharset($content, 'UTF-8', $GLOBALS['locale']->getExportCharset());
 

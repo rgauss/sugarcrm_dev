@@ -37,7 +37,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 
 require_once('include/connectors/sources/default/source.php');
 require_once('include/nusoap/nusoap.php');
- 
+
 /**
  * ext_soap
  * This class is the soap implementation for the connector framework.
@@ -46,26 +46,22 @@ require_once('include/nusoap/nusoap.php');
  *
  */
 abstract class ext_soap extends source {
-	
+
 	protected $_client;
-	
-	public function __construct(){
- 		parent::__construct();
- 	}
- 	
+
  	/**
  	 * obj2array
  	 * Given an object, returns the object as an Array
- 	 * 
+ 	 *
  	 * @param $obj Object to convert to an array
  	 * @return $out Array reflecting the object's properties
  	 */
  	public function obj2array($obj) {
 	  $out = array();
 	  if(empty($obj)) {
-	     return $out;	
+	     return $out;
 	  }
-	  
+
 	  foreach ($obj as $key => $val) {
 	    switch(true) {
 	      case is_object($val):
@@ -80,9 +76,4 @@ abstract class ext_soap extends source {
 	  }
   	  return $out;
 	}
- 	
- 	public function __destruct(){
-		parent::__destruct();
-	}
 }
-?>

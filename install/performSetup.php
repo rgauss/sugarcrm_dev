@@ -111,7 +111,7 @@ $out =<<<EOQ
    <link rel="stylesheet" href="$css" type="text/css" />
    <script type="text/javascript" src="$common"></script>
 </head>
-<body onload="javascript:document.getElementById('defaultFocus').focus();">
+<body onload="javascript:document.getElementById('button_next2').focus();">
 <table cellspacing="0" cellpadding="0" border="0" align="center" class="shell">
       <tr><td colspan="2" id="help"><a href="{$help_url}" target='_blank'>{$mod_strings['LBL_HELP']} </a></td></tr>
     <tr>
@@ -393,6 +393,10 @@ echo "<br>";
 installLog("Enable SugarFeeds");
 enableSugarFeeds();
 
+// Enable the InsideView connector and add all modules
+installLog("Enable InsideView Connector");
+enableInsideViewConnector();
+
 ///////////////////////////////////////////////////////////////////////////////
 ////    START DEMO DATA
     
@@ -408,6 +412,7 @@ enableSugarFeeds();
         print( $render_table_close );
         print( $render_table_open );
 
+        global $current_user;
         $current_user = new User();
         $current_user->retrieve(1);
         include("install/populateSeedData.php");
@@ -463,7 +468,7 @@ $errTcpip = '';
          <td>
             &nbsp;
          </td>
-         <td><input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="defaultFocus"/></td>
+         <td><input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next2"/></td>
        </tr>
      </table>
      </form>
@@ -476,7 +481,7 @@ FP;
          <td>
             <form action="index.php" method="post" name="formFinish" id="formFinish">
                 <input type="hidden" name="default_user_name" value="admin" />
-                <input class="button" type="submit" name="next" value="{$mod_strings['LBL_PERFORM_FINISH']}" id="defaultFocus"/>
+                <input class="button" type="submit" name="next" value="{$mod_strings['LBL_PERFORM_FINISH']}" id="button_next2"/>
             </form>
          </td>
        </tr>

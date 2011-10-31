@@ -155,7 +155,7 @@
 			<script>
 			var jstransaction = new JSTransaction();
 			</script>
-<script src = "include/javascript/yui/dragdrop.js" ></script>
+<script src = "include/javascript/yui/build/dragdrop/dragdrop.js" ></script>
 				 	
 			<script type="text/javascript" src="modules/Studio/studiodd.js" ></script>	
 			<script type="text/javascript" src="modules/Studio/studio.js" ></script>	
@@ -217,11 +217,11 @@
 			    if(record){
 			        jstransaction.record('changeDropDownValue', {'row':rowCount, 'new':val, 'old':document.getElementById('value_'+ rowCount).value});
 			    }
-			    document.getElementById('value_' + rowCount).value = val;
+			    document.getElementById('value_' + rowCount).value = YAHOO.lang.escapeHTML(val);
 			    var text =  document.getElementById('slot' + rowCount + '_text');
 			    var textspan =  document.getElementById('slot' + rowCount + '_textspan');
 			    var span = document.getElementById('slot' + rowCount + '_value');
-			    span.innerHTML  = val;
+			    span.innerHTML  = YAHOO.lang.escapeHTML(val);
 			    textspan.style.display = 'none';
 			    text.value = '';
 			    span.style.display = 'inline';
@@ -264,7 +264,7 @@
 			  span1.className = 'slot';
 			  var keyspan = document.createElement('span');
 			  keyspan.id = 'slot' + slotCount + '_key'
-			  keyspan.innerHTML  = addKey.value;
+			  keyspan.innerHTML  = YAHOO.lang.escapeHTML(addKey.value);
 			  span1.appendChild(keyspan);
 			  var span2 = document.createElement('span');
 			  span2.id = 'slot' + slotCount + 'b';

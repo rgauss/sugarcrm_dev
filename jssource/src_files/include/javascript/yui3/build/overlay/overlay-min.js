@@ -1,8 +1,8 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
-YUI.add("overlay",function(A){A.Overlay=A.Base.build("overlay",A.Widget,[A.WidgetPosition,A.WidgetStack,A.WidgetPositionExt,A.WidgetStdMod]);},"3.0.0",{requires:["widget","widget-position","widget-stack","widget-position-ext","widget-stdmod"]});
+YUI.add("overlay",function(A){A.Overlay=A.Base.create("overlay",A.Widget,[A.WidgetStdMod,A.WidgetPosition,A.WidgetStack,A.WidgetPositionAlign,A.WidgetPositionConstrain]);},"3.3.0",{requires:["widget","widget-stdmod","widget-position","widget-stack","widget-position-align","widget-position-constrain"]});

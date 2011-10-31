@@ -232,7 +232,7 @@ SUGAR.quickCompose = function() {
 		{
 			//IE Bug fix for TinyMCE when pulling in the js file dynamically.
 		   	window.skipTinyMCEInitPhase = true;
-		    var require = ["layout", "element", "tabview", "menu","cookie","tinymce","securejson","sugarwidgets","sugarquickcompose","sugarquickcomposecss"];
+		    var require = ["layout", "element", "tabview", "menu","cookie","tinymce","sugarwidgets","sugarquickcompose","sugarquickcomposecss"];
 			var loader = new YAHOO.util.YUILoader({
 				    require : require,
 				    loadOptional: true,
@@ -250,13 +250,6 @@ SUGAR.quickCompose = function() {
 				    type : "js",
 				    varName: "TinyMCE",
 				    fullpath: "include/javascript/tiny_mce/tiny_mce.js"
-				});
-				
-				loader.addModule({
-				    name :"securejson",
-				    type : "js",
-				    varName: "JSON",
-				    fullpath: "include/JSON.js"
 				});
 				
 				//Load the Sugar widgets with dependancies on the yui library.

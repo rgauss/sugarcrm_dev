@@ -124,8 +124,13 @@ if($_REQUEST['use_adv'] == 'false') {
 		$_REQUEST['mins'] = '*/'.$_REQUEST['basic_interval'];
 		$_REQUEST['hours'] = '*';	
 	} else {
-		$_REQUEST['hours'] = '*/'.$_REQUEST['basic_interval'];
-		$_REQUEST['mins'] = '0';
+        // Bug # 44933 - hours cannot be greater than 23
+        if ($_REQUEST['basic_interval'] < 24) {
+		    $_REQUEST['hours'] = '*/'.$_REQUEST['basic_interval'];
+        } else {
+           $_REQUEST['hours'] = '0'; // setting it to run midnight every 24 hours
+        }
+        $_REQUEST['mins'] = '0';    // on top of the hours
 	} 
 }
 

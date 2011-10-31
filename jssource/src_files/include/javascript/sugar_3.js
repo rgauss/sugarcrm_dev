@@ -100,14 +100,25 @@ var lastSubmitTime = 0;
 var alertList = new Array();
 var oldStartsWith = '';
 
-
+/**
+ * @deprecated
+ *
+ * As of Sugar version 6.2.3 (MSIE Version 9) this function is deprecated.  The preferred method is to use the
+ * user agent check supplied by YUI to check for IE:
+ *
+ * for checking if a browser is IE in general :  if(YAHOO.env.ua.ie) {...}
+ *
+ * or for checking specific versions:  if (YAHOO.env.ua.ie >= 5.5 && YAHOO.env.ua.ie < 9) {...}
+ *
+ */
 function isSupportedIE() {
 	var userAgent = navigator.userAgent.toLowerCase() ;
 
 	// IE Check supports ActiveX controls
 	if (userAgent.indexOf("msie") != -1 && userAgent.indexOf("mac") == -1 && userAgent.indexOf("opera") == -1) {
 		var version = navigator.appVersion.match(/MSIE (.\..)/)[1] ;
-		if(version >= 5.5) {
+
+		if(version >= 5.5 && version < 9) {
 			return true;
 		} else {
 			return false;
@@ -116,6 +127,7 @@ function isSupportedIE() {
 }
 
 SUGAR.isIE = isSupportedIE();
+SUGAR.isIE7 = (navigator.userAgent.toLowerCase().indexOf('msie 7')!=-1);
 var isSafari = (navigator.userAgent.toLowerCase().indexOf('safari')!=-1);
 
 // escapes regular expression characters
@@ -325,14 +337,20 @@ function isValidPrecision(value, precision){
 	    return true;
 	//#27021
 	if( (precision == "0") ){
-		if (value.indexOf(".")== -1){
+		if (value.indexOf(dec_sep)== -1){
 			return true;
 		}else{
 			return false;
 		}
 	}
 	//#27021   end
-	var actualPrecision = value.substr(value.indexOf(".")+1, value.length).length;
+	if(value.charAt(value.length-precision-1) == num_grp_sep){
+		if(value.substr(value.indexOf(dec_sep), 1)==dec_sep){
+			return false;
+		}
+		return 	true;
+	}
+	var actualPrecision = value.substr(value.indexOf(dec_sep)+1, value.length).length;
 	return actualPrecision == precision;
 }
 function toDecimal(original, precision) {
@@ -347,22 +365,25 @@ function toDecimal(original, precision) {
 }
 
 function isInteger(s) {
-	if (typeof s == "string" && s == "")
-        return true;
-    if(typeof num_grp_sep != 'undefined' && typeof dec_sep != 'undefined')
+	if(typeof num_grp_sep != 'undefined' && typeof dec_sep != 'undefined')
 	{
 		s = unformatNumberNoParse(s, num_grp_sep, dec_sep).toString();
 	}
-	return parseFloat(s) == parseInt(s) && !isNaN(s);
+	return /^[+-]?[0-9]*$/.test(s) ;
+}
+
+function isDecimal(s) {
+    if (typeof s == "string" && s == "")    // bug# 46530, this is required in order to
+        return true;                        // not check empty decimal fields 
+	if(typeof num_grp_sep != 'undefined' && typeof dec_sep != 'undefined')
+	{
+		s = unformatNumberNoParse(s, num_grp_sep, dec_sep).toString();
+	}
+	return  /^[+-]?[0-9]+\.?[0-9]*$/.test(s) ;
 }
 
 function isNumeric(s) {
-  if(!/^-*[0-9\.]+$/.test(s)) {
-   		return false
-   }
-   else {
-		return true;
-   }
+	return isDecimal(s);
 }
 
 var date_reg_positions = {'Y': 1,'m': 2,'d': 3};
@@ -585,6 +606,7 @@ function check_form(formname) {
 }
 
 function add_error_style(formname, input, txt, flash) {
+    var raiseFlag = false;
 	if (typeof flash == "undefined")
 		flash = true;
 	try {
@@ -601,11 +623,19 @@ function add_error_style(formname, input, txt, flash) {
     invalidTxt = SUGAR.language.get('app_strings', 'ERR_INVALID_VALUE');
     nomatchTxt = SUGAR.language.get('app_strings', 'ERR_SQS_NO_MATCH_FIELD');
     matchTxt = txt.replace(requiredTxt,'').replace(invalidTxt,'').replace(nomatchTxt,'');
-	
-	if(inputHandle.parentNode.innerHTML.search(matchTxt) == -1) {
-        errorTextNode = document.createElement('span');
-        errorTextNode.className = 'required';
-        errorTextNode.innerHTML = '<br />' + txt;
+
+    YUI().use('node', function (Y) {
+        Y.one(inputHandle).get('parentNode').get('children').each(function(node, index, nodeList){
+            if(node.hasClass('validation-message') && node.get('text').search(matchTxt)){
+                raiseFlag = true;
+            }
+        });
+    });
+
+    if(!raiseFlag) {
+        errorTextNode = document.createElement('div');
+        errorTextNode.className = 'required validation-message';
+        errorTextNode.innerHTML = txt;
         if ( inputHandle.parentNode.className.indexOf('x-form-field-wrap') != -1 ) {
             inputHandle.parentNode.parentNode.appendChild(errorTextNode);
         }
@@ -640,13 +670,14 @@ function add_error_style(formname, input, txt, flash) {
 	            }
 	        }
 		}
-		window.setTimeout("inputsWithErrors[" + (inputsWithErrors.length - 1) + "].style.backgroundColor = null;", 2000);
+		window.setTimeout("inputsWithErrors[" + (inputsWithErrors.length - 1) + "].style.backgroundColor = '';", 2000);
     }
 
   } catch ( e ) {
       // Catch errors here so we don't allow an incomplete record through the javascript validation
   }
 }
+
 
 /**
  * removes all error messages for the current form
@@ -818,6 +849,12 @@ function validate_form(formname, startsWith){
 						  break;	
 						case 'int':
 							if(!isInteger(trim(form[validate[formname][i][nameIndex]].value))){
+								isError = true;
+								add_error_style(formname, validate[formname][i][nameIndex], invalidTxt + " " +	validate[formname][i][msgIndex]);
+							}
+							break;
+						case 'decimal':
+							if(!isDecimal(trim(form[validate[formname][i][nameIndex]].value))){
 								isError = true;
 								add_error_style(formname, validate[formname][i][nameIndex], invalidTxt + " " +	validate[formname][i][msgIndex]);
 							}
@@ -1274,11 +1311,10 @@ var global_xmlhttp = getXMLHTTPinstance();
 
 function http_fetch_sync(url,post_data) {
 	global_xmlhttp = getXMLHTTPinstance();
-	var method = 'GET';
-
-	if(typeof(post_data) != 'undefined') method = 'POST';
+	var method = (typeof(post_data) != 'undefined') ? 'POST' : 'GET';
+    
 	try {
-		global_xmlhttp.open(method, url,false);
+		global_xmlhttp.open(method, url, false);
 	}
 	catch(e) {
 		alert('message:'+e.message+":url:"+url);
@@ -1331,28 +1367,6 @@ function http_fetch_async(url,callback,request_id,post_data) {
 		}
 	}
 	global_xmlhttp.send(post_data);
-}
-
-function call_json_method(module,action,vars,variable_name,callback) {
-	global_xmlhttp.open("GET", "index.php?entryPoint=json&module="+module+"&action="+action+"&"+vars,true);
-	global_xmlhttp.onreadystatechange=
-	function() {
-		if(global_xmlhttp.readyState==4) {
-			if(global_xmlhttp.status == 200) {
-				// cn: bug 12274 - pass through JSON.parse() to remove security envelope
-				json_objects[variable_name] = JSON.parse(global_xmlhttp.responseText);
-
-				// cn: bug 12274 - safe from CSRF, render response as expected
-				var respText = JSON.parseNoSecurity(global_xmlhttp.responseText);
-				var args = {responseText:respText, responseXML:global_xmlhttp.responseXML};
-				callback.call(document, args);
-			}
-			else {
-				alert("There was a problem retrieving the XML data:\n" + global_xmlhttp.statusText);
-			}
-		}
-	}
-	global_xmlhttp.send(null);
 }
 
 function insert_at_cursor(field, value) {
@@ -1606,8 +1620,12 @@ function initEditView(theForm) {
     	window.setTimeout(function(){initEditView(theForm);}, 100);
     	return;
     }
+    if ( theForm == null || theForm.id == null ) {
+        // Not much we can do here.
+        return;
+    }    
     // we don't need to check if the data is changed in the search popup
-    if (theForm.id == 'popup_query_form') {
+    if (theForm.id == 'popup_query_form' || theForm.id == 'MassUpdate') {
     	return;
     }
 	if ( typeof editViewSnapshots == 'undefined' ) {
@@ -1616,15 +1634,8 @@ function initEditView(theForm) {
     if ( typeof SUGAR.loadedForms == 'undefined' ) {
     	SUGAR.loadedForms = new Object();
     }
-
-    // console.log('DEBUG: Adding checks for '+theForm.id);
-    if ( theForm == null || theForm.id == null ) {
-        // Not much we can do here.
-        return;
-    }
     editViewSnapshots[theForm.id] = snapshotForm(theForm);
     SUGAR.loadedForms[theForm.id] = true;
-
 }
 
 function onUnloadEditView(theForm) {
@@ -1841,8 +1852,15 @@ sugarListView.prototype.use_external_mail_client_callback = function(o)
 }
 
 sugarListView.prototype.send_form_for_emails = function(select, currentModule, action, no_record_txt,action_module,totalCount, totalCountError) {
-	if (document.MassUpdate.select_entire_list.value == 1) {
-		if (totalCount > 10) {
+	if ( typeof(SUGAR.config.email_sugarclient_listviewmaxselect) != 'undefined' ) {
+	    maxCount = 10;
+	}
+	else {
+	    maxCount = SUGAR.config.email_sugarclient_listviewmaxselect;
+	}
+
+    if (document.MassUpdate.select_entire_list.value == 1) {
+		if (totalCount > maxCount) {
 			alert(totalCountError);
 			return;
 		} // if
@@ -1884,7 +1902,7 @@ sugarListView.prototype.send_form_for_emails = function(select, currentModule, a
 	}
 
 	var selectedArray = uidTa.value.split(",");
-	if(selectedArray.length > 10) {
+	if(selectedArray.length > maxCount) {
 		alert(totalCountError);
 		return;
 	} // if
@@ -2495,11 +2513,6 @@ SUGAR.ajaxStatusClass.prototype.positionStatus = function() {
 SUGAR.ajaxStatusClass.prototype.createStatus = function(text) {
 	statusDiv = document.createElement('div');
 	statusDiv.className = 'dataLabel';
-	statusDiv.style.background = '#ffffff';
-	statusDiv.style.color = '#c60c30';
-	statusDiv.style.position = 'absolute';
-	statusDiv.style.opacity = .8;
-	statusDiv.style.filter = 'alpha(opacity=80)';
 	statusDiv.id = 'ajaxStatusDiv';
 	document.body.appendChild(statusDiv);
 	this.statusDiv = document.getElementById('ajaxStatusDiv');
@@ -2733,7 +2746,7 @@ SUGAR.util = function () {
 					var script = document.createElement('script');
                   	script.type= 'text/javascript';
                   	if(result[1].indexOf("src=") > -1){
-						var srcRegex = /.*src=['"]([a-zA-Z0-9\&\/\.\?=:]*)['"].*/igm;
+						var srcRegex = /.*src=['"]([a-zA-Z0-9_\&\/\.\?=:]*)['"].*/igm;
 						var srcResult =  result[1].replace(srcRegex, '$1');
 						script.src = srcResult;
                   	}else{
@@ -4142,25 +4155,10 @@ SUGAR.util.closeActivityPanel = {
                         //var args = "action=save&id=" + id + "&status=" + new_status + "&module=" + module;
                         var callback = {
                             success:function(o)
-                            {	//refresh window to show updated changes
-								window.location.reload(true);
-								/*
-                                if(viewType == 'dashlet')
-                                {
-                                    SUGAR.mySugar.retrieveDashlet(o.argument['parentContainerId']);
-                                    ajaxStatus.hideStatus();
-                                }
-                                else if(viewType == 'subpanel'){
-                                    showSubPanel(o.argument['parentContainerId'],null,true);
-									if(o.argument['parentContainerId'] == 'activities'){
-										showSubPanel('history',null,true);
-									}
-									ajaxStatus.hideStatus();
-
-                                }else if(viewType == 'listview'){
-                                    document.location = 'index.php?module=' + module +'&action=index';
-									}
-								*/
+                            {
+                                // Bug 45792: Firefox seems to believe reloading a page after an ajax request means you are re-submitting a form and gives you the warning for it.
+                                // So instead, we reload from a timeout
+								window.setTimeout("window.location.reload(true);",0);
                             },
                             argument:{'parentContainerId':parentContainerId}
                         };
@@ -4198,3 +4196,19 @@ SUGAR.util.setEmailPasswordEdit = function(id) {
 	link.style.display = 'none';
 }
 
+/**
+ * Compares a filename with a supplied array of allowed file extensions.
+ * @param fileName string
+ * @param allowedTypes array of allowed file extensions
+ * @return bool
+ */
+SUGAR.util.validateFileExt = function(fileName, allowedTypes) {
+    var ext = fileName.split('.').pop();
+    for (var i = allowedTypes.length; i >= 0; i--) {
+        if (ext === allowedTypes[i]) {
+            return true;
+        }
+    }
+
+    return false;
+}

@@ -67,6 +67,7 @@ $popupMeta = array (
 	    'name' => 'last_name',
 	    'width' => '10%',
 	  ),
+	  'email',
 	  'account_name' => 
 	  array (
 	    'type' => 'varchar',

@@ -211,8 +211,8 @@ function gridInit() {
 			//Override Paging request construction
 			grid.set("generateRequest", function(oState, oSelf) {
 	            oState = oState || {pagination:null, sortedBy:null};
-	            var sort = (oState.sortedBy) ? oState.sortedBy.key : oSelf.getColumnSet().keys[1].getKey();
-	            var dir = (oState.sortedBy && oState.sortedBy.dir === YAHOO.widget.DataTable.CLASS_DESC) ? "desc" : "asc";
+	            var sort = (oState.sortedBy) ? oState.sortedBy.key : oSelf.getColumnSet().keys[5].getKey();
+	            var dir = (oState.sortedBy && oState.sortedBy.dir === YAHOO.widget.DataTable.CLASS_ASC) ? "asc" : "desc";
 	            var startIndex = (oState.pagination) ? oState.pagination.recordOffset : 0;
 	            var results = (oState.pagination) ? oState.pagination.rowsPerPage : null;
 	            // Build the request 

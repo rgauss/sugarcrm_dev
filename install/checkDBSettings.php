@@ -47,13 +47,25 @@ installLog("Begin DB Check Process *************");
     if(function_exists('sqlsrv_connect')){
         $_SESSION['mssql_type'] = 'sqlsrv';
     }
+
+
     global $mod_strings;
     $errors = array();
     copyInputsIntoSession();
     
-        if( trim($_SESSION['setup_db_database_name']) == '' ){
+        installLog("Checking DB Name is valid.");
+
+        $_SESSION['setup_db_database_name'] = trim($_SESSION['setup_db_database_name']);
+
+        if($_SESSION['setup_db_database_name'] == '' ){
             $errors['ERR_DB_NAME'] = $mod_strings['ERR_DB_NAME'];
             installLog("ERROR::  {$errors['ERR_DB_NAME']}");
+        }
+
+        if (!isValidDBName($_SESSION['setup_db_database_name'], $_SESSION['setup_db_type'])) {
+            $errIdx = 'ERR_DB_' . strtoupper($_SESSION['setup_db_type']) . '_DB_NAME_INVALID';
+            $errors[$errIdx] = $mod_strings[$errIdx];
+            installLog("ERROR::  {$errors[$errIdx]}");
         }
 
         if($_SESSION['setup_db_type'] != 'oci8') {
@@ -84,7 +96,7 @@ installLog("Begin DB Check Process *************");
 
         // test the account that will talk to the db if we're not creating it
         if( $_SESSION['setup_db_sugarsales_user'] != '' && !$_SESSION['setup_db_create_sugarsales_user'] ){
-        	if( $_SESSION['setup_db_type'] == 'mysql' ){
+            if( $_SESSION['setup_db_type'] == 'mysql' ){
                 installLog("testing with mysql");
                 if(isset($_SESSION['mysql_type']) && $_SESSION['mysql_type'] == 'mysqli'){
                     installLog("MySQLI library detected");
@@ -113,7 +125,7 @@ installLog("Begin DB Check Process *************");
                         $error = mysql_error();
                     }
 
-                    $errors['ERR_DB_LOGIN_FAILURE'] = $mod_strings['ERR_DB_LOGIN_FAILURE_MYSQL']." $errno: $error).";
+                    $errors['ERR_DB_LOGIN_FAILURE'] = $mod_strings['ERR_DB_LOGIN_FAILURE_MYSQL'];
                     installLog("ERROR::  {$errors['ERR_DB_LOGIN_FAILURE']}");
                 }
                 else{
@@ -160,10 +172,11 @@ installLog("Begin DB Check Process *************");
                     }
                 }
                 // Bug 29855 - Check to see if given db name is valid
-                if (preg_match("/[\"\'\*\/\\?\:\\<\>\-]+/i", $_SESSION['setup_db_database_name']) ) {
-                    $errors['ERR_DB_MSSQL_DB_NAME'] = $mod_strings['ERR_DB_MSSQL_DB_NAME_INVALID'];
-                    installLog("ERROR::  {$errors['ERR_DB_MSSQL_DB_NAME']}");
-                }
+//                if (preg_match("/^[0-9#@]+|[\"\'\*\/\\?\:\\<\>\-\ \&\!\(\)\[\]\{\}\;\,\.\`\~\|\\\\]+/i", $_SESSION['setup_db_database_name']) ) {
+//                    $errors['ERR_DB_MSSQL_DB_NAME'] = $mod_strings['ERR_DB_MSSQL_DB_NAME_INVALID'];
+//                    installLog("ERROR::  {$errors['ERR_DB_MSSQL_DB_NAME']}");
+//                }
+//                Moved to isValidDBName function in db_utils.php
 
             } elseif( $_SESSION['setup_db_type'] == 'oci8' ){
             }

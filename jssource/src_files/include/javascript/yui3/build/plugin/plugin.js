@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('plugin', function(Y) {
 
@@ -21,7 +21,11 @@ YUI.add('plugin', function(Y) {
      * @param {Object} config Configuration object with property name/value pairs.
      */
     function Plugin(config) {
-        Plugin.superclass.constructor.apply(this, arguments);
+        if (! (this.hasImpl && this.hasImpl(Y.Plugin.Base)) ) {
+            Plugin.superclass.constructor.apply(this, arguments);
+        } else {
+            Plugin.prototype.initializer.apply(this, arguments);
+        }
     }
 
     /**
@@ -111,24 +115,20 @@ YUI.add('plugin', function(Y) {
          *
          * @method doBefore
          *
-         * @param sFn {String} The event to listen for, or method to inject logic before.
+         * @param strMethod {String} The event to listen for, or method to inject logic before.
          * @param fn {Function} The handler function. For events, the "on" moment listener. For methods, the function to execute before the given method is executed.
          * @param context {Object} An optional context to call the handler with. The default context is the plugin instance.
          * @return handle {EventHandle} The detach handle for the handler.
          */
-        doBefore: function(sFn, fn, context) {
-            var host = this.get("host"),
-                handle;
+        doBefore: function(strMethod, fn, context) {
+            var host = this.get("host"), handle;
 
-            context = context || this;
-
-            if (sFn in host) { // method
-                handle = Y.Do.before(fn, host, sFn, context);
+            if (strMethod in host) { // method
+                handle = this.beforeHostMethod(strMethod, fn, context);
             } else if (host.on) { // event
-                handle = host.on(sFn, fn, context);
+                handle = this.onHostEvent(strMethod, fn, context);
             }
 
-            this._handles.push(handle);
             return handle;
         },
 
@@ -138,23 +138,87 @@ YUI.add('plugin', function(Y) {
          *
          * @method doAfter
          *
-         * @param sFn {String} The event to listen for, or method to inject logic after.
+         * @param strMethod {String} The event to listen for, or method to inject logic after.
          * @param fn {Function} The handler function. For events, the "after" moment listener. For methods, the function to execute after the given method is executed.
          * @param context {Object} An optional context to call the handler with. The default context is the plugin instance.
-         * @return handle {EventHandle} The detach handle for the handler.
+         * @return handle {EventHandle} The detach handle for the listener.
          */
-        doAfter: function(sFn, fn, context) {
-            var host = this.get("host"),
-                handle;
+        doAfter: function(strMethod, fn, context) {
+            var host = this.get("host"), handle;
 
-            context = context || this;
-
-            if (sFn in host) { // method
-                handle = Y.Do.after(fn, host, sFn, context);
+            if (strMethod in host) { // method
+                handle = this.afterHostMethod(strMethod, fn, context);
             } else if (host.after) { // event
-                handle = host.after(sFn, fn, context);
+                handle = this.afterHostEvent(strMethod, fn, context);
             }
 
+            return handle;
+        },
+
+        /**
+         * Listens for the "on" moment of events fired by the host object.
+         *
+         * Listeners attached through this method will be detached when the plugin is unplugged.
+         * 
+         * @method onHostEvent
+         * @param {String | Object} type The event type.
+         * @param {Function} fn The listener.
+         * @param {Object} context The execution context. Defaults to the plugin instance.
+         * @return handle {EventHandle} The detach handle for the listener. 
+         */
+        onHostEvent : function(type, fn, context) {
+            var handle = this.get("host").on(type, fn, context || this);
+            this._handles.push(handle);
+            return handle;
+        },
+
+        /**
+         * Listens for the "after" moment of events fired by the host object.
+         *
+         * Listeners attached through this method will be detached when the plugin is unplugged.
+         * 
+         * @method afterHostEvent
+         * @param {String | Object} type The event type.
+         * @param {Function} fn The listener.
+         * @param {Object} context The execution context. Defaults to the plugin instance.
+         * @return handle {EventHandle} The detach handle for the listener. 
+         */
+        afterHostEvent : function(type, fn, context) {
+            var handle = this.get("host").after(type, fn, context || this);
+            this._handles.push(handle);
+            return handle;
+        },
+
+        /**
+         * Injects a function to be executed before a given method on host object.
+         *
+         * The function will be detached when the plugin is unplugged.
+         *
+         * @method beforeHostMethod
+         * @param {String} method The name of the method to inject the function before.
+         * @param {Function} fn The function to inject.
+         * @param {Object} context The execution context. Defaults to the plugin instance.
+         * @return handle {EventHandle} The detach handle for the injected function. 
+         */
+        beforeHostMethod : function(strMethod, fn, context) {
+            var handle = Y.Do.before(fn, this.get("host"), strMethod, context || this);
+            this._handles.push(handle);
+            return handle;
+        },
+
+        /**
+         * Injects a function to be executed after a given method on host object.
+         *
+         * The function will be detached when the plugin is unplugged.
+         *
+         * @method afterHostMethod
+         * @param {String} method The name of the method to inject the function after.
+         * @param {Function} fn The function to inject.
+         * @param {Object} context The execution context. Defaults to the plugin instance.
+         * @return handle {EventHandle} The detach handle for the injected function. 
+         */
+        afterHostMethod : function(strMethod, fn, context) {
+            var handle = Y.Do.after(fn, this.get("host"), strMethod, context || this);
             this._handles.push(handle);
             return handle;
         },
@@ -167,4 +231,4 @@ YUI.add('plugin', function(Y) {
     Y.namespace("Plugin").Base = Plugin;
 
 
-}, '3.0.0' ,{requires:['base-base']});
+}, '3.3.0' ,{requires:['base-base']});

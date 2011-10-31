@@ -54,7 +54,7 @@
 					<td>
 						<input type=hidden name='emailAddressWidget' value=1>
 						<span class="id-ff multiple ownline">
-						<button class='button' type='button'
+						<button class='button' type='button' id="{$module}{$index}_email_widget_add"
 onClick="javascript:SUGAR.EmailAddressWidget.instances.{$module}{$index}.addEmailAddress('{$module}emailAddressesTable{$index}','','');" 
 value='{$app_strings.LBL_ADD_BUTTON}'><img src="{sugar_getimagepath file="id-ff-add.png"}"></button>
 						</span>					

@@ -459,6 +459,7 @@ class ImportViewStep4 extends SugarView
                                     $existing_focus->$focus_key = $focus_value;
                                                    
                             $focus = $existing_focus;
+                            $focus->update_date_entered = true;
                         }
                         unset($existing_focus);
                     }
@@ -493,7 +494,7 @@ class ImportViewStep4 extends SugarView
                     $list_of_users=$focus->sync_contact;
                     //and set it to false for the save
                     $focus->sync_contact=false;
-                } else if($focus->object_name == "User" && !empty($current_user) && $focus->is_admin && !is_admin($current_user) && is_admin_for_module($current_user, 'Users')) {
+                } else if($focus->object_name == "User" && (empty($current_user) || !$current_user->isAdminForModule( 'Users'))) {
                 	sugar_die($GLOBALS['mod_strings']['ERR_IMPORT_SYSTEM_ADMININSTRATOR']);
                 }
                 //bug# 40260 setting it true as the module in focus is involved in an import
@@ -622,7 +623,7 @@ class ImportViewStep4 extends SugarView
         )
     {
         return preg_replace_callback( 
-            '|[^A-Za-z0-9\-]|',
+            '|[^A-Za-z0-9\-\.]|',
             create_function(
             // single quotes are essential here,
             // or alternative escape all $ as \$

@@ -72,13 +72,13 @@ class ViewModulelabels extends SugarView
 		$mb->getPackage($_REQUEST['view_package']);
 		$package = $mb->packages[$_REQUEST['view_package']];
 		$package->getModule($module_name);
-		$this->module = $package->modules[$module_name];
+		$mbModule = $package->modules[$module_name];
 		$selected_lang = (!empty($_REQUEST['selected_lang'])?$_REQUEST['selected_lang']:$_SESSION['authenticated_user_language']);
 		if(empty($selected_lang)){
 	    	$selected_lang = $GLOBALS['sugar_config']['default_language'];
 		}
 	        //need to change the following to interface with MBlanguage.
-        $smarty->assign('MOD', $this->module->getModStrings($selected_lang));
+        $smarty->assign('MOD', $mbModule->getModStrings($selected_lang));
 		$smarty->assign('APP', $GLOBALS['app_strings']);
 		$smarty->assign('selected_lang', $selected_lang);
 		$smarty->assign('view_package', $package_name);

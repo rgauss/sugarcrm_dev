@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dom-base', function(Y) {
 
@@ -14,6 +14,7 @@ YUI.add('dom-base', function(Y) {
  * for other common tasks. 
  * @module dom
  * @submodule dom-base
+ * @for DOM
  *
  */
 
@@ -24,6 +25,7 @@ YUI.add('dom-base', function(Y) {
  */
 var NODE_TYPE = 'nodeType',
     OWNER_DOCUMENT = 'ownerDocument',
+    DOCUMENT_ELEMENT = 'documentElement',
     DEFAULT_VIEW = 'defaultView',
     PARENT_WINDOW = 'parentWindow',
     TAG_NAME = 'tagName',
@@ -33,12 +35,29 @@ var NODE_TYPE = 'nodeType',
     NEXT_SIBLING = 'nextSibling',
     CONTAINS = 'contains',
     COMPARE_DOCUMENT_POSITION = 'compareDocumentPosition',
+    EMPTY_STRING = '',
+    EMPTY_ARRAY = [],
 
-    documentElement = document.documentElement,
+    documentElement = Y.config.doc.documentElement,
 
-    re_tag = /<([a-z]+)/i;
+    re_tag = /<([a-z]+)/i,
 
-Y.DOM = {
+    createFromDIV = function(html, tag) {
+        var div = Y.config.doc.createElement('div'),
+            ret = true;
+
+        div.innerHTML = html;
+        if (!div.firstChild || div.firstChild.tagName !== tag.toUpperCase()) {
+            ret = false;
+        }
+
+        return ret;
+    },
+
+    addFeature = Y.Features.add,
+    testFeature = Y.Features.test,
+    
+Y_DOM = {
     /**
      * Returns the HTMLElement with the given ID (Wrapper for document.getElementById).
      * @method byId         
@@ -47,31 +66,8 @@ Y.DOM = {
      * @return {HTMLElement | null} The HTMLElement with the id, or null if none found. 
      */
     byId: function(id, doc) {
-        doc = doc || Y.config.doc;
-        // TODO: IE Name
-        return doc.getElementById(id);
-    },
-
-    // @deprecated
-    children: function(node, tag) {
-        var ret = [];
-        if (node) {
-            tag = tag || '*';
-            ret = Y.Selector.query('> ' + tag, node); 
-        }
-        return ret;
-    },
-
-    // @deprecated
-    firstByTag: function(tag, root) {
-        var ret;
-        root = root || Y.config.doc;
-
-        if (tag && root.getElementsByTagName) {
-            ret = root.getElementsByTagName(tag)[0];
-        }
-
-        return ret || null;
+        // handle dupe IDs and IE name collision
+        return Y_DOM.allById(id, doc)[0] || null;
     },
 
     /**
@@ -90,7 +86,7 @@ Y.DOM = {
         } : function(element) {
             var ret = '';
             if (element) {
-                ret = element.innerText;
+                ret = element.innerText || element.nodeValue; // might be a textNode
             }
             return ret || '';
         },
@@ -107,55 +103,54 @@ Y.DOM = {
                 element.textContent = content;
             }
         } : function(element, content) {
-            if (element) {
+            if ('innerText' in element) {
                 element.innerText = content;
+            } else if ('nodeValue' in element) {
+                element.nodeValue = content;
             }
+
         },
-
-    /*
-     * Finds the previous sibling of the element.
-     * @method previous
-     * @deprecated Use elementByAxis
-     * @param {HTMLElement} element The html element.
-     * @param {Function} fn optional An optional boolean test to apply.
-     * The optional function is passed the current DOM node being tested as its only argument.
-     * If no function is given, the first sibling is returned.
-     * @param {Boolean} all optional Whether all node types should be scanned, or just element nodes.
-     * @return {HTMLElement | null} The matching DOM node or null if none found. 
-     */
-    previous: function(element, fn, all) {
-        return Y.DOM.elementByAxis(element, PREVIOUS_SIBLING, fn, all);
-    },
-
-    /*
-     * Finds the next sibling of the element.
-     * @method next
-     * @deprecated Use elementByAxis
-     * @param {HTMLElement} element The html element.
-     * @param {Function} fn optional An optional boolean test to apply.
-     * The optional function is passed the current DOM node being tested as its only argument.
-     * If no function is given, the first sibling is returned.
-     * @param {Boolean} all optional Whether all node types should be scanned, or just element nodes.
-     * @return {HTMLElement | null} The matching DOM node or null if none found. 
-     */
-    next: function(element, fn, all) {
-        return Y.DOM.elementByAxis(element, NEXT_SIBLING, fn, all);
-    },
 
     /*
      * Finds the ancestor of the element.
      * @method ancestor
-     * @deprecated Use elementByAxis
      * @param {HTMLElement} element The html element.
      * @param {Function} fn optional An optional boolean test to apply.
      * The optional function is passed the current DOM node being tested as its only argument.
      * If no function is given, the parentNode is returned.
-     * @param {Boolean} all optional Whether all node types should be scanned, or just element nodes.
+     * @param {Boolean} testSelf optional Whether or not to include the element in the scan 
      * @return {HTMLElement | null} The matching DOM node or null if none found. 
      */
-     // TODO: optional stopAt node?
-    ancestor: function(element, fn, all) {
-        return Y.DOM.elementByAxis(element, PARENT_NODE, fn, all);
+    ancestor: function(element, fn, testSelf) {
+        var ret = null;
+        if (testSelf) {
+            ret = (!fn || fn(element)) ? element : null;
+
+        }
+        return ret || Y_DOM.elementByAxis(element, PARENT_NODE, fn, null);
+    },
+
+    /*
+     * Finds the ancestors of the element.
+     * @method ancestors
+     * @param {HTMLElement} element The html element.
+     * @param {Function} fn optional An optional boolean test to apply.
+     * The optional function is passed the current DOM node being tested as its only argument.
+     * If no function is given, all ancestors are returned.
+     * @param {Boolean} testSelf optional Whether or not to include the element in the scan 
+     * @return {Array} An array containing all matching DOM nodes.
+     */
+    ancestors: function(element, fn, testSelf) {
+        var ancestor = Y_DOM.ancestor.apply(Y_DOM, arguments),
+            ret = (ancestor) ? [ancestor] : [];
+
+        while ((ancestor = Y_DOM.ancestor(ancestor, fn))) {
+            if (ancestor) {
+                ret.unshift(ancestor);
+            }
+        }
+
+        return ret;
     },
 
     /**
@@ -194,7 +189,7 @@ Y.DOM = {
             if (Y.UA.opera || needle[NODE_TYPE] === 1) { // IE & SAF contains fail if needle not an ELEMENT_NODE
                 ret = element[CONTAINS](needle);
             } else {
-                ret = Y.DOM._bruteContains(element, needle); 
+                ret = Y_DOM._bruteContains(element, needle); 
             }
         } else if (element[COMPARE_DOCUMENT_POSITION]) { // gecko
             if (element === needle || !!(element[COMPARE_DOCUMENT_POSITION](needle) & 16)) { 
@@ -213,56 +208,118 @@ Y.DOM = {
      * @return {Boolean} Whether or not the element is attached to the document. 
      */
     inDoc: function(element, doc) {
-        doc = doc || element[OWNER_DOCUMENT];
-        var id = element.id;
-        if (!id) { // TODO: remove when done?
-            id = element.id = Y.guid();
+        var ret = false,
+            rootNode;
+
+        if (element && element.nodeType) {
+            (doc) || (doc = element[OWNER_DOCUMENT]);
+
+            rootNode = doc[DOCUMENT_ELEMENT];
+
+            // contains only works with HTML_ELEMENT
+            if (rootNode && rootNode.contains && element.tagName) {
+                ret = rootNode.contains(element);
+            } else {
+                ret = Y_DOM.contains(rootNode, element);
+            }
         }
 
-        return !! (doc.getElementById(id));
+        return ret;
+
     },
+
+   allById: function(id, root) {
+        root = root || Y.config.doc;
+        var nodes = [],
+            ret = [],
+            i,
+            node;
+
+        if (root.querySelectorAll) {
+            ret = root.querySelectorAll('[id="' + id + '"]');
+        } else if (root.all) {
+            nodes = root.all(id);
+
+            if (nodes) {
+                // root.all may return HTMLElement or HTMLCollection.
+                // some elements are also HTMLCollection (FORM, SELECT).
+                if (nodes.nodeName) {
+                    if (nodes.id === id) { // avoid false positive on name
+                        ret.push(nodes);
+                        nodes = EMPTY_ARRAY; // done, no need to filter
+                    } else { //  prep for filtering
+                        nodes = [nodes];
+                    }
+                }
+
+                if (nodes.length) {
+                    // filter out matches on node.name
+                    // and element.id as reference to element with id === 'id'
+                    for (i = 0; node = nodes[i++];) {
+                        if (node.id === id  || 
+                                (node.attributes && node.attributes.id &&
+                                node.attributes.id.value === id)) { 
+                            ret.push(node);
+                        }
+                    }
+                }
+            }
+        } else {
+            ret = [Y_DOM._getDoc(root).getElementById(id)];
+        }
+    
+        return ret;
+   },
 
     /**
      * Creates a new dom node using the provided markup string. 
      * @method create
      * @param {String} html The markup used to create the element
      * @param {HTMLDocument} doc An optional document context 
+     * @return {HTMLElement|DocumentFragment} returns a single HTMLElement 
+     * when creating one node, and a documentFragment when creating
+     * multiple nodes.
      */
     create: function(html, doc) {
         if (typeof html === 'string') {
             html = Y.Lang.trim(html); // match IE which trims whitespace from innerHTML
-        }
 
-        if (!doc && Y.DOM._cloneCache[html]) {
-            return Y.DOM._cloneCache[html].cloneNode(true); // NOTE: return
         }
 
         doc = doc || Y.config.doc;
         var m = re_tag.exec(html),
-            create = Y.DOM._create,
-            custom = Y.DOM.creators,
+            create = Y_DOM._create,
+            custom = Y_DOM.creators,
             ret = null,
+            creator,
             tag, nodes;
 
-        if (m && custom[m[1]]) {
-            if (typeof custom[m[1]] === 'function') {
-                create = custom[m[1]];
-            } else {
-                tag = custom[m[1]];
+        if (html != undefined) { // not undefined or null
+            if (m && m[1]) {
+                creator = custom[m[1].toLowerCase()];
+                if (typeof creator === 'function') {
+                    create = creator; 
+                } else {
+                    tag = creator;
+                }
+            }
+
+            nodes = create(html, doc, tag).childNodes;
+
+            if (nodes.length === 1) { // return single node, breaking parentNode ref from "fragment"
+                ret = nodes[0].parentNode.removeChild(nodes[0]);
+            } else if (nodes[0] && nodes[0].className === 'yui3-big-dummy') { // using dummy node to preserve some attributes (e.g. OPTION not selected)
+                if (nodes.length === 2) {
+                    ret = nodes[0].nextSibling;
+                } else {
+                    nodes[0].parentNode.removeChild(nodes[0]); 
+                     ret = Y_DOM._nl2frag(nodes, doc);
+                }
+            } else { // return multiple nodes as a fragment
+                 ret = Y_DOM._nl2frag(nodes, doc);
             }
         }
 
-        nodes = create(html, doc, tag).childNodes;
-
-        if (nodes.length === 1) { // return single node, breaking parentNode ref from "fragment"
-            ret = nodes[0].parentNode.removeChild(nodes[0]);
-        } else { // return multiple nodes as a fragment
-             ret = Y.DOM._nl2frag(nodes, doc);
-        }
-
-        if (ret) {
-            Y.DOM._cloneCache[html] = ret.cloneNode(true);
-        }
         return ret;
     },
 
@@ -297,13 +354,13 @@ Y.DOM = {
     /**
      * Provides a normalized attribute interface. 
      * @method setAttibute
-     * @param {String | HTMLElement} el The target element for the attribute.
+     * @param {HTMLElement} el The target element for the attribute.
      * @param {String} attr The attribute to set.
      * @param {String} val The value of the attribute.
      */
     setAttribute: function(el, attr, val, ieAttr) {
-        if (el && el.setAttribute) {
-            attr = Y.DOM.CUSTOM_ATTRIBUTES[attr] || attr;
+        if (el && attr && el.setAttribute) {
+            attr = Y_DOM.CUSTOM_ATTRIBUTES[attr] || attr;
             el.setAttribute(attr, val, ieAttr);
         }
     },
@@ -312,15 +369,15 @@ Y.DOM = {
     /**
      * Provides a normalized attribute interface. 
      * @method getAttibute
-     * @param {String | HTMLElement} el The target element for the attribute.
+     * @param {HTMLElement} el The target element for the attribute.
      * @param {String} attr The attribute to get.
      * @return {String} The current value of the attribute. 
      */
     getAttribute: function(el, attr, ieAttr) {
         ieAttr = (ieAttr !== undefined) ? ieAttr : 2;
         var ret = '';
-        if (el && el.getAttribute) {
-            attr = Y.DOM.CUSTOM_ATTRIBUTES[attr] || attr;
+        if (el && attr && el.getAttribute) {
+            attr = Y_DOM.CUSTOM_ATTRIBUTES[attr] || attr;
             ret = el.getAttribute(attr, ieAttr);
 
             if (ret === null) {
@@ -331,21 +388,19 @@ Y.DOM = {
     },
 
     isWindow: function(obj) {
-        return obj.alert && obj.document;
+        return !!(obj && obj.alert && obj.document);
     },
 
-    _fragClones: {
-        div: document.createElement('div')
-    },
+    _fragClones: {},
 
     _create: function(html, doc, tag) {
         tag = tag || 'div';
 
-        var frag = Y.DOM._fragClones[tag];
+        var frag = Y_DOM._fragClones[tag];
         if (frag) {
             frag = frag.cloneNode(false);
         } else {
-            frag = Y.DOM._fragClones[tag] = doc.createElement(tag);
+            frag = Y_DOM._fragClones[tag] = doc.createElement(tag);
         }
         frag.innerHTML = html;
         return frag;
@@ -357,36 +412,50 @@ Y.DOM = {
         }
     },
 
-    _cloneCache: {},
-
     /**
      * Inserts content in a node at the given location 
      * @method addHTML
      * @param {HTMLElement} node The node to insert into
-     * @param {String} content The content to be inserted 
-     * @param {String} where Where to insert the content; default is after lastChild 
+     * @param {HTMLElement | Array | HTMLCollection} content The content to be inserted 
+     * @param {HTMLElement} where Where to insert the content
+     * If no "where" is given, content is appended to the node
+     * Possible values for "where"
+     * <dl>
+     * <dt>HTMLElement</dt>
+     * <dd>The element to insert before</dd>
+     * <dt>"replace"</dt>
+     * <dd>Replaces the existing HTML</dd>
+     * <dt>"before"</dt>
+     * <dd>Inserts before the existing HTML</dd>
+     * <dt>"before"</dt>
+     * <dd>Inserts content before the node</dd>
+     * <dt>"after"</dt>
+     * <dd>Inserts content after the node</dd>
+     * </dl>
      */
     addHTML: function(node, content, where) {
-        if (typeof content === 'string') {
-            content = Y.Lang.trim(content); // match IE which trims whitespace from innerHTML
-        }
-
-        var newNode = Y.DOM._cloneCache[content],
-            nodeParent = node.parentNode;
+        var nodeParent = node.parentNode,
+            i = 0,
+            item,
+            ret = content,
+            newNode;
             
-        if (newNode) {
-            newNode = newNode.cloneNode(true);
-        } else {
-            if (content.nodeType) { // domNode
+
+        if (content != undefined) { // not null or undefined (maybe 0)
+            if (content.nodeType) { // DOM node, just add it
                 newNode = content;
-            } else { // create from string and cache
-                newNode = Y.DOM.create(content);
+            } else if (typeof content == 'string' || typeof content == 'number') {
+                ret = newNode = Y_DOM.create(content);
+            } else if (content[0] && content[0].nodeType) { // array or collection 
+                newNode = Y.config.doc.createDocumentFragment();
+                while ((item = content[i++])) {
+                    newNode.appendChild(item); // append to fragment for insertion
+                }
             }
         }
 
         if (where) {
             if (where.nodeType) { // insert regardless of relationship to node
-                // TODO: check if node.contains(where)?
                 where.parentNode.insertBefore(newNode, where);
             } else {
                 switch (where) {
@@ -394,7 +463,9 @@ Y.DOM = {
                         while (node.firstChild) {
                             node.removeChild(node.firstChild);
                         }
-                        node.appendChild(newNode);
+                        if (newNode) { // allow empty content to clear node
+                            node.appendChild(newNode);
+                        }
                         break;
                     case 'before':
                         nodeParent.insertBefore(newNode, node);
@@ -410,11 +481,11 @@ Y.DOM = {
                         node.appendChild(newNode);
                 }
             }
-        } else {
+        } else if (newNode) {
             node.appendChild(newNode);
         }
 
-        return newNode;
+        return ret;
     },
 
     VALUE_SETTERS: {},
@@ -426,13 +497,19 @@ Y.DOM = {
             getter;
 
         if (node && node[TAG_NAME]) {
-            getter = Y.DOM.VALUE_GETTERS[node[TAG_NAME].toLowerCase()];
+            getter = Y_DOM.VALUE_GETTERS[node[TAG_NAME].toLowerCase()];
 
             if (getter) {
                 ret = getter(node);
             } else {
                 ret = node.value;
             }
+        }
+
+        // workaround for IE8 JSON stringify bug
+        // which converts empty string values to null
+        if (ret === EMPTY_STRING) {
+            ret = EMPTY_STRING; // for real
         }
 
         return (typeof ret === 'string') ? ret : '';
@@ -442,7 +519,7 @@ Y.DOM = {
         var setter;
 
         if (node && node[TAG_NAME]) {
-            setter = Y.DOM.VALUE_SETTERS[node[TAG_NAME].toLowerCase()];
+            setter = Y_DOM.VALUE_SETTERS[node[TAG_NAME].toLowerCase()];
 
             if (setter) {
                 setter(node, val);
@@ -450,6 +527,26 @@ Y.DOM = {
                 node.value = val;
             }
         }
+    },
+
+    siblings: function(node, fn) {
+        var nodes = [],
+            sibling = node;
+
+        while ((sibling = sibling[PREVIOUS_SIBLING])) {
+            if (sibling[TAG_NAME] && (!fn || fn(sibling))) {
+                nodes.unshift(sibling);
+            }
+        }
+
+        sibling = node;
+        while ((sibling = sibling[NEXT_SIBLING])) {
+            if (sibling[TAG_NAME] && (!fn || fn(sibling))) {
+                nodes.push(sibling);
+            }
+        }
+
+        return nodes;
     },
 
     /**
@@ -482,11 +579,11 @@ Y.DOM = {
      */
     _getRegExp: function(str, flags) {
         flags = flags || '';
-        Y.DOM._regexCache = Y.DOM._regexCache || {};
-        if (!Y.DOM._regexCache[str + flags]) {
-            Y.DOM._regexCache[str + flags] = new RegExp(str, flags);
+        Y_DOM._regexCache = Y_DOM._regexCache || {};
+        if (!Y_DOM._regexCache[str + flags]) {
+            Y_DOM._regexCache[str + flags] = new RegExp(str, flags);
         }
-        return Y.DOM._regexCache[str + flags];
+        return Y_DOM._regexCache[str + flags];
     },
 
 // TODO: make getDoc/Win true privates?
@@ -498,12 +595,15 @@ Y.DOM = {
      * @return {Object} The document for the given element or the default document. 
      */
     _getDoc: function(element) {
-        element = element || {};
-
-        return (element[NODE_TYPE] === 9) ? element : // element === document
+        var doc = Y.config.doc;
+        if (element) {
+            doc = (element[NODE_TYPE] === 9) ? element : // element === document
                 element[OWNER_DOCUMENT] || // element === DOM node
                 element.document || // element === window
                 Y.config.doc; // default
+        }
+
+        return doc;
     },
 
     /**
@@ -514,98 +614,186 @@ Y.DOM = {
      * @return {Object} The window for the given element or the default window. 
      */
     _getWin: function(element) {
-        var doc = Y.DOM._getDoc(element);
+        var doc = Y_DOM._getDoc(element);
         return doc[DEFAULT_VIEW] || doc[PARENT_WINDOW] || Y.config.win;
     },
 
     _batch: function(nodes, fn, arg1, arg2, arg3, etc) {
-        fn = (typeof name === 'string') ? Y.DOM[fn] : fn;
+        fn = (typeof fn === 'string') ? Y_DOM[fn] : fn;
         var result,
-            ret = [];
+            args = Array.prototype.slice.call(arguments, 2),
+            i = 0,
+            node,
+            ret;
 
         if (fn && nodes) {
-            Y.each(nodes, function(node) {
-                if ((result = fn.call(Y.DOM, node, arg1, arg2, arg3, etc)) !== undefined) {
-                    ret[ret.length] = result;
+            while ((node = nodes[i++])) {
+                result = result = fn.call(Y_DOM, node, arg1, arg2, arg3, etc);
+                if (typeof result !== 'undefined') {
+                    (ret) || (ret = []);
+                    ret.push(result);
                 }
-            });
+            }
         }
 
-        return ret.length ? ret : nodes;
+        return (typeof ret !== 'undefined') ? ret : nodes;
     },
 
-    _testElement: function(element, tag, fn) {
-        tag = (tag && tag !== '*') ? tag.toUpperCase() : null;
-        return (element && element[TAG_NAME] &&
-                (!tag || element[TAG_NAME].toUpperCase() === tag) &&
-                (!fn || fn(element)));
+    wrap: function(node, html) {
+        var parent = Y.DOM.create(html),
+            nodes = parent.getElementsByTagName('*');
+
+        if (nodes.length) {
+            parent = nodes[nodes.length - 1];
+        }
+
+        if (node.parentNode) { 
+            node.parentNode.replaceChild(parent, node);
+        }
+        parent.appendChild(node);
     },
 
-    creators: {},
+    unwrap: function(node) {
+        var parent = node.parentNode,
+            lastChild = parent.lastChild,
+            node = parent.firstChild,
+            next = node,
+            grandparent;
 
-    _IESimpleCreate: function(html, doc) {
-        doc = doc || Y.config.doc;
-        return doc.createElement(html);
-    }
+        if (parent) {
+            grandparent = parent.parentNode;
+            if (grandparent) {
+                while (node !== lastChild) {
+                    next = node.nextSibling;
+                    grandparent.insertBefore(node, parent);
+                    node = next;
+                }
+                grandparent.replaceChild(lastChild, parent);
+            } else {
+                parent.removeChild(node);
+            }
+        }
+    },
+
+    generateID: function(el) {
+        var id = el.id;
+
+        if (!id) {
+            id = Y.stamp(el);
+            el.id = id; 
+        }   
+
+        return id; 
+    },
+
+    creators: {}
 };
 
+addFeature('innerhtml', 'table', {
+    test: function() {
+        var node = Y.config.doc.createElement('table');
+        try {
+            node.innerHTML = '<tbody></tbody>';
+        } catch(e) {
+            return false;
+        }
+        return (node.firstChild && node.firstChild.nodeName === 'TBODY');
+    }
+});
+
+addFeature('innerhtml-div', 'tr', {
+    test: function() {
+        return createFromDIV('<tr></tr>', 'tr');
+    }
+});
+
+addFeature('innerhtml-div', 'script', {
+    test: function() {
+        return createFromDIV('<script></script>', 'script');
+    }
+});
+
+addFeature('value-set', 'select', {
+    test: function() {
+        var node = Y.config.doc.createElement('select');
+        node.innerHTML = '<option>1</option><option>2</option>';
+        node.value = '2';
+        return (node.value && node.value === '2');
+    }
+});
 
 (function(Y) {
-    var creators = Y.DOM.creators,
-        create = Y.DOM.create,
+    var creators = Y_DOM.creators,
+        create = Y_DOM.create,
         re_tbody = /(?:\/(?:thead|tfoot|tbody|caption|col|colgroup)>)+\s*<tbody/,
 
         TABLE_OPEN = '<table>',
         TABLE_CLOSE = '</table>';
 
-    if (Y.UA.ie) {
-        Y.mix(creators, {
+    if (!testFeature('innerhtml', 'table')) {
         // TODO: thead/tfoot with nested tbody
             // IE adds TBODY when creating TABLE elements (which may share this impl)
-            tbody: function(html, doc) {
-                var frag = create(TABLE_OPEN + html + TABLE_CLOSE, doc),
-                    tb = frag.children.tags('tbody')[0];
+        creators.tbody = function(html, doc) {
+            var frag = create(TABLE_OPEN + html + TABLE_CLOSE, doc),
+                tb = frag.children.tags('tbody')[0];
 
-                if (frag.children.length > 1 && tb && !re_tbody.test(html)) {
-                    tb[PARENT_NODE].removeChild(tb); // strip extraneous tbody
-                }
-                return frag;
-            },
-
-            script: function(html, doc) {
-                var frag = doc.createElement('div');
-
-                frag.innerHTML = '-' + html;
-                frag.removeChild(frag[FIRST_CHILD]);
-                return frag;
+            if (frag.children.length > 1 && tb && !re_tbody.test(html)) {
+                tb[PARENT_NODE].removeChild(tb); // strip extraneous tbody
             }
-
-        }, true);
-
-        Y.mix(Y.DOM.VALUE_GETTERS, {
-            button: function(node) {
-                return (node.attributes && node.attributes.value) ? node.attributes.value.value : '';
-            }
-        });
-
-        Y.mix(Y.DOM.VALUE_SETTERS, {
-            // IE: node.value changes the button text, which should be handled via innerHTML
-            button: function(node, val) {
-                var attr = node.attributes.value;
-                if (!attr) {
-                    attr = node[OWNER_DOCUMENT].createAttribute('value');
-                    node.setAttributeNode(attr);
-                }
-
-                attr.value = val;
-            }
-        });
+            return frag;
+        };
     }
 
-    if (Y.UA.gecko || Y.UA.ie) {
+    if (!testFeature('innerhtml-div', 'script')) {
+        creators.script = function(html, doc) {
+            var frag = doc.createElement('div');
+
+            frag.innerHTML = '-' + html;
+            frag.removeChild(frag[FIRST_CHILD]);
+            return frag;
+        }
+
+        Y_DOM.creators.link = Y_DOM.creators.style = Y_DOM.creators.script;
+    }
+
+    
+    if (!testFeature('value-set', 'select')) {
+        Y_DOM.VALUE_SETTERS.select = function(node, val) {
+            for (var i = 0, options = node.getElementsByTagName('option'), option;
+                    option = options[i++];) {
+                if (Y_DOM.getValue(option) === val) {
+                    option.selected = true;
+                    //Y_DOM.setAttribute(option, 'selected', 'selected');
+                    break;
+                }
+            }
+        }
+    }
+
+    Y.mix(Y_DOM.VALUE_GETTERS, {
+        button: function(node) {
+            return (node.attributes && node.attributes.value) ? node.attributes.value.value : '';
+        }
+    });
+
+    Y.mix(Y_DOM.VALUE_SETTERS, {
+        // IE: node.value changes the button text, which should be handled via innerHTML
+        button: function(node, val) {
+            var attr = node.attributes.value;
+            if (!attr) {
+                attr = node[OWNER_DOCUMENT].createAttribute('value');
+                node.setAttributeNode(attr);
+            }
+
+            attr.value = val;
+        }
+    });
+
+
+    if (!testFeature('innerhtml-div', 'tr')) {
         Y.mix(creators, {
             option: function(html, doc) {
-                return create('<select>' + html + '</select>', doc);
+                return create('<select><option class="yui3-big-dummy" selected></option>' + html + '</select>', doc);
             },
 
             tr: function(html, doc) {
@@ -616,9 +804,11 @@ Y.DOM = {
                 return create('<tr>' + html + '</tr>', doc);
             }, 
 
-            tbody: function(html, doc) {
-                return create(TABLE_OPEN + html + TABLE_CLOSE, doc);
-            }
+            col: function(html, doc) {
+                return create('<colgroup>' + html + '</colgroup>', doc);
+            }, 
+
+            tbody: 'table'
         });
 
         Y.mix(creators, {
@@ -628,12 +818,11 @@ Y.DOM = {
             tfoot: creators.tbody,
             caption: creators.tbody,
             colgroup: creators.tbody,
-            col: creators.tbody,
             optgroup: creators.option
         });
     }
 
-    Y.mix(Y.DOM.VALUE_GETTERS, {
+    Y.mix(Y_DOM.VALUE_GETTERS, {
         option: function(node) {
             var attrs = node.attributes;
             return (attrs.value && attrs.value.specified) ? node.value : node.text;
@@ -643,10 +832,11 @@ Y.DOM = {
             var val = node.value,
                 options = node.options;
 
-            if (options && val === '') {
+            if (options && options.length) {
+                // TODO: implement multipe select
                 if (node.multiple) {
                 } else {
-                    val = Y.DOM.getValue(options[node.selectedIndex], 'value');
+                    val = Y_DOM.getValue(options[node.selectedIndex]);
                 }
             }
 
@@ -655,6 +845,7 @@ Y.DOM = {
     });
 })(Y);
 
+Y.DOM = Y_DOM;
 })(Y);
 var addClass, hasClass, removeClass;
 
@@ -662,6 +853,7 @@ Y.mix(Y.DOM, {
     /**
      * Determines whether a DOM element has the given className.
      * @method hasClass
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {String} className the class name to search for
      * @return {Boolean} Whether or not the element has the given class. 
@@ -674,6 +866,7 @@ Y.mix(Y.DOM, {
     /**
      * Adds a class name to a given DOM element.
      * @method addClass         
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {String} className the class name to add to the class attribute
      */
@@ -686,6 +879,7 @@ Y.mix(Y.DOM, {
     /**
      * Removes a class name from a given element.
      * @method removeClass         
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {String} className the class name to remove from the class attribute
      */
@@ -704,26 +898,33 @@ Y.mix(Y.DOM, {
      * Replace a class with another class for a given element.
      * If no oldClassName is present, the newClassName is simply added.
      * @method replaceClass  
-     * @param {HTMLElement} element The DOM element. 
+     * @for DOM
+     * @param {HTMLElement} element The DOM element 
      * @param {String} oldClassName the class name to be replaced
      * @param {String} newClassName the class name that will be replacing the old class name
      */
     replaceClass: function(node, oldC, newC) {
+        removeClass(node, oldC); // remove first in case oldC === newC
         addClass(node, newC);
-        removeClass(node, oldC);
     },
 
     /**
      * If the className exists on the node it is removed, if it doesn't exist it is added.
      * @method toggleClass  
-     * @param {HTMLElement} element The DOM element. 
+     * @for DOM
+     * @param {HTMLElement} element The DOM element
      * @param {String} className the class name to be toggled
+     * @param {Boolean} addClass optional boolean to indicate whether class
+     * should be added or removed regardless of current state
      */
-    toggleClass: function(node, className) {
-        if (hasClass(node, className)) {
-            removeClass(node, className);
-        } else {
+    toggleClass: function(node, className, force) {
+        var add = (force !== undefined) ? force :
+                !(hasClass(node, className));
+
+        if (add) {
             addClass(node, className);
+        } else {
+            removeClass(node, className);
         }
     }
 });
@@ -732,9 +933,52 @@ hasClass = Y.DOM.hasClass;
 removeClass = Y.DOM.removeClass;
 addClass = Y.DOM.addClass;
 
+Y.mix(Y.DOM, {
+    /**
+     * Sets the width of the element to the given size, regardless
+     * of box model, border, padding, etc.
+     * @method setWidth
+     * @param {HTMLElement} element The DOM element. 
+     * @param {String|Int} size The pixel height to size to
+     */
+
+    setWidth: function(node, size) {
+        Y.DOM._setSize(node, 'width', size);
+    },
+
+    /**
+     * Sets the height of the element to the given size, regardless
+     * of box model, border, padding, etc.
+     * @method setHeight
+     * @param {HTMLElement} element The DOM element. 
+     * @param {String|Int} size The pixel height to size to
+     */
+
+    setHeight: function(node, size) {
+        Y.DOM._setSize(node, 'height', size);
+    },
+
+    _setSize: function(node, prop, val) {
+        val = (val > 0) ? val : 0;
+        var size = 0;
+
+        node.style[prop] = val + 'px';
+        size = (prop === 'height') ? node.offsetHeight : node.offsetWidth;
+
+        if (size > val) {
+            val = val - (size - val);
+
+            if (val < 0) {
+                val = 0;
+            }
+
+            node.style[prop] = val + 'px';
+        }
+    }
+});
 
 
-}, '3.0.0' ,{requires:['oop']});
+}, '3.3.0' ,{requires:['oop']});
 YUI.add('dom-style', function(Y) {
 
 (function(Y) {
@@ -754,14 +998,33 @@ var DOCUMENT_ELEMENT = 'documentElement',
     STYLE_FLOAT = 'styleFloat',
     TRANSPARENT = 'transparent',
     GET_COMPUTED_STYLE = 'getComputedStyle',
+    GET_BOUNDING_CLIENT_RECT = 'getBoundingClientRect',
 
+    WINDOW = Y.config.win,
     DOCUMENT = Y.config.doc,
     UNDEFINED = undefined,
 
-    re_color = /color$/i;
+    Y_DOM = Y.DOM,
 
+    TRANSFORM = 'transform',
+    VENDOR_TRANSFORM = [
+        'WebkitTransform',
+        'MozTransform',
+        'OTransform'
+    ],
 
-Y.mix(Y.DOM, {
+    re_color = /color$/i,
+    re_unit = /width|height|top|left|right|bottom|margin|padding/i;
+
+Y.Array.each(VENDOR_TRANSFORM, function(val) {
+    if (val in DOCUMENT[DOCUMENT_ELEMENT].style) {
+        TRANSFORM = val;
+    }
+});
+
+Y.mix(Y_DOM, {
+    DEFAULT_UNIT: 'px',
+
     CUSTOM_STYLES: {
     },
 
@@ -775,12 +1038,15 @@ Y.mix(Y.DOM, {
      */
     setStyle: function(node, att, val, style) {
         style = style || node.style;
-        var CUSTOM_STYLES = Y.DOM.CUSTOM_STYLES;
+        var CUSTOM_STYLES = Y_DOM.CUSTOM_STYLES;
 
         if (style) {
-            if (val === null) {
-                val = ''; // normalize for unsetting
+            if (val === null || val === '') { // normalize unsetting
+                val = '';
+            } else if (!isNaN(new Number(val)) && re_unit.test(att)) { // number values may need a unit
+                val += Y_DOM.DEFAULT_UNIT;
             }
+
             if (att in CUSTOM_STYLES) {
                 if (CUSTOM_STYLES[att].set) {
                     CUSTOM_STYLES[att].set(node, val, style);
@@ -788,6 +1054,9 @@ Y.mix(Y.DOM, {
                 } else if (typeof CUSTOM_STYLES[att] === 'string') {
                     att = CUSTOM_STYLES[att];
                 }
+            } else if (att === '') { // unset inline styles
+                att = 'cssText';
+                val = '';
             }
             style[att] = val; 
         }
@@ -799,9 +1068,9 @@ Y.mix(Y.DOM, {
      * @param {HTMLElement} An HTMLElement to get the style from.
      * @param {String} att The style property to get. 
      */
-    getStyle: function(node, att) {
-        var style = node[STYLE],
-            CUSTOM_STYLES = Y.DOM.CUSTOM_STYLES,
+    getStyle: function(node, att, style) {
+        style = style || node.style;
+        var CUSTOM_STYLES = Y_DOM.CUSTOM_STYLES,
             val = '';
 
         if (style) {
@@ -814,7 +1083,7 @@ Y.mix(Y.DOM, {
             }
             val = style[att];
             if (val === '') { // TODO: is empty string sufficient?
-                val = Y.DOM[GET_COMPUTED_STYLE](node, att);
+                val = Y_DOM[GET_COMPUTED_STYLE](node, att);
             }
         }
 
@@ -830,8 +1099,8 @@ Y.mix(Y.DOM, {
     setStyles: function(node, hash) {
         var style = node.style;
         Y.each(hash, function(v, n) {
-            Y.DOM.setStyle(node, n, v, style);
-        }, Y.DOM);
+            Y_DOM.setStyle(node, n, v, style);
+        }, Y_DOM);
     },
 
     /**
@@ -845,7 +1114,7 @@ Y.mix(Y.DOM, {
         var val = '',
             doc = node[OWNER_DOCUMENT];
 
-        if (node[STYLE]) {
+        if (node[STYLE] && doc[DEFAULT_VIEW] && doc[DEFAULT_VIEW][GET_COMPUTED_STYLE]) {
             val = doc[DEFAULT_VIEW][GET_COMPUTED_STYLE](node, null)[att];
         }
         return val;
@@ -854,14 +1123,14 @@ Y.mix(Y.DOM, {
 
 // normalize reserved word float alternatives ("cssFloat" or "styleFloat")
 if (DOCUMENT[DOCUMENT_ELEMENT][STYLE][CSS_FLOAT] !== UNDEFINED) {
-    Y.DOM.CUSTOM_STYLES[FLOAT] = CSS_FLOAT;
+    Y_DOM.CUSTOM_STYLES[FLOAT] = CSS_FLOAT;
 } else if (DOCUMENT[DOCUMENT_ELEMENT][STYLE][STYLE_FLOAT] !== UNDEFINED) {
-    Y.DOM.CUSTOM_STYLES[FLOAT] = STYLE_FLOAT;
+    Y_DOM.CUSTOM_STYLES[FLOAT] = STYLE_FLOAT;
 }
 
 // fix opera computedStyle default color unit (convert to rgb)
 if (Y.UA.opera) {
-    Y.DOM[GET_COMPUTED_STYLE] = function(node, att) {
+    Y_DOM[GET_COMPUTED_STYLE] = function(node, att) {
         var view = node[OWNER_DOCUMENT][DEFAULT_VIEW],
             val = view[GET_COMPUTED_STYLE](node, '')[att];
 
@@ -876,7 +1145,7 @@ if (Y.UA.opera) {
 
 // safari converts transparent to rgba(), others use "transparent"
 if (Y.UA.webkit) {
-    Y.DOM[GET_COMPUTED_STYLE] = function(node, att) {
+    Y_DOM[GET_COMPUTED_STYLE] = function(node, att) {
         var view = node[OWNER_DOCUMENT][DEFAULT_VIEW],
             val = view[GET_COMPUTED_STYLE](node, '')[att];
 
@@ -888,6 +1157,73 @@ if (Y.UA.webkit) {
     };
 
 }
+
+Y.DOM._getAttrOffset = function(node, attr) {
+    var val = Y.DOM[GET_COMPUTED_STYLE](node, attr),
+        offsetParent = node.offsetParent,
+        position,
+        parentOffset,
+        offset;
+
+    if (val === 'auto') {
+        position = Y.DOM.getStyle(node, 'position');
+        if (position === 'static' || position === 'relative') {
+            val = 0;    
+        } else if (offsetParent && offsetParent[GET_BOUNDING_CLIENT_RECT]) {
+            parentOffset = offsetParent[GET_BOUNDING_CLIENT_RECT]()[attr];
+            offset = node[GET_BOUNDING_CLIENT_RECT]()[attr];
+            if (attr === 'left' || attr === 'top') {
+                val = offset - parentOffset;
+            } else {
+                val = parentOffset - node[GET_BOUNDING_CLIENT_RECT]()[attr];
+            }
+        }
+    }
+
+    return val;
+};
+
+Y.DOM._getOffset = function(node) {
+    var pos,
+        xy = null;
+
+    if (node) {
+        pos = Y_DOM.getStyle(node, 'position');
+        xy = [
+            parseInt(Y_DOM[GET_COMPUTED_STYLE](node, 'left'), 10),
+            parseInt(Y_DOM[GET_COMPUTED_STYLE](node, 'top'), 10)
+        ];
+
+        if ( isNaN(xy[0]) ) { // in case of 'auto'
+            xy[0] = parseInt(Y_DOM.getStyle(node, 'left'), 10); // try inline
+            if ( isNaN(xy[0]) ) { // default to offset value
+                xy[0] = (pos === 'relative') ? 0 : node.offsetLeft || 0;
+            }
+        } 
+
+        if ( isNaN(xy[1]) ) { // in case of 'auto'
+            xy[1] = parseInt(Y_DOM.getStyle(node, 'top'), 10); // try inline
+            if ( isNaN(xy[1]) ) { // default to offset value
+                xy[1] = (pos === 'relative') ? 0 : node.offsetTop || 0;
+            }
+        } 
+    }
+
+    return xy;
+
+};
+
+Y_DOM.CUSTOM_STYLES.transform = {
+    set: function(node, val, style) {
+        style[TRANSFORM] = val;
+    },
+
+    get: function(node, style) {
+        return Y_DOM[GET_COMPUTED_STYLE](node, TRANSFORM);
+    }
+};
+
+
 })(Y);
 (function(Y) {
 var PARSE_INT = parseInt,
@@ -943,11 +1279,11 @@ Y.Color = {
 
             for (var i = 0; i < val.length; i++) {
                 if (val[i].length < 2) {
-                    val[i] = val[i].replace(Y.Color.re_hex3, '$1$1');
+                    val[i] = '0' + val[i];
                 }
             }
 
-            val = '#' + val.join('');
+            val = val.join('');
         }
 
         if (val.length < 6) {
@@ -958,282 +1294,14 @@ Y.Color = {
             val = '#' + val;
         }
 
-        return val.toLowerCase();
+        return val.toUpperCase();
     }
 };
 })(Y);
 
-(function(Y) {
-var HAS_LAYOUT = 'hasLayout',
-    PX = 'px',
-    FILTER = 'filter',
-    FILTERS = 'filters',
-    OPACITY = 'opacity',
-    AUTO = 'auto',
-
-    BORDER_WIDTH = 'borderWidth',
-    BORDER_TOP_WIDTH = 'borderTopWidth',
-    BORDER_RIGHT_WIDTH = 'borderRightWidth',
-    BORDER_BOTTOM_WIDTH = 'borderBottomWidth',
-    BORDER_LEFT_WIDTH = 'borderLeftWidth',
-    WIDTH = 'width',
-    HEIGHT = 'height',
-    TRANSPARENT = 'transparent',
-    VISIBLE = 'visible',
-    GET_COMPUTED_STYLE = 'getComputedStyle',
-    UNDEFINED = undefined,
-    documentElement = document.documentElement,
-
-    // TODO: unit-less lineHeight (e.g. 1.22)
-    re_unit = /^(\d[.\d]*)+(em|ex|px|gd|rem|vw|vh|vm|ch|mm|cm|in|pt|pc|deg|rad|ms|s|hz|khz|%){1}?/i,
-
-    _getStyleObj = function(node) {
-        return node.currentStyle || node.style;
-    },
-
-    ComputedStyle = {
-        CUSTOM_STYLES: {},
-
-        get: function(el, property) {
-            var value = '',
-                current;
-
-            if (el) {
-                    current = _getStyleObj(el)[property];
-
-                if (property === OPACITY && Y.DOM.CUSTOM_STYLES[OPACITY]) {
-                    value = Y.DOM.CUSTOM_STYLES[OPACITY].get(el);        
-                } else if (!current || (current.indexOf && current.indexOf(PX) > -1)) { // no need to convert
-                    value = current;
-                } else if (Y.DOM.IE.COMPUTED[property]) { // use compute function
-                    value = Y.DOM.IE.COMPUTED[property](el, property);
-                } else if (re_unit.test(current)) { // convert to pixel
-                    value = ComputedStyle.getPixel(el, property) + PX;
-                } else {
-                    value = current;
-                }
-            }
-
-            return value;
-        },
-
-        sizeOffsets: {
-            width: ['Left', 'Right'],
-            height: ['Top', 'Bottom'],
-            top: ['Top'],
-            bottom: ['Bottom']
-        },
-
-        getOffset: function(el, prop) {
-            var current = _getStyleObj(el)[prop],                     // value of "width", "top", etc.
-                capped = prop.charAt(0).toUpperCase() + prop.substr(1), // "Width", "Top", etc.
-                offset = 'offset' + capped,                             // "offsetWidth", "offsetTop", etc.
-                pixel = 'pixel' + capped,                               // "pixelWidth", "pixelTop", etc.
-                sizeOffsets = ComputedStyle.sizeOffsets[prop], 
-                value = '';
-
-            // IE pixelWidth incorrect for percent
-            // manually compute by subtracting padding and border from offset size
-            // NOTE: clientWidth/Height (size minus border) is 0 when current === AUTO so offsetHeight is used
-            // reverting to auto from auto causes position stacking issues (old impl)
-            if (current === AUTO || current.indexOf('%') > -1) {
-                value = el['offset' + capped];
-
-                if (sizeOffsets[0]) {
-                    value -= ComputedStyle.getPixel(el, 'padding' + sizeOffsets[0]);
-                    value -= ComputedStyle.getBorderWidth(el, 'border' + sizeOffsets[0] + 'Width', 1);
-                }
-
-                if (sizeOffsets[1]) {
-                    value -= ComputedStyle.getPixel(el, 'padding' + sizeOffsets[1]);
-                    value -= ComputedStyle.getBorderWidth(el, 'border' + sizeOffsets[1] + 'Width', 1);
-                }
-
-            } else { // use style.pixelWidth, etc. to convert to pixels
-                // need to map style.width to currentStyle (no currentStyle.pixelWidth)
-                if (!el.style[pixel] && !el.style[prop]) {
-                    el.style[prop] = current;
-                }
-                value = el.style[pixel];
-                
-            }
-            return value + PX;
-        },
-
-        borderMap: {
-            thin: '2px', 
-            medium: '4px', 
-            thick: '6px'
-        },
-
-        getBorderWidth: function(el, property, omitUnit) {
-            var unit = omitUnit ? '' : PX,
-                current = el.currentStyle[property];
-
-            if (current.indexOf(PX) < 0) { // look up keywords
-                if (ComputedStyle.borderMap[current]) {
-                    current = ComputedStyle.borderMap[current];
-                } else {
-                }
-            }
-            return (omitUnit) ? parseFloat(current) : current;
-        },
-
-        getPixel: function(node, att) {
-            // use pixelRight to convert to px
-            var val = null,
-                style = _getStyleObj(node),
-                styleRight = style.right,
-                current = style[att];
-
-            node.style.right = current;
-            val = node.style.pixelRight;
-            node.style.right = styleRight; // revert
-
-            return val;
-        },
-
-        getMargin: function(node, att) {
-            var val,
-                style = _getStyleObj(node);
-
-            if (style[att] == AUTO) {
-                val = 0;
-            } else {
-                val = ComputedStyle.getPixel(node, att);
-            }
-            return val + PX;
-        },
-
-        getVisibility: function(node, att) {
-            var current;
-            while ( (current = node.currentStyle) && current[att] == 'inherit') { // NOTE: assignment in test
-                node = node.parentNode;
-            }
-            return (current) ? current[att] : VISIBLE;
-        },
-
-        getColor: function(node, att) {
-            var current = _getStyleObj(node)[att];
-
-            if (!current || current === TRANSPARENT) {
-                Y.DOM.elementByAxis(node, 'parentNode', null, function(parent) {
-                    current = _getStyleObj(parent)[att];
-                    if (current && current !== TRANSPARENT) {
-                        node = parent;
-                        return true;
-                    }
-                });
-            }
-
-            return Y.Color.toRGB(current);
-        },
-
-        getBorderColor: function(node, att) {
-            var current = _getStyleObj(node),
-                val = current[att] || current.color;
-            return Y.Color.toRGB(Y.Color.toHex(val));
-        }
-    },
-
-    //fontSize: getPixelFont,
-    IEComputed = {};
-
-// use alpha filter for IE opacity
-try {
-    if (documentElement.style[OPACITY] === UNDEFINED &&
-            documentElement[FILTERS]) {
-        Y.DOM.CUSTOM_STYLES[OPACITY] = {
-            get: function(node) {
-                var val = 100;
-                try { // will error if no DXImageTransform
-                    val = node[FILTERS]['DXImageTransform.Microsoft.Alpha'][OPACITY];
-
-                } catch(e) {
-                    try { // make sure its in the document
-                        val = node[FILTERS]('alpha')[OPACITY];
-                    } catch(err) {
-                    }
-                }
-                return val / 100;
-            },
-
-            set: function(node, val, style) {
-                var current,
-                    styleObj;
-
-                if (val === '') { // normalize inline style behavior
-                    styleObj = _getStyleObj(node);
-                    current = (OPACITY in styleObj) ? styleObj[OPACITY] : 1; // revert to original opacity
-                    val = current;
-                }
-
-                if (typeof style[FILTER] == 'string') { // in case not appended
-                    style[FILTER] = 'alpha(' + OPACITY + '=' + val * 100 + ')';
-                    
-                    if (!node.currentStyle || !node.currentStyle[HAS_LAYOUT]) {
-                        style.zoom = 1; // needs layout 
-                    }
-                }
-            }
-        };
-    }
-} catch(e) {
-}
-
-try {
-    document.createElement('div').style.height = '-1px';
-} catch(e) { // IE throws error on invalid style set; trap common cases
-    Y.DOM.CUSTOM_STYLES.height = {
-        set: function(node, val, style) {
-            var floatVal = parseFloat(val);
-            if (isNaN(floatVal) || floatVal >= 0) {
-                style.height = val;
-            } else {
-            }
-        }
-    };
-
-    Y.DOM.CUSTOM_STYLES.width = {
-        set: function(node, val, style) {
-            var floatVal = parseFloat(val);
-            if (isNaN(floatVal) || floatVal >= 0) {
-                style.width = val;
-            } else {
-            }
-        }
-    };
-}
-
-// TODO: top, right, bottom, left
-IEComputed[WIDTH] = IEComputed[HEIGHT] = ComputedStyle.getOffset;
-
-IEComputed.color = IEComputed.backgroundColor = ComputedStyle.getColor;
-
-IEComputed[BORDER_WIDTH] = IEComputed[BORDER_TOP_WIDTH] = IEComputed[BORDER_RIGHT_WIDTH] =
-        IEComputed[BORDER_BOTTOM_WIDTH] = IEComputed[BORDER_LEFT_WIDTH] =
-        ComputedStyle.getBorderWidth;
-
-IEComputed.marginTop = IEComputed.marginRight = IEComputed.marginBottom =
-        IEComputed.marginLeft = ComputedStyle.getMargin;
-
-IEComputed.visibility = ComputedStyle.getVisibility;
-IEComputed.borderColor = IEComputed.borderTopColor =
-        IEComputed.borderRightColor = IEComputed.borderBottomColor =
-        IEComputed.borderLeftColor = ComputedStyle.getBorderColor;
-
-if (!Y.config.win[GET_COMPUTED_STYLE]) {
-    Y.DOM[GET_COMPUTED_STYLE] = ComputedStyle.get; 
-}
-
-Y.namespace('DOM.IE');
-Y.DOM.IE.COMPUTED = IEComputed;
-Y.DOM.IE.ComputedStyle = ComputedStyle;
-
-})(Y);
 
 
-}, '3.0.0' ,{requires:['dom-base']});
+}, '3.3.0' ,{requires:['dom-base']});
 YUI.add('dom-screen', function(Y) {
 
 (function(Y) {
@@ -1259,18 +1327,30 @@ var DOCUMENT_ELEMENT = 'documentElement',
     GET_BOUNDING_CLIENT_RECT = 'getBoundingClientRect',
     GET_COMPUTED_STYLE = 'getComputedStyle',
 
+    Y_DOM = Y.DOM,
+
     // TODO: how about thead/tbody/tfoot/tr?
     // TODO: does caption matter?
-    RE_TABLE = /^t(?:able|d|h)$/i;
+    RE_TABLE = /^t(?:able|d|h)$/i,
 
-Y.mix(Y.DOM, {
+    SCROLL_NODE;
+
+if (Y.UA.ie) {
+    if (Y.config.doc[COMPAT_MODE] !== 'quirks') {
+        SCROLL_NODE = DOCUMENT_ELEMENT; 
+    } else {
+        SCROLL_NODE = 'body';
+    }
+}
+
+Y.mix(Y_DOM, {
     /**
      * Returns the inner height of the viewport (exludes scrollbar). 
      * @method winHeight
      * @return {Number} The current height of the viewport.
      */
     winHeight: function(node) {
-        var h = Y.DOM._getWinSize(node).height;
+        var h = Y_DOM._getWinSize(node).height;
         return h;
     },
 
@@ -1280,7 +1360,7 @@ Y.mix(Y.DOM, {
      * @return {Number} The current width of the viewport.
      */
     winWidth: function(node) {
-        var w = Y.DOM._getWinSize(node).width;
+        var w = Y_DOM._getWinSize(node).width;
         return w;
     },
 
@@ -1290,8 +1370,8 @@ Y.mix(Y.DOM, {
      * @return {Number} The current height of the document.
      */
     docHeight:  function(node) {
-        var h = Y.DOM._getDocSize(node).height;
-        return Math.max(h, Y.DOM._getWinSize(node).height);
+        var h = Y_DOM._getDocSize(node).height;
+        return Math.max(h, Y_DOM._getWinSize(node).height);
     },
 
     /**
@@ -1300,8 +1380,8 @@ Y.mix(Y.DOM, {
      * @return {Number} The current width of the document.
      */
     docWidth:  function(node) {
-        var w = Y.DOM._getDocSize(node).width;
-        return Math.max(w, Y.DOM._getWinSize(node).width);
+        var w = Y_DOM._getDocSize(node).width;
+        return Math.max(w, Y_DOM._getWinSize(node).width);
     },
 
     /**
@@ -1309,9 +1389,11 @@ Y.mix(Y.DOM, {
      * @method docScrollX
      * @return {Number} The current amount the screen is scrolled horizontally.
      */
-    docScrollX: function(node) {
-        var doc = Y.DOM._getDoc(node);
-        return Math.max(doc[DOCUMENT_ELEMENT].scrollLeft, doc.body.scrollLeft);
+    docScrollX: function(node, doc) {
+        doc = doc || (node) ? Y_DOM._getDoc(node) : Y.config.doc; // perf optimization
+        var dv = doc.defaultView,
+            pageOffset = (dv) ? dv.pageXOffset : 0;
+        return Math.max(doc[DOCUMENT_ELEMENT].scrollLeft, doc.body.scrollLeft, pageOffset);
     },
 
     /**
@@ -1319,9 +1401,11 @@ Y.mix(Y.DOM, {
      * @method docScrollY
      * @return {Number} The current amount the screen is scrolled vertically.
      */
-    docScrollY:  function(node) {
-        var doc = Y.DOM._getDoc(node);
-        return Math.max(doc[DOCUMENT_ELEMENT].scrollTop, doc.body.scrollTop);
+    docScrollY:  function(node, doc) {
+        doc = doc || (node) ? Y_DOM._getDoc(node) : Y.config.doc; // perf optimization
+        var dv = doc.defaultView,
+            pageOffset = (dv) ? dv.pageYOffset : 0;
+        return Math.max(doc[DOCUMENT_ELEMENT].scrollTop, doc.body.scrollTop, pageOffset);
     },
 
     /**
@@ -1335,7 +1419,7 @@ Y.mix(Y.DOM, {
      TODO: test inDocument/display?
      */
     getXY: function() {
-        if (document[DOCUMENT_ELEMENT][GET_BOUNDING_CLIENT_RECT]) {
+        if (Y.config.doc[DOCUMENT_ELEMENT][GET_BOUNDING_CLIENT_RECT]) {
             return function(node) {
                 var xy = null,
                     scrollLeft,
@@ -1344,22 +1428,33 @@ Y.mix(Y.DOM, {
                     off1, off2,
                     bLeft, bTop,
                     mode,
-                    doc;
+                    doc,
+                    inDoc,
+                    rootNode;
 
-                if (node) {
-                    if (Y.DOM.inDoc(node)) {
-                        scrollLeft = Y.DOM.docScrollX(node);
-                        scrollTop = Y.DOM.docScrollY(node);
+                if (node && node.tagName) {
+                    doc = node.ownerDocument;
+                    rootNode = doc[DOCUMENT_ELEMENT];
+
+                    // inline inDoc check for perf
+                    if (rootNode.contains) {
+                        inDoc = rootNode.contains(node); 
+                    } else {
+                        inDoc = Y.DOM.contains(rootNode, node);
+                    }
+
+                    if (inDoc) {
+                        scrollLeft = (SCROLL_NODE) ? doc[SCROLL_NODE].scrollLeft : Y_DOM.docScrollX(node, doc);
+                        scrollTop = (SCROLL_NODE) ? doc[SCROLL_NODE].scrollTop : Y_DOM.docScrollY(node, doc);
                         box = node[GET_BOUNDING_CLIENT_RECT]();
-                        doc = Y.DOM._getDoc(node);
                         xy = [box.left, box.top];
 
                             if (Y.UA.ie) {
                                 off1 = 2;
                                 off2 = 2;
                                 mode = doc[COMPAT_MODE];
-                                bLeft = Y.DOM[GET_COMPUTED_STYLE](doc[DOCUMENT_ELEMENT], BORDER_LEFT_WIDTH);
-                                bTop = Y.DOM[GET_COMPUTED_STYLE](doc[DOCUMENT_ELEMENT], BORDER_TOP_WIDTH);
+                                bLeft = Y_DOM[GET_COMPUTED_STYLE](doc[DOCUMENT_ELEMENT], BORDER_LEFT_WIDTH);
+                                bTop = Y_DOM[GET_COMPUTED_STYLE](doc[DOCUMENT_ELEMENT], BORDER_TOP_WIDTH);
 
                                 if (Y.UA.ie === 6) {
                                     if (mode !== _BACK_COMPAT) {
@@ -1383,27 +1478,32 @@ Y.mix(Y.DOM, {
                             }
 
                         if ((scrollTop || scrollLeft)) {
-                            xy[0] += scrollLeft;
-                            xy[1] += scrollTop;
+                            if (!Y.UA.ios || (Y.UA.ios >= 4.2)) {
+                                xy[0] += scrollLeft;
+                                xy[1] += scrollTop;
+                            }
+                            
                         }
-                    } else { // default to current offsets
-                        xy = Y.DOM._getOffset(node);
+                    } else {
+                        xy = Y_DOM._getOffset(node);       
                     }
                 }
                 return xy;                   
-            };
+            }
         } else {
             return function(node) { // manually calculate by crawling up offsetParents
                 //Calculate the Top and Left border sizes (assumes pixels)
                 var xy = null,
+                    doc,
                     parentNode,
                     bCheck,
                     scrollTop,
                     scrollLeft;
 
                 if (node) {
-                    if (Y.DOM.inDoc(node)) {
+                    if (Y_DOM.inDoc(node)) {
                         xy = [node.offsetLeft, node.offsetTop];
+                        doc = node.ownerDocument;
                         parentNode = node;
                         // TODO: refactor with !! or just falsey
                         bCheck = ((Y.UA.gecko || Y.UA.webkit > 519) ? true : false);
@@ -1413,12 +1513,12 @@ Y.mix(Y.DOM, {
                             xy[0] += parentNode.offsetLeft;
                             xy[1] += parentNode.offsetTop;
                             if (bCheck) {
-                                xy = Y.DOM._calcBorders(parentNode, xy);
+                                xy = Y_DOM._calcBorders(parentNode, xy);
                             }
                         }
 
                         // account for any scrolled ancestors
-                        if (Y.DOM.getStyle(node, POSITION) != FIXED) {
+                        if (Y_DOM.getStyle(node, POSITION) != FIXED) {
                             parentNode = node;
 
                             while ((parentNode = parentNode.parentNode)) {
@@ -1426,8 +1526,8 @@ Y.mix(Y.DOM, {
                                 scrollLeft = parentNode.scrollLeft;
 
                                 //Firefox does something funky with borders when overflow is not visible.
-                                if (Y.UA.gecko && (Y.DOM.getStyle(parentNode, 'overflow') !== 'visible')) {
-                                        xy = Y.DOM._calcBorders(parentNode, xy);
+                                if (Y.UA.gecko && (Y_DOM.getStyle(parentNode, 'overflow') !== 'visible')) {
+                                        xy = Y_DOM._calcBorders(parentNode, xy);
                                 }
                                 
 
@@ -1436,16 +1536,16 @@ Y.mix(Y.DOM, {
                                     xy[1] -= scrollTop;
                                 }
                             }
-                            xy[0] += Y.DOM.docScrollX(node);
-                            xy[1] += Y.DOM.docScrollY(node);
+                            xy[0] += Y_DOM.docScrollX(node, doc);
+                            xy[1] += Y_DOM.docScrollY(node, doc);
 
                         } else {
                             //Fix FIXED position -- add scrollbars
-                            xy[0] += Y.DOM.docScrollX(node);
-                            xy[1] += Y.DOM.docScrollY(node);
+                            xy[0] += Y_DOM.docScrollX(node, doc);
+                            xy[1] += Y_DOM.docScrollY(node, doc);
                         }
                     } else {
-                        xy = Y.DOM._getOffset(node);
+                        xy = Y_DOM._getOffset(node);
                     }
                 }
 
@@ -1453,36 +1553,6 @@ Y.mix(Y.DOM, {
             };
         }
     }(),// NOTE: Executing for loadtime branching
-
-    _getOffset: function(node) {
-        var pos,
-            xy = null;
-
-        if (node) {
-            pos = Y.DOM.getStyle(node, POSITION);
-            xy = [
-                parseInt(Y.DOM[GET_COMPUTED_STYLE](node, LEFT), 10),
-                parseInt(Y.DOM[GET_COMPUTED_STYLE](node, TOP), 10)
-            ];
-
-            if ( isNaN(xy[0]) ) { // in case of 'auto'
-                xy[0] = parseInt(Y.DOM.getStyle(node, LEFT), 10); // try inline
-                if ( isNaN(xy[0]) ) { // default to offset value
-                    xy[0] = (pos === RELATIVE) ? 0 : node.offsetLeft || 0;
-                }
-            } 
-
-            if ( isNaN(xy[1]) ) { // in case of 'auto'
-                xy[1] = parseInt(Y.DOM.getStyle(node, TOP), 10); // try inline
-                if ( isNaN(xy[1]) ) { // default to offset value
-                    xy[1] = (pos === RELATIVE) ? 0 : node.offsetTop || 0;
-                }
-            } 
-        }
-
-        return xy;
-
-    },
 
     /**
      * Gets the current X position of an element based on page coordinates. 
@@ -1494,7 +1564,7 @@ Y.mix(Y.DOM, {
      */
 
     getX: function(node) {
-        return Y.DOM.getXY(node)[0];
+        return Y_DOM.getXY(node)[0];
     },
 
     /**
@@ -1507,7 +1577,7 @@ Y.mix(Y.DOM, {
      */
 
     getY: function(node) {
-        return Y.DOM.getXY(node)[1];
+        return Y_DOM.getXY(node)[1];
     },
 
     /**
@@ -1519,23 +1589,21 @@ Y.mix(Y.DOM, {
      * @param {Boolean} noRetry By default we try and set the position a second time if the first fails
      */
     setXY: function(node, xy, noRetry) {
-        var setStyle = Y.DOM.setStyle,
+        var setStyle = Y_DOM.setStyle,
             pos,
             delta,
             newXY,
             currentXY;
 
         if (node && xy) {
-            pos = Y.DOM.getStyle(node, POSITION);
+            pos = Y_DOM.getStyle(node, POSITION);
 
-            delta = Y.DOM._getOffset(node);       
-
+            delta = Y_DOM._getOffset(node);       
             if (pos == 'static') { // default to relative
                 pos = RELATIVE;
                 setStyle(node, POSITION, pos);
             }
-
-            currentXY = Y.DOM.getXY(node);
+            currentXY = Y_DOM.getXY(node);
 
             if (xy[0] !== null) {
                 setStyle(node, LEFT, xy[0] - currentXY[0] + delta[0] + 'px');
@@ -1546,9 +1614,9 @@ Y.mix(Y.DOM, {
             }
 
             if (!noRetry) {
-                newXY = Y.DOM.getXY(node);
+                newXY = Y_DOM.getXY(node);
                 if (newXY[0] !== xy[0] || newXY[1] !== xy[1]) {
-                    Y.DOM.setXY(node, xy, true); 
+                    Y_DOM.setXY(node, xy, true); 
                 }
             }
           
@@ -1564,7 +1632,7 @@ Y.mix(Y.DOM, {
      * @param {Int} x The X values for new position (coordinates are page-based)
      */
     setX: function(node, x) {
-        return Y.DOM.setXY(node, [x, null]);
+        return Y_DOM.setXY(node, [x, null]);
     },
 
     /**
@@ -1575,12 +1643,25 @@ Y.mix(Y.DOM, {
      * @param {Int} y The Y values for new position (coordinates are page-based)
      */
     setY: function(node, y) {
-        return Y.DOM.setXY(node, [null, y]);
+        return Y_DOM.setXY(node, [null, y]);
+    },
+
+    /**
+     * @method swapXY
+     * @description Swap the xy position with another node
+     * @param {Node} node The node to swap with
+     * @param {Node} otherNode The other node to swap with
+     * @return {Node}
+     */
+    swapXY: function(node, otherNode) {
+        var xy = Y_DOM.getXY(node);
+        Y_DOM.setXY(node, Y_DOM.getXY(otherNode));
+        Y_DOM.setXY(otherNode, xy);
     },
 
     _calcBorders: function(node, xy2) {
-        var t = parseInt(Y.DOM[GET_COMPUTED_STYLE](node, BORDER_TOP_WIDTH), 10) || 0,
-            l = parseInt(Y.DOM[GET_COMPUTED_STYLE](node, BORDER_LEFT_WIDTH), 10) || 0;
+        var t = parseInt(Y_DOM[GET_COMPUTED_STYLE](node, BORDER_TOP_WIDTH), 10) || 0,
+            l = parseInt(Y_DOM[GET_COMPUTED_STYLE](node, BORDER_LEFT_WIDTH), 10) || 0;
         if (Y.UA.gecko) {
             if (RE_TABLE.test(node.tagName)) {
                 t = 0;
@@ -1592,9 +1673,9 @@ Y.mix(Y.DOM, {
         return xy2;
     },
 
-    _getWinSize: function(node) {
-        var doc = Y.DOM._getDoc(),
-            win = doc.defaultView || doc.parentWindow,
+    _getWinSize: function(node, doc) {
+        doc  = doc || (node) ? Y_DOM._getDoc(node) : Y.config.doc;
+        var win = doc.defaultView || doc.parentWindow,
             mode = doc[COMPAT_MODE],
             h = win.innerHeight,
             w = win.innerWidth,
@@ -1607,11 +1688,11 @@ Y.mix(Y.DOM, {
             h = root.clientHeight;
             w = root.clientWidth;
         }
-        return { height: h, width: w }; 
+        return { height: h, width: w };
     },
 
     _getDocSize: function(node) {
-        var doc = Y.DOM._getDoc(),
+        var doc = (node) ? Y_DOM._getDoc(node) : Y.config.doc,
             root = doc[DOCUMENT_ELEMENT];
 
         if (doc[COMPAT_MODE] != 'CSS1Compat') {
@@ -1621,6 +1702,7 @@ Y.mix(Y.DOM, {
         return { height: root.scrollHeight, width: root.scrollWidth };
     }
 });
+
 })(Y);
 (function(Y) {
 var TOP = 'top',
@@ -1647,9 +1729,10 @@ var TOP = 'top',
 Y.mix(DOM, {
     /**
      * Returns an Object literal containing the following about this element: (top, right, bottom, left)
+     * @for DOM
      * @method region
      * @param {HTMLElement} element The DOM element. 
-     @return {Object} Object literal containing the following about this element: (top, right, bottom, left)
+     * @return {Object} Object literal containing the following about this element: (top, right, bottom, left)
      */
     region: function(node) {
         var xy = DOM.getXY(node),
@@ -1670,10 +1753,11 @@ Y.mix(DOM, {
     /**
      * Find the intersect information for the passes nodes.
      * @method intersect
+     * @for DOM
      * @param {HTMLElement} element The first element 
      * @param {HTMLElement | Object} element2 The element or region to check the interect with
      * @param {Object} altRegion An object literal containing the region for the first element if we already have the data (for performance i.e. DragDrop)
-     @return {Object} Object literal containing the following intersection data: (top, right, bottom, left, area, yoff, xoff, inRegion)
+     * @return {Object} Object literal containing the following intersection data: (top, right, bottom, left, area, yoff, xoff, inRegion)
      */
     intersect: function(node, node2, altRegion) {
         var r = altRegion || DOM.region(node), region = {},
@@ -1704,6 +1788,7 @@ Y.mix(DOM, {
     /**
      * Check if any part of this node is in the passed region
      * @method inRegion
+     * @for DOM
      * @param {Object} node2 The node to get the region from or an Object literal of the region
      * $param {Boolean} all Should all of the node be inside the region
      * @param {Object} altRegion An object literal containing the region for this node if we already have the data (for performance i.e. DragDrop)
@@ -1743,6 +1828,7 @@ Y.mix(DOM, {
     /**
      * Check if any part of this element is in the viewport
      * @method inViewportRegion
+     * @for DOM
      * @param {HTMLElement} element The DOM element. 
      * @param {Boolean} all Should all of the node be inside the region
      * @param {Object} altRegion An object literal containing the region for this node if we already have the data (for performance i.e. DragDrop)
@@ -1769,7 +1855,8 @@ Y.mix(DOM, {
     /**
      * Returns an Object literal containing the following about the visible region of viewport: (top, right, bottom, left)
      * @method viewportRegion
-     @return {Object} Object literal containing the following about the visible region of the viewport: (top, right, bottom, left)
+     * @for DOM
+     * @return {Object} Object literal containing the following about the visible region of the viewport: (top, right, bottom, left)
      */
     viewportRegion: function(node) {
         node = node || Y.config.doc.documentElement;
@@ -1793,7 +1880,7 @@ Y.mix(DOM, {
 })(Y);
 
 
-}, '3.0.0' ,{requires:['dom-base', 'dom-style']});
+}, '3.3.0' ,{requires:['dom-base', 'dom-style', 'event-base']});
 YUI.add('selector-native', function(Y) {
 
 (function(Y) {
@@ -1814,16 +1901,14 @@ YUI.add('selector-native', function(Y) {
 Y.namespace('Selector'); // allow native module to standalone
 
 var COMPARE_DOCUMENT_POSITION = 'compareDocumentPosition',
-    OWNER_DOCUMENT = 'ownerDocument',
-    TMP_PREFIX = 'yui-tmp-',
-    g_counter = 0;
+    OWNER_DOCUMENT = 'ownerDocument';
 
 var Selector = {
     _foundCache: [],
 
     useNative: true,
 
-    _compare: ('sourceIndex' in document.documentElement) ?
+    _compare: ('sourceIndex' in Y.config.doc.documentElement) ?
         function(nodeA, nodeB) {
             var a = nodeA.sourceIndex,
                 b = nodeB.sourceIndex;
@@ -1836,7 +1921,7 @@ var Selector = {
 
             return -1;
 
-        } : (document.documentElement[COMPARE_DOCUMENT_POSITION] ?
+        } : (Y.config.doc.documentElement[COMPARE_DOCUMENT_POSITION] ?
         function(nodeA, nodeB) {
             if (nodeA[COMPARE_DOCUMENT_POSITION](nodeB) & 4) {
                 return -1;
@@ -1901,7 +1986,7 @@ var Selector = {
     query: function(selector, root, firstOnly, skipNative) {
         root = root || Y.config.doc;
         var ret = [],
-            useNative = (Y.Selector.useNative && document.querySelector && !skipNative),
+            useNative = (Y.Selector.useNative && Y.config.doc.querySelector && !skipNative),
             queries = [[selector, root]],
             query,
             result,
@@ -1946,7 +2031,7 @@ var Selector = {
             // enforce for element scoping
             if (node.tagName) {
                 node.id = node.id || Y.guid();
-                prefix = '#' + node.id + ' ';
+                prefix = '[id="' + node.id + '"] ';
             }
 
             for (i = 0, len = groups.length; i < len; ++i) {
@@ -1959,6 +2044,10 @@ var Selector = {
     },
 
     _nativeQuery: function(selector, root, one) {
+        if (Y.UA.webkit && selector.indexOf(':checked') > -1 &&
+                (Y.Selector.pseudos && Y.Selector.pseudos.checked)) { // webkit (chrome, safari) fails to find "selected"
+            return Y.Selector.query(selector, root, one, true); // redo with skipNative true to try brute query
+        }
         try {
             return root['querySelector' + (one ? '' : 'All')](selector);
         } catch(e) { // fallback to brute if available
@@ -1985,26 +2074,68 @@ var Selector = {
     test: function(node, selector, root) {
         var ret = false,
             groups = selector.split(','),
+            useFrag = false,
+            parent,
             item,
-            i, group;
+            items,
+            frag,
+            i, j, group;
 
         if (node && node.tagName) { // only test HTMLElements
-            root = root || node.ownerDocument;
+
+            // we need a root if off-doc
+            if (!root && !Y.DOM.inDoc(node)) {
+                parent = node.parentNode;
+                if (parent) { 
+                    root = parent;
+                } else { // only use frag when no parent to query
+                    frag = node[OWNER_DOCUMENT].createDocumentFragment();
+                    frag.appendChild(node);
+                    root = frag;
+                    useFrag = true;
+                }
+            }
+            root = root || node[OWNER_DOCUMENT];
 
             if (!node.id) {
-                node.id = TMP_PREFIX + g_counter++;
+                node.id = Y.guid();
             }
             for (i = 0; (group = groups[i++]);) { // TODO: off-dom test
-                group += '#' + node.id; // add ID for uniqueness
-                item = Y.Selector.query(group, root, true);
-                ret = (item === node);
+                group += '[id="' + node.id + '"]';
+                items = Y.Selector.query(group, root);
+
+                for (j = 0; item = items[j++];) {
+                    if (item === node) {
+                        ret = true;
+                        break;
+                    }
+                }
                 if (ret) {
                     break;
                 }
             }
+
+            if (useFrag) { // cleanup
+                frag.removeChild(node);
+            }
         }
 
         return ret;
+    },
+
+    /**
+     * A convenience function to emulate Y.Node's aNode.ancestor(selector).
+     * @param {HTMLElement} element An HTMLElement to start the query from.
+     * @param {String} selector The CSS selector to test the node against.
+     * @return {HTMLElement} The ancestor node matching the selector, or null.
+     * @param {Boolean} testSelf optional Whether or not to include the element in the scan 
+     * @static
+     * @method ancestor
+     */
+    ancestor: function (element, selector, testSelf) {
+        return Y.DOM.ancestor(element, function(n) {
+            return Y.Selector.test(n, selector);
+        }, testSelf);
     }
 };
 
@@ -2013,7 +2144,7 @@ Y.mix(Y.Selector, Selector, true);
 })(Y);
 
 
-}, '3.0.0' ,{requires:['dom-base']});
+}, '3.3.0' ,{requires:['dom-base']});
 YUI.add('selector-css2', function(Y) {
 
 /**
@@ -2036,6 +2167,7 @@ var PARENT_NODE = 'parentNode',
     Selector = Y.Selector,
 
     SelectorCSS2 = {
+        _reRegExpTokens: /([\^\$\?\[\]\*\+\-\.\(\)\|\\])/, // TODO: move?
         SORT_RESULTS: true,
         _children: function(node, tag) {
             var ret = node.children,
@@ -2061,10 +2193,9 @@ var PARENT_NODE = 'parentNode',
             return ret || [];
         },
 
-        _regexCache: {},
-
         _re: {
-            attr: /(\[.*\])/g,
+            //attr: /(\[.*\])/g,
+            attr: /(\[[^\]]*\])/g,
             pseudos: /:([\-\w]+(?:\(?:['"]?(.+)['"]?\)))*/i
         },
 
@@ -2104,17 +2235,20 @@ var PARENT_NODE = 'parentNode',
                 tokens = Selector._tokenize(selector),
                 token = tokens[tokens.length - 1],
                 rootDoc = Y.DOM._getDoc(root),
+                child,
                 id,
                 className,
                 tagName;
 
 
             // if we have an initial ID, set to root when in document
+            /*
             if (tokens[0] && rootDoc === root &&  
                     (id = tokens[0].id) &&
                     rootDoc.getElementById(id)) {
                 root = rootDoc.getElementById(id);
             }
+            */
 
             if (token) {
                 // prefilter nodes
@@ -2122,18 +2256,28 @@ var PARENT_NODE = 'parentNode',
                 className = token.className;
                 tagName = token.tagName || '*';
 
-                // try ID first
-                if (id) {
-                    if (rootDoc.getElementById(id)) { // if in document
-                    nodes = [rootDoc.getElementById(id)]; // TODO: DOM.byId?
-                }
-                // try className if supported
-                } else if (className) {
-                    nodes = root.getElementsByClassName(className);
-                } else if (tagName) { // default to tagName
-                    nodes = root.getElementsByTagName(tagName || '*');
-                }
+                if (root.getElementsByTagName) { // non-IE lacks DOM api on doc frags
+                    // try ID first, unless no root.all && root not in document
+                    // (root.all works off document, but not getElementById)
+                    // TODO: move to allById?
+                    if (id && (root.all || (root.nodeType === 9 || Y.DOM.inDoc(root)))) {
+                        nodes = Y.DOM.allById(id, root);
+                    // try className
+                    } else if (className) {
+                        nodes = root.getElementsByClassName(className);
+                    } else { // default to tagName
+                        nodes = root.getElementsByTagName(tagName);
+                    }
 
+                } else { // brute getElementsByTagName('*')
+                    child = root.firstChild;
+                    while (child) {
+                        if (child.tagName) { // only collect HTMLElements
+                            nodes.push(child);
+                        }
+                        child = child.nextSilbing || child.firstChild;
+                    }
+                }
                 if (nodes.length) {
                     ret = Selector._filterNodes(nodes, tokens, firstOnly);
                 }
@@ -2185,8 +2329,10 @@ var PARENT_NODE = 'parentNode',
                             }
 
                             if ((operator === '=' && value !== test[2]) ||  // fast path for equality
-                                (operator.test && !operator.test(value)) ||  // regex test
-                                (operator.call && !operator(tmpNode, test[0]))) { // function test
+                                (typeof operator !== 'string' && // protect against String.test monkey-patch (Moo)
+                                operator.test && !operator.test(value)) ||  // regex test
+                                (!operator.test && // protect against RegExp as function (webkit)
+                                        typeof operator === 'function' && !operator(tmpNode, test[0]))) { // function test
 
                                 // skip non element nodes or non-matching tags
                                 if ((tmpNode = tmpNode[path])) {
@@ -2230,15 +2376,6 @@ var PARENT_NODE = 'parentNode',
             return result;
         },
 
-        _getRegExp: function(str, flags) {
-            var regexCache = Selector._regexCache;
-            flags = flags || '';
-            if (!regexCache[str + flags]) {
-                regexCache[str + flags] = new RegExp(str, flags);
-            }
-            return regexCache[str + flags];
-        },
-
         combinators: {
             ' ': {
                 axis: 'parentNode'
@@ -2259,7 +2396,7 @@ var PARENT_NODE = 'parentNode',
         _parsers: [
             {
                 name: ATTRIBUTES,
-                re: /^\[([a-z]+\w*)+([~\|\^\$\*!=]=?)?['"]?([^\]]*?)['"]?\]/i,
+                re: /^\[(-?[a-z]+[\w\-]*)+([~\|\^\$\*!=]=?)?['"]?([^\]]*?)['"]?\]/i,
                 fn: function(match, token) {
                     var operator = match[2] || '',
                         operators = Y.Selector.operators,
@@ -2268,7 +2405,7 @@ var PARENT_NODE = 'parentNode',
                     // add prefiltering for ID and CLASS
                     if ((match[1] === 'id' && operator === '=') ||
                             (match[1] === 'className' &&
-                            document.getElementsByClassName &&
+                            Y.config.doc.documentElement.getElementsByClassName &&
                             (operator === '~=' || operator === '='))) {
                         token.prefilter = match[1];
                         token[match[1]] = match[3];
@@ -2278,7 +2415,8 @@ var PARENT_NODE = 'parentNode',
                     if (operator in operators) {
                         test = operators[operator];
                         if (typeof test === 'string') {
-                            test = Y.Selector._getRegExp(test.replace('{val}', match[3]));
+                            match[3] = match[3].replace(Y.Selector._reRegExpTokens, '\\$1');
+                            test = Y.DOM._getRegExp(test.replace('{val}', match[3]));
                         }
                         match[2] = test;
                     }
@@ -2362,7 +2500,7 @@ var PARENT_NODE = 'parentNode',
                 found = false; // reset after full pass
                 for (i = 0; (parser = Selector._parsers[i++]);) {
                     if ( (match = parser.re.exec(selector)) ) { // note assignment
-                        if (parser !== COMBINATOR ) {
+                        if (parser.name !== COMBINATOR ) {
                             token.selector = selector;
                         }
                         selector = selector.replace(match[0], ''); // strip current match from selector
@@ -2416,7 +2554,7 @@ var PARENT_NODE = 'parentNode',
 
             for (re in shorthand) {
                 if (shorthand.hasOwnProperty(re)) {
-                    selector = selector.replace(Selector._getRegExp(re, 'gi'), shorthand[re]);
+                    selector = selector.replace(Y.DOM._getRegExp(re, 'gi'), shorthand[re]);
                 }
             }
 
@@ -2449,18 +2587,18 @@ Y.mix(Y.Selector, SelectorCSS2, true);
 Y.Selector.getters.src = Y.Selector.getters.rel = Y.Selector.getters.href;
 
 // IE wants class with native queries
-if (Y.Selector.useNative && document.querySelector) {
+if (Y.Selector.useNative && Y.config.doc.querySelector) {
     Y.Selector.shorthand['\\.(-?[_a-z]+[-\\w]*)'] = '[class~=$1]';
 }
 
 
 
-}, '3.0.0' ,{requires:['selector-native']});
+}, '3.3.0' ,{requires:['selector-native']});
 
 
-YUI.add('selector', function(Y){}, '3.0.0' ,{use:['selector-native', 'selector-css2']});
+YUI.add('selector', function(Y){}, '3.3.0' ,{use:['selector-native', 'selector-css2']});
 
 
 
-YUI.add('dom', function(Y){}, '3.0.0' ,{use:['dom-base', 'dom-style', 'dom-screen', 'selector']});
+YUI.add('dom', function(Y){}, '3.3.0' ,{use:['dom-base', 'dom-style', 'dom-screen', 'selector']});
 

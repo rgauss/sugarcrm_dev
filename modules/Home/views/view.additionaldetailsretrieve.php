@@ -48,7 +48,7 @@ class HomeViewAdditionaldetailsretrieve extends SugarView
 {
  	public function display()
  	{
-        global $beanList, $beanFiles, $current_user, $app_strings;
+        global $beanList, $beanFiles, $current_user, $app_strings, $app_list_strings;
         
         $moduleDir = empty($_REQUEST['bean']) ? '' : $_REQUEST['bean'];
         $beanName = empty($beanList[$moduleDir]) ? '' : $beanList[$moduleDir];
@@ -71,6 +71,16 @@ class HomeViewAdditionaldetailsretrieve extends SugarView
             $json = getJSONobj();
             $bean = new $beanName();
             $bean->retrieve($id);
+            
+        	//bug38901 - shows dropdown list label instead of database value
+			foreach($bean->field_name_map as $field => $value)
+			{
+				if($value["type"] == "enum" && isset($app_list_strings[$value['options']][$bean->$field]))
+				{
+					$bean->$field = $app_list_strings[$value['options']][$bean->$field];
+				}
+			}            
+            
             $arr = array_change_key_case($bean->toArray(), CASE_UPPER);
         
             $results = $adFunction($arr);

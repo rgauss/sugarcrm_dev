@@ -73,7 +73,7 @@ if(isset($this->field_defs['modified_user_id'])){
 	    'link'=>'modified_user_link'
 	  );
 	$this->field_defs['modified_by_name'] =  array (
-	    'name' => 'modified_user_name',
+	    'name' => 'modified_by_name',
 	    'rname'=>'user_name',
 	    'vname' => 'LBL_MODIFIED',
 	    'type' => 'relate',
@@ -82,8 +82,3 @@ if(isset($this->field_defs['modified_user_id'])){
 	    'link'=>'modified_user_link'
 	  );
 }
-
-
-
-
-?>

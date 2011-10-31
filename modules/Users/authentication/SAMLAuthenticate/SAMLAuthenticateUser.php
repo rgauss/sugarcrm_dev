@@ -62,8 +62,8 @@ class SAMLAuthenticateUser extends SugarAuthenticateUser{
 		
 		require 'modules/Users/authentication/SAMLAuthenticate/settings.php';
 		require 'modules/Users/authentication/SAMLAuthenticate/lib/onelogin/saml.php';
-		$samlresponse = new SamlResponse($_POST['SAMLResponse']);
- 		$samlresponse->user_settings = get_user_settings();
+		$samlresponse = new SamlResponse(get_saml_settings(), $_POST['SAMLResponse']);
+ 		
   		if ($samlresponse->is_valid()){
   			$dbresult = $GLOBALS['db']->query("SELECT id, status FROM users WHERE user_name='" . $samlresponse->get_nameid() . "' AND deleted = 0");
 

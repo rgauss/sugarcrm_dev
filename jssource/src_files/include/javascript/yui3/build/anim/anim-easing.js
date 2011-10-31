@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('anim-easing', function(Y) {
 
@@ -29,7 +29,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
  * @submodule anim-easing
  */
 
-Y.Easing = {
+var Easing = {
 
     /**
      * Uniform speed between points.
@@ -351,5 +351,7 @@ Y.Easing = {
     }
 };
 
+Y.Easing = Easing;
 
-}, '3.0.0' ,{requires:['anim-base']});
+
+}, '3.3.0' ,{requires:['anim-base']});

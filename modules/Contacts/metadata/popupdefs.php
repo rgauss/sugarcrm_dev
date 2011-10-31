@@ -48,7 +48,7 @@ $popupMeta = array(
 				'account_name' => 'accounts.name',
 				'account_id' => 'accounts.id'),
 	'searchInputs' =>
-		array('first_name', 'last_name', 'account_name'),
+		array('first_name', 'last_name', 'account_name', 'email'),
 	'create' =>
 		array('formBase' => 'ContactFormBase.php',
 				'formBaseClass' => 'ContactFormBase',
@@ -86,6 +86,7 @@ $popupMeta = array(
 		array('name' => 'account_name', 'type' => 'varchar',),
 		'title',
 		'lead_source',
+		'email',
 		array('name' => 'campaign_name', 'displayParams' => array('hideButtons'=>'true', 'size'=>30, 'class'=>'sqsEnabled sqsNoAutofill')),
 		array('name' => 'assigned_user_id', 'type' => 'enum', 'label' => 'LBL_ASSIGNED_TO', 'function' => array('name' => 'get_user_array', 'params' => array(false))),
 	  )

@@ -227,7 +227,7 @@ class MyPipelineBySalesStageDashlet extends DashletGenericChart
         $query = "SELECT opportunities.sales_stage,
                         users.user_name,
                         opportunities.assigned_user_id,
-                        count( * ) AS opp_count,
+                        count(*) AS opp_count,
                         sum(amount_usdollar/1000) AS total
                     FROM users,opportunities  ";
         $query .= " WHERE opportunities.assigned_user_id IN ('{$GLOBALS['current_user']->id}') " .

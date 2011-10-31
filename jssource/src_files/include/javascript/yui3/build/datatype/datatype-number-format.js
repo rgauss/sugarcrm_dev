@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('datatype-number-format', function(Y) {
 
@@ -108,5 +108,4 @@ Y.mix(Y.namespace("DataType.Number"), {
 });
 
 
-
-}, '3.0.0' );
+}, '3.3.0' ,{requires:['yui-base']});

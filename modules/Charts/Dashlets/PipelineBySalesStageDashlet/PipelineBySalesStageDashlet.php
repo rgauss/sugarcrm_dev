@@ -191,7 +191,7 @@ class PipelineBySalesStageDashlet extends DashletGenericChart
         $query = "  SELECT opportunities.sales_stage,
                         users.user_name,
                         opportunities.assigned_user_id,
-                        count( * ) AS opp_count,
+                        count(*) AS opp_count,
                         sum(amount_usdollar/1000) AS total
                     FROM users,opportunities  ";
         $query .= " WHERE opportunities.date_closed >= ". db_convert("'".$this->pbss_date_start."'",'datetime').

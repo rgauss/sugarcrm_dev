@@ -80,8 +80,8 @@
 		<td width="35%" ><span sugar='slot9b'>&nbsp;</span sugar='slot'></td>
 		<td scope="row"><span sugar='slot10'>&nbsp;</span sugar='slot'></td>
 		<td><span sugar='slot10b'>&nbsp;</span sugar='slot'></td>
-		<tr>
 		</tr>
+		<tr>
 		<td valign="top" scope="row"><span sugar='slot10'>{$MOD.LBL_CAMPAIGN_CONTENT}</span sugar='slot'></td>
 		<td colspan="3"><span sugar='slot10a'><textarea id='wiz_content' name='wiz_step1_content' title='{$MOD.LBL_CAMPAIGN_CONTENT}' tabindex='3' cols="110" rows="5">{$CONTENT}</textarea></span sugar='slot'></td>
 		</tr>

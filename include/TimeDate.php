@@ -53,6 +53,8 @@ class TimeDate
 	const DB_DATETIME_FORMAT = 'Y-m-d H:i:s';
 	const RFC2616_FORMAT = 'D, d M Y H:i:s \G\M\T';
 
+    const SECONDS_IN_A_DAY = 86400;
+
     // Standard DB date/time formats
     // they are constant, vars are for compatibility
 	public $dbDayFormat = self::DB_DATE_FORMAT;

@@ -1259,25 +1259,27 @@ function create_default_users(){
     global $setup_site_admin_user_name;
     global $create_default_user;
     global $sugar_config;
-    
+
+    global $current_user;
+
 	require_once('install/UserDemoData.php');
 
     //Create default admin user
-    $user = new User();
-    $user->id = 1;
-    $user->new_with_id = true;
-    $user->last_name = 'Administrator';
+    $current_user = new User();
+    $current_user->id = 1;
+    $current_user->new_with_id = true;
+    $current_user->last_name = 'Administrator';
     //$user->user_name = 'admin';
-    $user->user_name = $setup_site_admin_user_name;
-    $user->title = "Administrator";
-    $user->status = 'Active';
-    $user->is_admin = true;
-	$user->employee_status = 'Active';
+    $current_user->user_name = $setup_site_admin_user_name;
+    $current_user->title = "Administrator";
+    $current_user->status = 'Active';
+    $current_user->is_admin = true;
+	$current_user->employee_status = 'Active';
     //$user->user_password = $user->encrypt_password($setup_site_admin_password);
-    $user->user_hash = strtolower(md5($setup_site_admin_password));
-    $user->email = '';
-    $user->picture = UserDemoData::_copy_user_image($user->id);
-    $user->save();
+    $current_user->user_hash = strtolower(md5($setup_site_admin_password));
+    $current_user->email = '';
+    $current_user->picture = UserDemoData::_copy_user_image($current_user->id);
+    $current_user->save();
 
     // echo 'Creating RSS Feeds';
     //$feed = new Feed();
@@ -1288,7 +1290,7 @@ function create_default_users(){
     // $query = "update users set id='1' where user_name='$user->user_name'";
     // $result = $db->query($query, true, "Error updating admin user ID: ");
 
-    $GLOBALS['log']->info("Created ".$user->table_name." table. for user $user->id");
+    $GLOBALS['log']->info("Created ".$current_user->table_name." table. for user $current_user->id");
 
     if( $create_default_user ){
         $default_user = new User();
@@ -2306,4 +2308,24 @@ function enableSugarFeeds()
         SugarFeed::activateModuleFeed($module);
 
     check_logic_hook_file('Users','after_login', array(1, 'SugarFeed old feed entry remover', 'modules/SugarFeed/SugarFeedFlush.php', 'SugarFeedFlush', 'flushStaleEntries'));
+}
+
+/**
+ * Enable the InsideView connector for the four default modules.
+ */
+function enableInsideViewConnector()
+{
+    // Load up the existing mapping and hand it to the InsideView connector to have it setup the correct logic hooks
+    $mapFile = 'modules/Connectors/connectors/sources/ext/rest/insideview/mapping.php';
+    if ( file_exists('custom/'.$mapFile) ) {
+        require('custom/'.$mapFile);
+    } else {
+        require($mapFile);
+    }
+ 
+    require_once('modules/Connectors/connectors/sources/ext/rest/insideview/insideview.php');
+    $source = new ext_rest_insideview();
+
+    // $mapping is brought in from the mapping.php file above
+    $source->saveMappingHook($mapping);
 }

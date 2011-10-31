@@ -1,34 +1,18 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
-.yui-log {padding-top:3em;}
-/*
-.yui-log-container {position:relative;width:60em}
-.yui-log .yui-log-bd {height:auto; overflow:visible;}
-*/
-.yui-log-container {width:40em}
-.yui-log .yui-log-bd {height:60em}
-.yui-log .yui-log-btns {display:none;}
-.yui-log .yui-log-ft .yui-log-sourcefilters {visibility:hidden;}
-.yui-log .yui-log-hd {display:none;}
-.yui-log .yui-log-ft {position:absolute;top:0em;}
-
-.pass {
+.yui3-skin-sam .yui3-console-entry-pass .yui3-console-entry-cat {
     background-color: green;
-    font-weight: bold;
-    color: white;
 }
-.fail {
+
+.yui3-skin-sam .yui3-console-entry-fail .yui3-console-entry-cat {
     background-color: red;
-    font-weight: bold;
-    color: white;
 }
-.ignore {
+
+.yui3-skin-sam .yui3-console-entry-ignore .yui3-console-entry-cat {
     background-color: #666;
-    font-weight: bold;
-    color: white;
 }

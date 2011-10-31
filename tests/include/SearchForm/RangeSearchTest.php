@@ -131,24 +131,6 @@ class RangeSearchTest extends Sugar_PHPUnit_Framework_TestCase
 		
     }
     
-    public function testRangeSearchMysql()
-    {
-		$GLOBALS['db']->dbType = 'mysql';
-		$where_clauses = $this->searchForm->generateSearchWhere();
-		$this->assertEquals($where_clauses[0], 'LEFT(opportunities.date_closed,4) = EXTRACT(YEAR FROM ( current_date ))');
-		
-		$this->searchForm->searchFields['range_date_closed'] = array (
-	            'query_type' => 'default',
-	            'enable_range_search' => 1,
-	            'is_date_field' => 1,
-	            'value' => '[next_year]',
-	            'operator' => 'next_year',
-	    );
-
-		$where_clauses = $this->searchForm->generateSearchWhere();		
-		$this->assertEquals($where_clauses[0], 'LEFT(opportunities.date_closed,4) = EXTRACT(YEAR FROM ( current_date  + interval \'1\' year))');
-    } 
-    
     public function testRangeNumberSearches()
     {
     	$GLOBALS['db']->dbType = 'mysql';
@@ -214,25 +196,6 @@ class RangeSearchTest extends Sugar_PHPUnit_Framework_TestCase
 		$this->assertEquals($where_clauses[0], "opportunities.amount >= '9999.99' AND opportunities.amount <= '10000.01'"); 		
 		
     }
-    
-    public function testRangeSearchMssql()
-    {
-		$GLOBALS['db']->dbType = 'mssql';
-		$where_clauses = $this->searchForm->generateSearchWhere();
-		$this->assertEquals($where_clauses[0], 'DATEPART(yy,opportunities.date_closed) = DATEPART(yy, GETDATE())');
-
-		$this->searchForm->searchFields['range_date_closed'] = array (
-	            'query_type' => 'default',
-	            'enable_range_search' => 1,
-	            'is_date_field' => 1,
-	            'value' => '[next_year]',
-	            'operator' => 'next_year',
-	    );
-
-		$where_clauses = $this->searchForm->generateSearchWhere();	
-		$this->assertEquals($where_clauses[0], 'DATEPART(yy,opportunities.date_closed) = DATEPART(yy,( dateadd(yy, 1,GETDATE())))');
-		
-    }       
     
     /**
      * testRangeSearchWithSavedReportValues

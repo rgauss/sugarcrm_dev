@@ -58,11 +58,11 @@ class MyCallsDashlet extends DashletGeneric {
 			}
         }
         $this->columns = $dashletData['MyCallsDashlet']['columns'];
-        $this->columns['set_accept_links']= array('width'    => '10', 
+        /*$this->columns['set_accept_links']= array('width'    => '10', 
                                               'label'    => translate('LBL_ACCEPT_THIS', 'Meetings'),
                                               'sortable' => false,
                                               'related_fields' => array('status'),
-                                              'default' => 'true');
+                                              'default' => 'true');*/
         $this->seedBean = new Call();
     }
     
@@ -76,8 +76,8 @@ class MyCallsDashlet extends DashletGeneric {
         	//join with meeting_users table to process related users
        		$this->seedBean->listview_inner_join = array('LEFT JOIN  calls_users c_u on  c_u.call_id = calls.id');
         	
-        	//set the custom query to include assigned meetings            
-        	$lvsParams['custom_where'] = ' AND (calls.assigned_user_id = \'' . $current_user->id . '\' OR c_u.user_id = \'' . $current_user->id . '\' AND c_u.deleted = 0) ';
+        	//set the custom query to include assigned meetings
+            $lvsParams['custom_where'] = ' AND (calls.assigned_user_id = \'' . $current_user->id . '\' OR c_u.user_id = \'' . $current_user->id . '\') AND c_u.deleted = 0 ';
         }
         
         $this->myItemsOnly = false; 

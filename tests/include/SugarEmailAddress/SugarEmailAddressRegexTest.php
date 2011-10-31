@@ -49,16 +49,42 @@ class SugarEmailAddressRegexTest extends Sugar_PHPUnit_Framework_TestCase
 	        // For Bug 39186
 	        array('qfflats-@uol.com.br',true),
 	        array('atendimento-hd.@uol.com.br',true),
+	        // For Bug 44338
+	        array('jo&hn@john.com',true),
+	        array('joh#n@john.com.br',true),
+	        array('&#john@john.com', true),
+	        array('atendimento-hd.?uol.com.br',false),
+	        array('atendimento-hd.?uol.com.br;aaa@com.it',false),
+	        array('f.grande@pokerspa.it',true),
+	        array('fabio.grande@softwareontheroad.it',true),
+	        array('fabio$grande@softwareontheroad.it',true),
+	        // For Bug 44473
+	        array('ettingshallprimaryschool@wolverhampton.gov.u',false),
+	        // For Bug 13018
+	        array('Ert.F.Suu.-PA@pumpaudio.com',true),
+	        // For Bug 23202
+	        array('test--user@example.com',true),
+	        // For Bug 42403
+	        array('test@t--est.com',true),
+	        // For Bug 42404
+	        array('t.-est@test.com',true),
 	        );
 	}
     
     /**
      * @ticket 13765
      * @ticket 39186
+     * @ticket 44338
+     * @ticket 44473
+     * @ticket 13018
+     * @ticket 23202
+     * @ticket 42403
+     * @ticket 42404
      * @dataProvider providerEmailAddressRegex
      */
 	public function testEmailAddressRegex($email, $valid) 
     {
+        $startTime = microtime(true);
         $sea = new SugarEmailAddress;
         
         if ( $valid ) {
@@ -66,6 +92,10 @@ class SugarEmailAddressRegexTest extends Sugar_PHPUnit_Framework_TestCase
         }
         else {
             $this->assertNotRegExp($sea->regex,$email);
-        }     
+        }
+        
+        // Checking for elapsed time. I expect that evaluation takes less than a second.
+        $timeElapsed = microtime(true) - $startTime;
+        $this->assertLessThan(1.0, $timeElapsed);
     }
 }

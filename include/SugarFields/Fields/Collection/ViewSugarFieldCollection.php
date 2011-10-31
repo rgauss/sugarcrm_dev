@@ -285,7 +285,7 @@ FRA;
                     // If relate add the ID field to the array
                     $this->displayParams['collection_field_list'][$name]['field'] .= "collection['{$this->vardef['name']}'].update_fields.{$collection_field_vardef['id_name']}=true;";
                 }
-                $this->displayParams['collection_field_list'][$name]['field'] .= "document.getElementById('update_fields_{$this->vardef['name']}_collection').value = JSON.stringifyNoSecurity(collection['{$this->vardef['name']}'].update_fields);\" + oldonchange + \"};\");</script>{/literal}";
+                $this->displayParams['collection_field_list'][$name]['field'] .= "document.getElementById('update_fields_{$this->vardef['name']}_collection').value = YAHOO.lang.JSON.stringify(collection['{$this->vardef['name']}'].update_fields);\" + oldonchange + \"};\");</script>{/literal}";
                 //we need to get rid of the old value;
                 unset($this->displayParams['collection_field_list'][$k]);
             }
@@ -368,7 +368,7 @@ FRA;
         $qsd->setFormName($this->form_name);
         for($i=0; $i<$this->numFields; $i++){
             $name1 = "{$this->form_name}_{$this->name}_collection_{$i}";
-            if(!$this->skipModuleQuickSearch && preg_match('/(Campaigns|Teams|Users|Contacts|Accounts)/si', $this->related_module, $matches)) {
+            if(!$this->skipModuleQuickSearch && preg_match('/(Campaigns|Teams|Users|Accounts)/si', $this->related_module, $matches)) {
                 if($matches[0] == 'Users'){
                     $sqs_objects[$name1] = $qsd->getQSUser();
                 } else if($matches[0] == 'Campaigns') {
@@ -393,7 +393,9 @@ FRA;
                 } else if($matches[0] == 'Contacts'){
                     $sqs_objects[$name1] = $qsd->getQSContact($name1, "id_".$name1);
                 }
-                $temp_array = array('field_list'=>array(),'populate_list'=>array());
+
+               
+				$temp_array = array('field_list'=>array(),'populate_list'=>array());
                 foreach($sqs_objects[$name1]['field_list'] as $k=>$v){
                     if(!in_array($v, array('name','id'))){
                         $sqs_objects[$name1]['primary_field_list'][]=$v;

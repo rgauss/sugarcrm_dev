@@ -1,8 +1,8 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
-YUI.add("datasource-polling",function(C){var A=C.Lang,B=function(){this._intervals={};};B.prototype={_intervals:null,setInterval:function(F,E,G){var D=C.later(F,this,this.sendRequest,[E,G],true);this._intervals[D.id]=D;return D.id;},clearInterval:function(E,D){E=D||E;if(this._intervals[E]){this._intervals[E].cancel();delete this._intervals[E];}},clearAllIntervals:function(){C.each(this._intervals,this.clearInterval,this);}};C.augment(C.DataSource.Local,B);},"3.0.0",{requires:["datasource-local"]});
+YUI.add("datasource-polling",function(B){function A(){this._intervals={};}A.prototype={_intervals:null,setInterval:function(D,E){var C=B.later(D,this,this.sendRequest,[E],true);this._intervals[C.id]=C;return C.id;},clearInterval:function(D,C){D=C||D;if(this._intervals[D]){this._intervals[D].cancel();delete this._intervals[D];}},clearAllIntervals:function(){B.each(this._intervals,this.clearInterval,this);}};B.augment(B.DataSource.Local,A);},"3.3.0",{requires:["datasource-local"]});

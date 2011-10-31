@@ -45,6 +45,6 @@ function construct_url_from_tree_param(node){var treespace=YAHOO.namespace(node.
 for(i=node.depth;i>=0;i--){var currentnode;if(i==node.depth){currentnode=node;}else{currentnode=node.getAncestor(i);}
 url=url+"&PARAMN_id"+'_'+currentnode.depth+'='+currentnode.data.id;if(currentnode.data.param!='undefined'){for(nparam in currentnode.data.param){url=url+"&PARAMN_"+nparam+'_'+currentnode.depth+'='+currentnode.data.param[nparam];}}}
 return url;}
-function loadDataForNode(node,onCompleteCallback){var id=node.data.id;var params="entryPoint=TreeData&function=get_node_data"+construct_url_from_tree_param(node);var callback={success:function(o){node=o.argument[0];var nodes=JSON.parse(o.responseText);var tmpNode;for(nodedata in nodes){for(node1 in nodes[nodedata]){addNode(node,nodes[nodedata][node1]);}}
+function loadDataForNode(node,onCompleteCallback){var id=node.data.id;var params="entryPoint=TreeData&function=get_node_data"+construct_url_from_tree_param(node);var callback={success:function(o){node=o.argument[0];var nodes=YAHOO.lang.JSON.parse(o.responseText);var tmpNode;for(nodedata in nodes){for(node1 in nodes[nodedata]){addNode(node,nodes[nodedata][node1]);}}
 o.argument[1]();},failure:function(o){},argument:[node,onCompleteCallback]}
 var trobj=YAHOO.util.Connect.asyncRequest('POST','index.php',callback,params);}

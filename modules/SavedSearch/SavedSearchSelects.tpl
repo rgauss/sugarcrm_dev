@@ -41,7 +41,7 @@
 *}
 
 {if $SAVED_SEARCHES_OPTIONS != null}
-<select style="width: 110px" name='saved_search_select' id='saved_search_select' onChange='SUGAR.savedViews.shortcut_select(this, "{$SEARCH_MODULE}");'>
+<select style="width: auto !important; min-width: 150px;" name='saved_search_select' id='saved_search_select' onChange='SUGAR.savedViews.shortcut_select(this, "{$SEARCH_MODULE}");'>
 	{$SAVED_SEARCHES_OPTIONS}
 </select>
 <script>

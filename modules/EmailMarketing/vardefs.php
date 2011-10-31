@@ -95,6 +95,7 @@ $dictionary['EmailMarketing'] = array('table' => 'email_marketing'
 	    'type' => 'varchar',
 	    'len' => '255',
 	    'importable' => 'required',
+  		'required' => true
   	),
   	'from_name' =>  //starting from 4.0 from_name is obsolete..replaced with inbound_email_id
   	array (
@@ -103,6 +104,7 @@ $dictionary['EmailMarketing'] = array('table' => 'email_marketing'
 	    'type' => 'varchar',
 	    'len' => '100',
 	    'importable' => 'required',
+  		'required' => true
   	),
   	'from_addr' =>
   	array (
@@ -111,6 +113,7 @@ $dictionary['EmailMarketing'] = array('table' => 'email_marketing'
     	'type' => 'varchar',
     	'len' => '100',
     	'importable' => 'required',
+  		'required' => true
   	),
   	'reply_to_name' =>
   	array (
@@ -139,6 +142,7 @@ $dictionary['EmailMarketing'] = array('table' => 'email_marketing'
     	'vname' => 'LBL_DATE_START',
     	'type' => 'datetime',
     	'importable' => 'required',
+  		'required' => true
     	),
 
   	'template_id' =>

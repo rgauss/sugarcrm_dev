@@ -81,7 +81,7 @@ $out=<<<EOQ
    <link rel="stylesheet" href="install/install.css" type="text/css" />
    <script type="text/javascript" src="install/installCommon.js"></script>
 </head>
-<body onload="document.getElementById('defaultFocus').focus();">
+<body onload="document.getElementById('button_next2').focus();">
 <form action="install.php" method="post" name="systemOptions" id="form">
 
 <table cellspacing="0" cellpadding="0" border="0" align="center" class="shell">
@@ -157,10 +157,10 @@ $out.=<<<EOQ
      <table cellspacing="0" cellpadding="0" border="0" class="stdTable">
        <tr>
          <td>
-            <input class="button" type="button" value="{$mod_strings['LBL_BACK']}" onclick="document.getElementById('form').submit();" />
+            <input class="button" type="button" value="{$mod_strings['LBL_BACK']}" id="button_back_systemOptions" onclick="document.getElementById('form').submit();" />
             <input type="hidden" name="goto" value="{$mod_strings['LBL_BACK']}" />
          </td>
-         <td><input class="button" type="submit" id="defaultFocus" name="goto" value="{$mod_strings['LBL_NEXT']}" /></td>
+         <td><input class="button" type="submit" id="button_next2" name="goto" value="{$mod_strings['LBL_NEXT']}" /></td>
        </tr>
      </table>
 </td>

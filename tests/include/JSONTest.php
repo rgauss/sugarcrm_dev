@@ -91,31 +91,6 @@ class JSONTest extends Sugar_PHPUnit_Framework_TestCase
         );
     }
     
-    public function testEncodeWithSecurityEnvelope()
-    {
-        $array = array('foo' => 'bar', 'bar' => 'foo');
-        $this->assertEquals(
-            'while(1);/*{"foo":"bar","bar":"foo"}*/',
-            JSON::encode($array,true)
-        );
-    }
-    
-    public function testDecodeWithValidSecurityEnvelope()
-    {
-        $jsonString = '{"asychronous_key":"bar","jsonObject":"foo"}';
-        $_SESSION['asychronous_key'] = 'bar';
-        
-        $this->assertEquals('foo',JSON::decode($jsonString,true));
-    }
-    
-    public function testDecodeWithInvalidSecurityEnvelope()
-    {
-        $jsonString = '{"asychronous_key":"dog","jsonObject":"foo"}';
-        $_SESSION['asychronous_key'] = 'bar';
-        
-        $this->assertEquals('',JSON::decode($jsonString,true));
-    }
-    
     public function testEncodeRealWorks()
     {
         $array = array('foo' => 'bar', 'bar' => 'foo');

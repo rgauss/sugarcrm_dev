@@ -111,6 +111,29 @@ function get_field_list($value, $translate=true){
 			$list['release_name']['options'] = $options_ret;
 		}
 	}
+    if($value->module_dir == 'Emails'){
+        $fields = array('from_addr_name', 'reply_to_addr', 'to_addrs_names', 'cc_addrs_names', 'bcc_addrs_names');
+        foreach($fields as $field){
+            $var = $value->field_defs[$field];
+
+            $required = 0;
+            $entry = array();
+            $entry['name'] = $var['name'];
+            $entry['type'] = $var['type'];
+            if($translate) {
+            $entry['label'] = isset($var['vname']) ? translate($var['vname'], $value->module_dir) : $var['name'];
+            } else {
+            $entry['label'] = isset($var['vname']) ? $var['vname'] : $var['name'];
+            }
+            $entry['required'] = $required;
+            $entry['options'] = array();
+			if(isset($var['default'])) {
+			   $entry['default_value'] = $var['default'];
+			}
+
+			$list[$var['name']] = $entry;
+        }
+    }
 
 	if(isset($value->assigned_user_name) && isset($list['assigned_user_id'])) {
 		$list['assigned_user_name'] = $list['assigned_user_id'];
@@ -304,11 +327,14 @@ function check_modules_access($user, $module_name, $action='write'){
 	if(!isset($_SESSION['avail_modules'])){
 		$_SESSION['avail_modules'] = get_user_module_list($user);
 	}
-	if(isset($_SESSION['avail_modules'][$module_name])){
+    if(isset($_SESSION['avail_modules'][$module_name])){
 		if($action == 'write' && $_SESSION['avail_modules'][$module_name] == 'read_only'){
 			if(is_admin($user))return true;
 			return false;
-		}
+		}elseif($action == 'write' && strcmp(strtolower($module_name), 'users') == 0 && !$user->isAdminForModule($module_name)){
+            //rrs bug: 46000 - If the client is trying to write to the Users module and is not an admin then we need to stop them
+            return false;
+        }
 		return true;
 	}
 	return false;
@@ -916,30 +942,27 @@ function check_for_duplicate_contacts($seed){
 	$query = '';
 
 	$trimmed_email = trim($seed->email1);
+    $trimmed_email2 = trim($seed->email2);
 	$trimmed_last = trim($seed->last_name);
 	$trimmed_first = trim($seed->first_name);
-	if(!empty($trimmed_email)){
+	if(!empty($trimmed_email) || !empty($trimmed_email2)){
 
 		//obtain a list of contacts which contain the same email address
 		$contacts = $seed->emailAddress->getBeansByEmailAddress($trimmed_email);
+        $contacts2 = $seed->emailAddress->getBeansByEmailAddress($trimmed_email2);
+        $contacts = array_merge($contacts, $contacts2);
 		if(count($contacts) == 0){
 			return null;
 		}else{
-			foreach($contacts as $contact){
+            foreach($contacts as $contact){
 				if(!empty($trimmed_last) && strcmp($trimmed_last, $contact->last_name) == 0){
-					if(!empty($trimmed_email) && strcmp($trimmed_email, $contact->email1) == 0){
-						if(!empty($trimmed_email)){
-							if(strcmp($trimmed_email, $contact->email1) == 0){
-								//bug: 39234 - check if the account names are the same
-								//if the incoming contact's account_name is empty OR it is not empty and is the same
-								//as an existing contact's account name, then find the match.
-								$contact->load_relationship('accounts');
-								if(empty($seed->account_name) || strcmp($seed->account_name, $contact->account_name) == 0){
-									$GLOBALS['log']->info('End: SoapHelperWebServices->check_for_duplicate_contacts - duplicte found ' . $contact->id);
-									return $contact->id;
-								}
-							}
-						}else{
+                    if((!empty($trimmed_email) || !empty($trimmed_email2)) && (strcmp($trimmed_email, $contact->email1) == 0 || strcmp($trimmed_email, $contact->email2) == 0 || strcmp($trimmed_email2, $contact->email) == 0 || strcmp($trimmed_email2, $contact->email2) == 0)){
+						//bug: 39234 - check if the account names are the same
+						//if the incoming contact's account_name is empty OR it is not empty and is the same
+						//as an existing contact's account name, then find the match.
+                        $contact->load_relationship('accounts');
+						if(empty($seed->account_name) || strcmp($seed->account_name, $contact->account_name) == 0){
+						    $GLOBALS['log']->info('End: SoapHelperWebServices->check_for_duplicate_contacts - duplicte found ' . $contact->id);
 							return $contact->id;
 						}
 					}

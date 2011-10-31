@@ -38,10 +38,10 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 if (empty($_REQUEST)) die();
 
 $yui_path = array(
-    "2.7.0" => "include/javascript/yui",
-	"2_7_0" => "include/javascript/yui",
-	"3.0.0" => "include/javascript/yui3",
-	"3_0_0" => "include/javascript/yui3"
+    "2.9.0" => "include/javascript/yui",
+	"2_9_0" => "include/javascript/yui",
+	"3.3.0" => "include/javascript/yui3",
+	"3_3_0" => "include/javascript/yui3"
 );
 $types = array(
     "js" => "application/x-javascript",

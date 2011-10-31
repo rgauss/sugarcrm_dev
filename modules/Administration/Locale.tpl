@@ -163,7 +163,7 @@
 		<td width="25%" >
 			<select name="default_export_charset">{$exportCharsets}</select>
 		</td>
-
+		</tr><tr>
 		<td nowrap width="10%" scope="row">{$MOD.DISABLE_EXPORT}: </td>
 		{if !empty($config.disable_export)}
 			{assign var='disable_export_checked' value='CHECKED'}
@@ -214,4 +214,5 @@
 
 <script language="Javascript" type="text/javascript">
 {$getNameJs}
+setPreview();
 </script>

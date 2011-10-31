@@ -325,6 +325,8 @@ function handleSave($prefix,$redirect=true, $useRequired=false, $do_save=true, $
 		$prospect=new Prospect();
 		$prospect->retrieve($_POST[$prefix.'prospect_id']);
 		$prospect->lead_id=$focus->id;
+		// Set to keep email in target
+		$prospect->in_workflow = true;
 		$prospect->save();
 
         //if prospect id exists, make sure we are coming from prospect detail

@@ -219,7 +219,7 @@ $layout_defs['Accounts'] = array(
 			'title_key' => 'LBL_MEMBER_ORG_SUBPANEL_TITLE',
 			'top_buttons' => array(
 				array('widget_class' => 'SubPanelTopButtonQuickCreate'),
-				array('widget_class' => 'SubPanelTopSelectButton', 'mode'=>'MultiSelect')
+				array('widget_class' => 'SubPanelTopSelectAccountButton', 'mode'=>'MultiSelect')
 			),
 		),
 		'bugs' => array(

@@ -47,7 +47,7 @@ require_once('modules/Campaigns/utils.php');
 
 //if campaign_id is passed then we assume this is being invoked from the campaign module and in a popup.
 $has_campaign=true;
-$inboundEmail=true;  
+$inboundEmail=true;
 if (!isset($_REQUEST['campaign_id']) || empty($_REQUEST['campaign_id'])) {
 	$has_campaign=false;
 }
@@ -110,6 +110,11 @@ if(empty($focus->id)){
 
 echo getClassicModuleTitle($focus->module_dir, $params, true);
 
+if (!$focus->ACLAccess('EditView')) {
+    ACLController::displayNoAccess(true);
+    sugar_cleanup(true);
+}
+
 $GLOBALS['log']->info("EmailTemplate detail view");
 
 if($has_campaign || $inboundEmail) {
@@ -141,7 +146,7 @@ if ($has_campaign || $inboundEmail ) {
     $cancel_script="this.form.action.value='{$returnAction}'; this.form.module.value='{$_REQUEST['return_module']}';
     this.form.record.value=";
     if(empty($_REQUEST['return_id'])) {
-        $cancel_script="this.form.action.value='index'; this.form.module.value='{$_REQUEST['return_module']}';this.form.name.value='';this.form.description.value=''"; 
+        $cancel_script="this.form.action.value='index'; this.form.module.value='{$_REQUEST['return_module']}';this.form.name.value='';this.form.description.value=''";
     } else {
         $cancel_script.="'{$_REQUEST['return_id']}'";
     }
@@ -182,6 +187,11 @@ $xtpl->assign("JSLANG", $jsLang);
 
 $xtpl->assign("ID", $focus->id);
 if(isset($focus->name)) $xtpl->assign("NAME", $focus->name); else $xtpl->assign("NAME", "");
+
+//Bug45632
+if(isset($focus->assigned_user_id)) $xtpl->assign("ASSIGNED_USER_ID", $focus->assigned_user_id); else $xtpl->assign("ASSIGNED_USER_ID", "");
+//Bug45632
+
 if(isset($focus->description)) $xtpl->assign("DESCRIPTION", $focus->description); else $xtpl->assign("DESCRIPTION", "");
 if(isset($focus->subject)) $xtpl->assign("SUBJECT", $focus->subject); else $xtpl->assign("SUBJECT", "");
 if( $focus->published == 'on')
@@ -202,13 +212,13 @@ $xtpl->assign("FIELD_DEFS_JS", $focus->generateFieldDefsJS());
 $xtpl->assign("LBL_CONTACT",$app_list_strings['moduleList']['Contacts']);
 
 global $current_user;
-if(is_admin($current_user) && $_REQUEST['module'] != 'DynamicLayout' && !empty($_SESSION['editinplace'])) { 
+if(is_admin($current_user) && $_REQUEST['module'] != 'DynamicLayout' && !empty($_SESSION['editinplace'])) {
     $record = '';
     if(!empty($_REQUEST['record'])) {
         $record =   $_REQUEST['record'];
     }
     $xtpl->assign("ADMIN_EDIT","<a href='index.php?action=index&module=DynamicLayout&from_action=" . $_REQUEST['action']
-	."&from_module=".$_REQUEST['module'] ."&record=".$record. "'>".SugarThemeRegistry::current()->getImage("EditLayout","border='0' alt='Edit Layout' align='bottom'")."</a>");    
+	."&from_module=".$_REQUEST['module'] ."&record=".$record. "'>".SugarThemeRegistry::current()->getImage("EditLayout","border='0' alt='Edit Layout' align='bottom'")."</a>");
 }
 if(isset($focus->parent_type) && $focus->parent_type != "") {
     $change_parent_button = "<input title='".$app_strings['LBL_SELECT_BUTTON_TITLE']."' accessKey='".$app_strings['LBL_SELECT_BUTTON_KEY']."'
@@ -241,35 +251,36 @@ if(true) {
 	///////////////////////////////////////
 	////	MACRO VARS
 	$xtpl->assign("INSERT_VARIABLE_ONCLICK", "insert_variable(document.EditView.variable_text.value)");
-	if(!$inboundEmail){
-		$xtpl->parse("main.NoInbound.variable_button");
-	}
+
+    // bug 37255, included without condition
+    $xtpl->parse("main.NoInbound.variable_button");
+
 	///////////////////////////////////////
 	////	CAMPAIGNS
 	if($has_campaign || $inboundEmail) {
-		$xtpl->assign("INPOPUPWINDOW",'true');	
+		$xtpl->assign("INPOPUPWINDOW",'true');
 		$xtpl->assign("INSERT_URL_ONCLICK", "insert_variable_html_link(document.EditView.tracker_url.value)");
 		if($has_campaign){
 		  $campaign_urls=get_campaign_urls($_REQUEST['campaign_id']);
 		}
 		if(!empty($campaign_urls)) {
-			$xtpl->assign("DEFAULT_URL_TEXT",key($campaign_urls)); 
+			$xtpl->assign("DEFAULT_URL_TEXT",key($campaign_urls));
 	  	}
 	    if($has_campaign){
 		  $xtpl->assign("TRACKER_KEY_OPTIONS", get_select_options_with_id($campaign_urls, null));
 		  $xtpl->parse("main.NoInbound.tracker_url");
 	    }
 	}
-	
+
 	// The insert variable drodown should be conditionally displayed.
-	// If it's campaign then hide the Account. 
+	// If it's campaign then hide the Account.
 	if($has_campaign) {
 	    $dropdown="<option value='Contacts'>
 						".$mod_strings['LBL_CONTACT_AND_OTHERS']."
 			       </option>";
 	     $xtpl->assign("DROPDOWN",$dropdown);
 	     $xtpl->assign("DEFAULT_MODULE",'Contacts');
-         //$xtpl->assign("CAMPAIGN_POPUP_JS", '<script type="text/javascript" src="include/javascript/sugar_3.js"></script>');                  	 
+         //$xtpl->assign("CAMPAIGN_POPUP_JS", '<script type="text/javascript" src="include/javascript/sugar_3.js"></script>');
 	} else {
 	     $dropdown="<option value='Accounts'>
 						".$mod_strings['LBL_ACCOUNT']."
@@ -280,7 +291,7 @@ if(true) {
 			       <option value='Users'>
 						".$mod_strings['LBL_USERS']."
 			       </option>";
-		$xtpl->assign("DROPDOWN",$dropdown);      
+		$xtpl->assign("DROPDOWN",$dropdown);
 		$xtpl->assign("DEFAULT_MODULE",'Accounts');
 	}
 	////	END CAMPAIGNS
@@ -299,7 +310,7 @@ if(true) {
 	    $note = new Note();
 	    $where = "notes.parent_id='{$etid}' AND notes.filename IS NOT NULL";
 	    $notes_list = $note->get_full_list("", $where,true);
-	
+
 	    if(!isset($notes_list)) {
 	        $notes_list = array();
 	    }
@@ -322,21 +333,21 @@ if(true) {
 
 	////    END ATTACHMENTS
 	///////////////////////////////////////
-	
+
 	// done and parse
 	$xtpl->parse("main.textarea");
 }
 
 //Add Custom Fields
 require_once('modules/DynamicFields/templates/Files/EditView.php');
+$xtpl->parse("main.NoInbound");
 if(!$inboundEmail){
-    $xtpl->parse("main.NoInbound");
     $xtpl->parse("main.NoInbound1");
     $xtpl->parse("main.NoInbound2");
     $xtpl->parse("main.NoInbound3");
-    $xtpl->parse("main.NoInbound4");
-    $xtpl->parse("main.NoInbound5");
 }
+$xtpl->parse("main.NoInbound4");
+$xtpl->parse("main.NoInbound5");
 $xtpl->parse("main");
 
 $xtpl->out("main");

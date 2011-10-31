@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('datasource-local', function(Y) {
 
@@ -82,17 +82,30 @@ Y.mix(DSLocal, {
     _tId: 0,
 
     /**
-     * Executes a given callback.  The third param determines whether to execute
+     * Global in-progress transaction objects.
      *
-     * @method DataSource.issueCallback
-     * @param callback {Object} The callback object.
-     * @param params {Array} params to be passed to the callback method
-     * @param error {Boolean} whether an error occurred
+     * @property DataSource.transactions
+     * @type Object
      * @static
      */
-    issueCallback: function (e) {
+    transactions: {},
+
+    /**
+     * Returns data to callback.
+     *
+     * @method DataSource.issueCallback
+     * @param e {EventFacade} Event Facade.
+     * @param caller {DataSource} Calling DataSource instance.
+     * @static
+     */
+    issueCallback: function (e, caller) {
+        var error = (e.error || e.response.error);
+        if(error) {
+            e.error = e.error || e.response.error;
+            caller.fire("error", e);
+        }
         if(e.callback) {
-            var callbackFunc = (e.error && e.callback.failure) || e.callback.success;
+            var callbackFunc = (error && e.callback.failure) || e.callback.success;
             if (callbackFunc) {
                 callbackFunc(e);
             }
@@ -237,9 +250,6 @@ Y.extend(DSLocal, Y.Base, {
         if(LANG.isUndefined(data)) {
             e.error = new Error("Local source undefined");
         }
-        if(e.error) {
-            this.fire("error", e);
-        }
 
         this.fire("data", Y.mix({data:data}, e));
     },
@@ -302,29 +312,37 @@ Y.extend(DSLocal, Y.Base, {
      */
     _defResponseFn: function(e) {
         // Send the response back to the callback
-        DSLocal.issueCallback(e);
+        DSLocal.issueCallback(e, this);
     },
     
     /**
      * Generates a unique transaction ID and fires <code>request</code> event.
      *
      * @method sendRequest
-     * @param request {Object} Request.
-     * @param callback {Object} An object literal with the following properties:
+     * @param request {Object} An object literal with the following properties:
      *     <dl>
-     *     <dt><code>success</code></dt>
-     *     <dd>The function to call when the data is ready.</dd>
-     *     <dt><code>failure</code></dt>
-     *     <dd>The function to call upon a response failure condition.</dd>
-     *     <dt><code>argument</code></dt>
-     *     <dd>Arbitrary data payload that will be passed back to the success and failure handlers.</dd>
+     *     <dt><code>request</code></dt>
+     *     <dd>The request to send to the live data source, if any.</dd>
+     *     <dt><code>callback</code></dt>
+     *     <dd>An object literal with the following properties:
+     *         <dl>
+     *         <dt><code>success</code></dt>
+     *         <dd>The function to call when the data is ready.</dd>
+     *         <dt><code>failure</code></dt>
+     *         <dd>The function to call upon a response failure condition.</dd>
+     *         <dt><code>argument</code></dt>
+     *         <dd>Arbitrary data payload that will be passed back to the success and failure handlers.</dd>
+     *         </dl>
+     *     </dd>
+     *     <dt><code>cfg</code></dt>
+     *     <dd>Configuration object, if any.</dd>
      *     </dl>
-     * @param cfg {Object} Configuration object
      * @return {Number} Transaction ID.
      */
-    sendRequest: function(request, callback, cfg) {
+    sendRequest: function(request) {
+        request = request || {};
         var tId = DSLocal._tId++;
-        this.fire("request", {tId:tId, request:request, callback:callback, cfg:cfg || {}});
+        this.fire("request", {tId:tId, request:request.request, callback:request.callback, cfg:request.cfg || {}});
         return tId;
     }
 });
@@ -333,7 +351,7 @@ Y.namespace("DataSource").Local = DSLocal;
 
 
 
-}, '3.0.0' ,{requires:['base']});
+}, '3.3.0' ,{requires:['base']});
 
 YUI.add('datasource-io', function(Y) {
 
@@ -390,7 +408,18 @@ Y.mix(DSIO, {
         io: {
             value: Y.io,
             cloneDefaultValue: false
-        }
+        },
+        
+        /**
+         * Default IO Config.
+         *
+         * @attribute ioConfig
+         * @type Object
+         * @default null
+         */
+         ioConfig: {
+         	value: null
+         }
     }
 });
     
@@ -406,6 +435,47 @@ Y.extend(DSIO, Y.DataSource.Local, {
         this._queue = {interval:null, conn:null, requests:[]};
     },
 
+    /**
+    * IO success callback.
+    *
+    * @method successHandler
+    * @param id {String} Transaction ID.
+    * @param response {String} Response.
+    * @param e {Event.Facade} Event facade.
+    * @private
+    */
+    successHandler: function (id, response, e) {
+        var defIOConfig = this.get("ioConfig");
+
+        delete Y.DataSource.Local.transactions[e.tId];
+
+        this.fire("data", Y.mix({data:response}, e));
+        if (defIOConfig && defIOConfig.on && defIOConfig.on.success) {
+        	defIOConfig.on.success.apply(defIOConfig.context || Y, arguments);
+        }
+    },
+
+    /**
+    * IO failure callback.
+    *
+    * @method failureHandler
+    * @param id {String} Transaction ID.
+    * @param response {String} Response.
+    * @param e {Event.Facade} Event facade.
+    * @private
+    */
+    failureHandler: function (id, response, e) {
+        var defIOConfig = this.get("ioConfig");
+        
+        delete Y.DataSource.Local.transactions[e.tId];
+
+        e.error = new Error("IO data failure");
+        this.fire("data", Y.mix({data:response}, e));
+        if (defIOConfig && defIOConfig.on && defIOConfig.on.failure) {
+        	defIOConfig.on.failure.apply(defIOConfig.context || Y, arguments);
+        }
+    },
+    
     /**
     * @property _queue
     * @description Object literal to manage asynchronous request/response
@@ -446,20 +516,15 @@ Y.extend(DSIO, Y.DataSource.Local, {
     _defRequestFn: function(e) {
         var uri = this.get("source"),
             io = this.get("io"),
+            defIOConfig = this.get("ioConfig"),
             request = e.request,
-            cfg = Y.mix(e.cfg, {
-                on: {
-                    success: function (id, response, e) {
-                        this.fire("data", Y.mix({data:response}, e));
-                    },
-                    failure: function (id, response, e) {
-                        e.error = new Error("IO data failure");
-                        this.fire("error", Y.mix({data:response}, e));
-                        this.fire("data", Y.mix({data:response}, e));
-                    }
-                },
+            cfg = Y.merge(defIOConfig, e.cfg, {
+                on: Y.merge(defIOConfig, {
+                    success: this.successHandler,
+                    failure: this.failureHandler
+                }),
                 context: this,
-                arguments: e
+                "arguments": e
             });
         
         // Support for POST transactions
@@ -471,17 +536,16 @@ Y.extend(DSIO, Y.DataSource.Local, {
                 uri += request;
             }
         }
-        io(uri, cfg);
+        Y.DataSource.Local.transactions[e.tId] = io(uri, cfg);
         return e.tId;
     }
 });
   
 Y.DataSource.IO = DSIO;
-    
 
 
 
-}, '3.0.0' ,{requires:['datasource-local', 'io']});
+}, '3.3.0' ,{requires:['datasource-local', 'io-base']});
 
 YUI.add('datasource-get', function(Y) {
 
@@ -502,119 +566,8 @@ var DSGet = function() {
     DSGet.superclass.constructor.apply(this, arguments);
 };
     
-
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // DataSource.Get static properties
-    //
-    /////////////////////////////////////////////////////////////////////////////
-Y.mix(DSGet, {
-    /**
-     * Class name.
-     *
-     * @property NAME
-     * @type String
-     * @static     
-     * @final
-     * @value "dataSourceGet"
-     */
-    NAME: "dataSourceGet",
-
-
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // DataSource.Get Attributes
-    //
-    /////////////////////////////////////////////////////////////////////////////
-
-    ATTRS: {
-        /**
-         * Pointer to Get Utility.
-         *
-         * @attribute get
-         * @type Y.Get
-         * @default Y.Get
-         */
-        get: {
-            value: Y.Get,
-            cloneDefaultValue: false
-        },
-
-/**
- * Defines request/response management in the following manner:
- * <dl>
- *     <!--<dt>queueRequests</dt>
- *     <dd>If a request is already in progress, wait until response is returned before sending the next request.</dd>
- *     <dt>cancelStaleRequests</dt>
- *     <dd>If a request is already in progress, cancel it before sending the next request.</dd>-->
- *     <dt>ignoreStaleResponses</dt>
- *     <dd>Send all requests, but handle only the response for the most recently sent request.</dd>
- *     <dt>allowAll</dt>
- *     <dd>Send all requests and handle all responses.</dd>
- * </dl>
- *
- * @attribute asyncMode
- * @type String
- * @default "allowAll"
- */
-asyncMode: {
-    value: "allowAll"
-},
-
-/**
- * Callback string parameter name sent to the remote script. By default,
- * requests are sent to
- * &#60;URI&#62;?&#60;scriptCallbackParam&#62;=callbackFunction
- *
- * @attribute scriptCallbackParam
- * @type String
- * @default "callback"
- */
-scriptCallbackParam : {
-    value: "callback"
-},
-
-/**
- * Accepts the DataSource instance and a callback ID, and returns a callback
- * param/value string that gets appended to the script URI. Implementers
- * can customize this string to match their server's query syntax.
- *
- * @attribute generateRequestCallback
- * @type Function
- */
-generateRequestCallback : {
-    value: function(self, id) {
-        return "&" + self.get("scriptCallbackParam") + "=YUI.Env.DataSource.callbacks["+id+"]" ;
-    }
-}
-
-
-
-
-
-    },
-
-    /**
-     * Global array of callback functions, one for each request sent.
-     *
-     * @property callbacks
-     * @type Function[]
-     * @static
-     */
-    callbacks : [],
-
-    /**
-     * Unique ID to track requests.
-     *
-     * @property _tId
-     * @type Number
-     * @private
-     * @static
-     */
-    _tId : 0
-});
     
-Y.extend(DSGet, Y.DataSource.Local, {
+Y.DataSource.Get = Y.extend(DSGet, Y.DataSource.Local, {
     /**
      * Passes query string to Get Utility. Fires <code>response</code> event when
      * response is received asynchronously.
@@ -635,73 +588,168 @@ Y.extend(DSGet, Y.DataSource.Local, {
      * @protected
      */
     _defRequestFn: function(e) {
-        var uri = this.get("source"),
-            get = this.get("get"),
-            id = DSGet._tId++,
-            self = this;
-            
+        var uri  = this.get("source"),
+            get  = this.get("get"),
+            guid = Y.guid().replace(/\-/g, '_'),
+            generateRequest = this.get( "generateRequestCallback" ),
+            o;
+
+        /**
+         * Stores the most recent request id for validation against stale
+         * response handling.
+         *
+         * @property _last
+         * @type {String}
+         * @protected
+         */
+        this._last = guid;
+
+        // Dynamically add handler function with a closure to the callback stack
+        // for access to guid
+        YUI.Env.DataSource.callbacks[guid] = Y.bind(function(response) {
+            delete YUI.Env.DataSource.callbacks[guid];
+            delete Y.DataSource.Local.transactions[e.tId];
+
+            var process = this.get('asyncMode') !== "ignoreStaleResponses" ||
+                          this._last === guid;
+
+            if (process) {
+                this.fire("data", Y.mix({ data: response }, e));
+            } else {
+            }
+
+        }, this);
+
+        // Add the callback param to the request url
+        uri += e.request + generateRequest.call( this, guid );
 
 
+        Y.DataSource.Local.transactions[e.tId] = get.script(uri, {
+            autopurge: true,
+            // Works in Firefox only....
+            onFailure: Y.bind(function(e, o) {
+                delete YUI.Env.DataSource.callbacks[guid];
+                delete Y.DataSource.Local.transactions[e.tId];
 
+                e.error = new Error(o.msg || "Script node data failure");
+                this.fire("data", e);
+            }, this, e),
+            onTimeout: Y.bind(function(e, o) {
+                delete YUI.Env.DataSource.callbacks[guid];
+                delete Y.DataSource.Local.transactions[e.tId];
 
-
-
-
-
-
-
-
-
-    // Dynamically add handler function with a closure to the callback stack
-    YUI.Env.DataSource.callbacks[id] = Y.rbind(function(response) {
-        if((self.get("asyncMode") !== "ignoreStaleResponses")||
-                (id === DSGet.callbacks.length-1)) { // Must ignore stale responses
-
-            self.fire("data", Y.mix({data:response}, e));
-        }
-        else {
-        }
-
-        delete DSGet.callbacks[id];
-    }, this, id);
-
-    // We are now creating a request
-    uri += e.request + this.get("generateRequestCallback")(this, id);
-    //uri = this.doBefore(sUri);
-    get.script(uri, {
-        autopurge: true,
-        // Works in Firefox only....
-        onFailure: Y.bind(function(e) {
-            e.error = new Error("Script node data failure");
-            this.fire("error", e);
-        }, this, e)
-    });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                e.error = new Error(o.msg || "Script node data timeout");
+                this.fire("data", e);
+            }, this, e)
+        });
 
         return e.tId;
+    },
+
+
+    /**
+     * Default method for adding callback param to url.  See
+     * generateRequestCallback attribute.
+     *
+     * @method _generateRequest
+     * @param guid {String} unique identifier for callback function wrapper
+     * @protected
+     */
+     _generateRequest: function (guid) {
+        return "&" + this.get("scriptCallbackParam") +
+                "=YUI.Env.DataSource.callbacks." + guid;
+    }
+
+}, {
+
+    /**
+     * Class name.
+     *
+     * @property NAME
+     * @type String
+     * @static     
+     * @final
+     * @value "dataSourceGet"
+     */
+    NAME: "dataSourceGet",
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // DataSource.Get Attributes
+    //
+    ////////////////////////////////////////////////////////////////////////////
+    ATTRS: {
+        /**
+         * Pointer to Get Utility.
+         *
+         * @attribute get
+         * @type Y.Get
+         * @default Y.Get
+         */
+        get: {
+            value: Y.Get,
+            cloneDefaultValue: false
+        },
+
+        /**
+         * Defines request/response management in the following manner:
+         * <dl>
+         *     <!--<dt>queueRequests</dt>
+         *     <dd>If a request is already in progress, wait until response is
+         *     returned before sending the next request.</dd>
+         *     <dt>cancelStaleRequests</dt>
+         *     <dd>If a request is already in progress, cancel it before
+         *     sending the next request.</dd>-->
+         *     <dt>ignoreStaleResponses</dt>
+         *     <dd>Send all requests, but handle only the response for the most
+         *     recently sent request.</dd>
+         *     <dt>allowAll</dt>
+         *     <dd>Send all requests and handle all responses.</dd>
+         * </dl>
+         *
+         * @attribute asyncMode
+         * @type String
+         * @default "allowAll"
+         */
+        asyncMode: {
+            value: "allowAll"
+        },
+
+        /**
+         * Callback string parameter name sent to the remote script. By default,
+         * requests are sent to
+         * &#60;URI&#62;?&#60;scriptCallbackParam&#62;=callbackFunction
+         *
+         * @attribute scriptCallbackParam
+         * @type String
+         * @default "callback"
+         */
+        scriptCallbackParam : {
+            value: "callback"
+        },
+
+        /**
+         * Accepts the DataSource instance and a callback ID, and returns a callback
+         * param/value string that gets appended to the script URI. Implementers
+         * can customize this string to match their server's query syntax.
+         *
+         * @attribute generateRequestCallback
+         * @type Function
+         */
+        generateRequestCallback : {
+            value: function () {
+                return this._generateRequest.apply(this, arguments);
+            }
+        }
     }
 });
   
-Y.DataSource.Get = DSGet;
 YUI.namespace("Env.DataSource.callbacks");
-    
 
 
 
-}, '3.0.0' ,{requires:['datasource-local', 'get']});
+}, '3.3.0' ,{requires:['datasource-local', 'get']});
 
 YUI.add('datasource-function', function(Y) {
 
@@ -793,12 +841,12 @@ Y.extend(DSFn, Y.DataSource.Local, {
                 }
                 catch(error) {
                     e.error = error;
-                    this.fire("error", e);
+                    this.fire("data", e);
                 }
             }
             else {
                 e.error = new Error("Function data failure");
-                this.fire("error", e);
+                this.fire("data", e);
             }
             
         return e.tId;
@@ -810,27 +858,25 @@ Y.DataSource.Function = DSFn;
 
 
 
-}, '3.0.0' ,{requires:['datasource-local']});
+}, '3.3.0' ,{requires:['datasource-local']});
 
 YUI.add('datasource-cache', function(Y) {
 
 /**
- * Extends DataSource with caching functionality.
+ * Plugs DataSource with caching functionality.
  *
  * @module datasource
  * @submodule datasource-cache
  */
 
 /**
- * Adds cacheability to the DataSource Utility.
- * @class DataSourceCache
- * @extends Cache
- */    
-var DataSourceCache = function() {
-    DataSourceCache.superclass.constructor.apply(this, arguments);
+ * DataSourceCache extension binds Cache to DataSource.
+ * @class DataSourceCacheExtension
+ */
+var DataSourceCacheExtension = function() {
 };
 
-Y.mix(DataSourceCache, {
+Y.mix(DataSourceCacheExtension, {
     /**
      * The namespace for the plugin. This will be the property on the host which
      * references the plugin instance.
@@ -850,22 +896,12 @@ Y.mix(DataSourceCache, {
      * @type String
      * @static
      * @final
-     * @value "dataSourceCache"
+     * @value "dataSourceCacheExtension"
      */
-    NAME: "dataSourceCache",
-
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // DataSourceCache Attributes
-    //
-    /////////////////////////////////////////////////////////////////////////////
-
-    ATTRS: {
-
-    }
+    NAME: "dataSourceCacheExtension"
 });
 
-Y.extend(DataSourceCache, Y.Cache, {
+DataSourceCacheExtension.prototype = {
     /**
     * Internal init() handler.
     *
@@ -895,11 +931,11 @@ Y.extend(DataSourceCache, Y.Cache, {
         // Is response already in the Cache?
         var entry = (this.retrieve(e.request)) || null;
         if(entry && entry.response) {
-            this.get("host").fire("response", Y.mix({response: entry.response}, e));
-            return new Y.Do.Halt("DataSourceCache plugin halted _defRequestFn");
+            this.get("host").fire("response", Y.mix(entry, e));
+            return new Y.Do.Halt("DataSourceCache extension halted _defRequestFn");
         }
     },
-    
+
     /**
      * Adds data to cache before returning data.
      *
@@ -929,18 +965,61 @@ Y.extend(DataSourceCache, Y.Cache, {
      */
      _beforeDefResponseFn: function(e) {
         // Add to Cache before returning
-        if(e.response && !e.response.cached) {
-            e.response.cached = true;
-            this.add(e.request, e.response, (e.callback && e.callback.argument));
+        if(e.response && !e.cached) {
+            this.add(e.request, e.response);
         }
      }
+};
+
+Y.namespace("Plugin").DataSourceCacheExtension = DataSourceCacheExtension;
+
+
+
+/**
+ * DataSource plugin adds cache functionality.
+ * @class DataSourceCache
+ * @extends Cache
+ * @uses Plugin.Base, DataSourceCachePlugin
+ */
+function DataSourceCache(config) {
+    var cache = config && config.cache ? config.cache : Y.Cache,
+        tmpclass = Y.Base.create("dataSourceCache", cache, [Y.Plugin.Base, Y.Plugin.DataSourceCacheExtension]),
+        tmpinstance = new tmpclass(config);
+    tmpclass.NS = "tmpClass";
+    return tmpinstance;
+}
+
+Y.mix(DataSourceCache, {
+    /**
+     * The namespace for the plugin. This will be the property on the host which
+     * references the plugin instance.
+     *
+     * @property NS
+     * @type String
+     * @static
+     * @final
+     * @value "cache"
+     */
+    NS: "cache",
+
+    /**
+     * Class name.
+     *
+     * @property NAME
+     * @type String
+     * @static
+     * @final
+     * @value "dataSourceCache"
+     */
+    NAME: "dataSourceCache"
 });
 
-Y.namespace('Plugin').DataSourceCache = DataSourceCache;
+
+Y.namespace("Plugin").DataSourceCache = DataSourceCache;
 
 
 
-}, '3.0.0' ,{requires:['datasource-local', 'cache']});
+}, '3.3.0' ,{requires:['datasource-local', 'cache-base']});
 
 YUI.add('datasource-jsonschema', function(Y) {
 
@@ -1010,7 +1089,9 @@ Y.extend(DataSourceJSONSchema, Y.Plugin.Base, {
     },
 
     /**
-     * Parses raw data into a normalized response.
+     * Parses raw data into a normalized response. To accommodate XHR responses,
+     * will first look for data in data.responseText. Otherwise will just work
+     * with data.
      *
      * @method _beforeDefDataFn
      * <dl>
@@ -1027,8 +1108,8 @@ Y.extend(DataSourceJSONSchema, Y.Plugin.Base, {
      * @protected
      */
     _beforeDefDataFn: function(e) {
-        var data = (Y.DataSource.IO && (this.get("host") instanceof Y.DataSource.IO) && Y.Lang.isString(e.data.responseText)) ? e.data.responseText : e.data,
-            response = Y.DataSchema.JSON.apply(this.get("schema"), data);
+        var data = e.data ? (e.data.responseText ?  e.data.responseText : e.data) : e.data,
+            response = Y.DataSchema.JSON.apply.call(this, this.get("schema"), data);
             
         // Default
         if(!response) {
@@ -1047,7 +1128,7 @@ Y.namespace('Plugin').DataSourceJSONSchema = DataSourceJSONSchema;
 
 
 
-}, '3.0.0' ,{requires:['plugin', 'datasource-local', 'dataschema-json']});
+}, '3.3.0' ,{requires:['datasource-local', 'plugin', 'dataschema-json']});
 
 YUI.add('datasource-xmlschema', function(Y) {
 
@@ -1135,7 +1216,7 @@ Y.extend(DataSourceXMLSchema, Y.Plugin.Base, {
      */
     _beforeDefDataFn: function(e) {
         var data = (Y.DataSource.IO && (this.get("host") instanceof Y.DataSource.IO) && e.data.responseXML && (e.data.responseXML.nodeType === 9)) ? e.data.responseXML : e.data,
-            response = Y.DataSchema.XML.apply(this.get("schema"), data);
+            response = Y.DataSchema.XML.apply.call(this, this.get("schema"), data);
             
         // Default
         if(!response) {
@@ -1154,7 +1235,7 @@ Y.namespace('Plugin').DataSourceXMLSchema = DataSourceXMLSchema;
 
 
 
-}, '3.0.0' ,{requires:['plugin', 'datasource-local', 'dataschema-xml']});
+}, '3.3.0' ,{requires:['datasource-local', 'plugin', 'dataschema-xml']});
 
 YUI.add('datasource-arrayschema', function(Y) {
 
@@ -1242,7 +1323,7 @@ Y.extend(DataSourceArraySchema, Y.Plugin.Base, {
      */
     _beforeDefDataFn: function(e) {
         var data = (Y.DataSource.IO && (this.get("host") instanceof Y.DataSource.IO) && Y.Lang.isString(e.data.responseText)) ? e.data.responseText : e.data,
-            response = Y.DataSchema.Array.apply(this.get("schema"), data);
+            response = Y.DataSchema.Array.apply.call(this, this.get("schema"), data);
             
         // Default
         if(!response) {
@@ -1261,7 +1342,7 @@ Y.namespace('Plugin').DataSourceArraySchema = DataSourceArraySchema;
 
 
 
-}, '3.0.0' ,{requires:['plugin', 'datasource-local', 'dataschema-array']});
+}, '3.3.0' ,{requires:['datasource-local', 'plugin', 'dataschema-array']});
 
 YUI.add('datasource-textschema', function(Y) {
 
@@ -1349,7 +1430,7 @@ Y.extend(DataSourceTextSchema, Y.Plugin.Base, {
      */
     _beforeDefDataFn: function(e) {
         var data = (Y.DataSource.IO && (this.get("host") instanceof Y.DataSource.IO) && Y.Lang.isString(e.data.responseText)) ? e.data.responseText : e.data,
-            response = Y.DataSchema.Text.apply(this.get("schema"), data);
+            response = Y.DataSchema.Text.apply.call(this, this.get("schema"), data);
             
         // Default
         if(!response) {
@@ -1368,7 +1449,7 @@ Y.namespace('Plugin').DataSourceTextSchema = DataSourceTextSchema;
 
 
 
-}, '3.0.0' ,{requires:['plugin', 'datasource-local', 'dataschema-text']});
+}, '3.3.0' ,{requires:['datasource-local', 'plugin', 'dataschema-text']});
 
 YUI.add('datasource-polling', function(Y) {
 
@@ -1384,11 +1465,9 @@ YUI.add('datasource-polling', function(Y) {
  * @class Pollable
  * @extends DataSource.Local
  */    
-var LANG = Y.Lang,
-
-    Pollable = function() {
-        this._intervals = {};
-    };
+function Pollable() {
+    this._intervals = {};
+}
 
 Pollable.prototype = {
 
@@ -1401,25 +1480,33 @@ Pollable.prototype = {
     _intervals: null,
 
     /**
-     * Sets up a polling mechanism to send requests at set intervals and forward
-     * responses to given callback.
+     * Sets up a polling mechanism to send requests at set intervals and
+     * forward responses to given callback.
      *
      * @method setInterval
      * @param msec {Number} Length of interval in milliseconds.
-     * @param request {Object} Request object.
-     * @param callback {Object} An object literal with the following properties:
+     * @param request {Object} An object literal with the following properties:
      *     <dl>
-     *     <dt><code>success</code></dt>
-     *     <dd>The function to call when the data is ready.</dd>
-     *     <dt><code>failure</code></dt>
-     *     <dd>The function to call upon a response failure condition.</dd>
-     *     <dt><code>argument</code></dt>
-     *     <dd>Arbitrary data that will be passed back to the success and failure handlers.</dd>
+     *     <dt><code>request</code></dt>
+     *     <dd>The request to send to the live data source, if any.</dd>
+     *     <dt><code>callback</code></dt>
+     *     <dd>An object literal with the following properties:
+     *         <dl>
+     *         <dt><code>success</code></dt>
+     *         <dd>The function to call when the data is ready.</dd>
+     *         <dt><code>failure</code></dt>
+     *         <dd>The function to call upon a response failure condition.</dd>
+     *         <dt><code>argument</code></dt>
+     *         <dd>Arbitrary data payload that will be passed back to the success and failure handlers.</dd>
+     *         </dl>
+     *     </dd>
+     *     <dt><code>cfg</code></dt>
+     *     <dd>Configuration object, if any.</dd>
      *     </dl>
      * @return {Number} Interval ID.
      */
-    setInterval: function(msec, request, callback) {
-        var x = Y.later(msec, this, this.sendRequest, [request, callback], true);
+    setInterval: function(msec, callback) {
+        var x = Y.later(msec, this, this.sendRequest, [ callback ], true);
         this._intervals[x.id] = x;
         return x.id;
     },
@@ -1455,9 +1542,9 @@ Y.augment(Y.DataSource.Local, Pollable);
 
 
 
-}, '3.0.0' ,{requires:['datasource-local']});
+}, '3.3.0' ,{requires:['datasource-local']});
 
 
 
-YUI.add('datasource', function(Y){}, '3.0.0' ,{use:['datasource-local','datasource-io','datasource-get','datasource-function','datasource-cache','datasource-jsonschema','datasource-xmlschema','datasource-arrayschema','datasource-textschema','datasource-polling']});
+YUI.add('datasource', function(Y){}, '3.3.0' ,{use:['datasource-local','datasource-io','datasource-get','datasource-function','datasource-cache','datasource-jsonschema','datasource-xmlschema','datasource-arrayschema','datasource-textschema','datasource-polling']});
 

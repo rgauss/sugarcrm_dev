@@ -1,9 +1,9 @@
 /*
- Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+ Copyright (c) 2010, Yahoo! Inc. All rights reserved.
  Code licensed under the BSD License:
- http://developer.yahoo.net/yui/license.txt
- version: 3.0.0
- build: 1549
+ http://developer.yahoo.com/yui/license.html
+ version: 3.3.0
+ build: 3167
  */
 YUI.add('profiler',function(Y){var container={},report={},stopwatches={},WATCH_STARTED=0,WATCH_STOPPED=1,WATCH_PAUSED=2,L=Y.Lang;function createReport(name){report[name]={calls:0,max:0,min:0,avg:0,points:[]};return report[name];}
 function saveDataPoint(name,duration){var functionData=report[name];if(!functionData){functionData=createReport(name);}
@@ -15,4 +15,4 @@ stopwatch.start=0;stopwatch.total=0;stopwatch.state=WATCH_STOPPED;}},getAverage:
 return fullReport;}},registerConstructor:function(name,owner){this.registerFunction(name,owner,true);},registerFunction:function(name,owner,registerPrototype){var funcName=(name.indexOf(".")>-1?name.substring(name.lastIndexOf(".")+1):name),method,prototype;if(!L.isObject(owner)){owner=eval(name.substring(0,name.lastIndexOf(".")));}
 method=owner[funcName];prototype=method.prototype;if(L.isFunction(method)&&!method.__yuiProfiled){owner[funcName]=this.instrument(name,method);container[name].__yuiOwner=owner;container[name].__yuiFuncName=funcName;if(registerPrototype){this.registerObject(name+".prototype",prototype);}}},registerObject:function(name,object,recurse){object=(L.isObject(object)?object:eval(name));container[name]=object;for(var prop in object){if(typeof object[prop]=="function"){if(prop!="constructor"&&prop!="superclass"){this.registerFunction(name+"."+prop,object);}}else if(typeof object[prop]=="object"&&recurse){this.registerObject(name+"."+prop,object[prop],recurse);}}},unregisterConstructor:function(name){if(L.isFunction(container[name])){this.unregisterFunction(name,true);}},unregisterFunction:function(name,unregisterPrototype){if(L.isFunction(container[name])){if(unregisterPrototype){this.unregisterObject(name+".prototype",container[name].prototype);}
 var owner=container[name].__yuiOwner,funcName=container[name].__yuiFuncName;delete container[name].__yuiOwner;delete container[name].__yuiFuncName;owner[funcName]=container[name];delete container[name];}},unregisterObject:function(name,recurse){if(L.isObject(container[name])){var object=container[name];for(var prop in object){if(typeof object[prop]=="function"){this.unregisterFunction(name+"."+prop);}else if(typeof object[prop]=="object"&&recurse){this.unregisterObject(name+"."+prop,recurse);}}
-delete container[name];}}};},'3.0.0',{requires:['oop']});
+delete container[name];}}};},'3.3.0',{requires:['oop']});

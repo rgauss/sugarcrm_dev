@@ -77,8 +77,7 @@ class SugarWidgetReportField extends SugarWidgetField
         if ( ! empty($context) && method_exists($obj,$func_name))
         {
                 return  $obj->$func_name($layout_def);
-        } else
-        {
+        } else {
                 return 'display not found:'.$func_name;
         }
  }

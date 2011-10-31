@@ -40,8 +40,8 @@
     {{assign var=idname value=$displayParams.idName}}
 {{/if}}
 <input type="text" name="{{$idname}}" class={{if empty($displayParams.class) }}"sqsEnabled"{{else}} "{{$displayParams.class}}" {{/if}} tabindex="{{$tabindex}}" id="{{$idname}}" size="{{$displayParams.size}}" value="{{sugarvar key='value'}}" title='{{$vardef.help}}' autocomplete="off" {{$displayParams.readOnly}} {{$displayParams.field}}>
-<input type="hidden" name="{{if !empty($displayParams.idName)}}{{$idname}}_{{/if}}{{sugarvar key='id_name'}}" 
-	id="{{if !empty($displayParams.idName)}}{{$idname}}_{{/if}}{{sugarvar key='id_name'}}" 
+<input type="hidden" name="{{if !empty($displayParams.idNameHidden)}}{{$displayParams.idNameHidden}}{{/if}}{{sugarvar key='id_name'}}" 
+	id="{{if !empty($displayParams.idNameHidden)}}{{$displayParams.idNameHidden}}{{/if}}{{sugarvar key='id_name'}}" 
 	{{if !empty($vardef.id_name)}}value="{{sugarvar memberName='vardef.id_name' key='value'}}"{{/if}}>
 {{if empty($displayParams.hideButtons) }}
 <span class="id-ff multiple">

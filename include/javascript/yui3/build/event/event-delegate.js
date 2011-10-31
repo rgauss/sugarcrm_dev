@@ -1,21 +1,27 @@
 /*
- Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+ Copyright (c) 2010, Yahoo! Inc. All rights reserved.
  Code licensed under the BSD License:
- http://developer.yahoo.net/yui/license.txt
- version: 3.0.0
- build: 1549
+ http://developer.yahoo.com/yui/license.html
+ version: 3.3.0
+ build: 3167
  */
-YUI.add('event-delegate',function(Y){var Event=Y.Event,Lang=Y.Lang,delegates={},specialTypes={mouseenter:"mouseover",mouseleave:"mouseout"},resolveTextNode=function(n){try{if(n&&3==n.nodeType){return n.parentNode;}}catch(e){}
-return n;},delegateHandler=function(delegateKey,e,el){var target=resolveTextNode((e.target||e.srcElement)),tests=delegates[delegateKey],spec,ename,matched,fn,ev;var getMatch=function(el,selector,container){var returnVal;if(!el||el===container){returnVal=false;}
-else{returnVal=Y.Selector.test(el,selector)?el:getMatch(el.parentNode,selector,container);}
-return returnVal;};for(spec in tests){if(tests.hasOwnProperty(spec)){ename=tests[spec];fn=tests.fn;matched=null;if(Y.Selector.test(target,spec,el)){matched=target;}
-else if(Y.Selector.test(target,((spec.replace(/,/gi," *,"))+" *"),el)){matched=getMatch(target,spec,el);}
-if(matched){if(!ev){ev=new Y.DOMEventFacade(e,el);ev.container=ev.currentTarget;}
-ev.currentTarget=Y.Node.get(matched);Y.publish(ename,{contextFn:function(){return ev.currentTarget;}});if(fn){fn(ev,ename);}
-else{Y.fire(ename,ev);}}}}},attach=function(type,key,element){var focusMethods={focus:Event._attachFocus,blur:Event._attachBlur},attachFn=focusMethods[type],args=[type,function(e){delegateHandler(key,(e||window.event),element);},element];if(attachFn){return attachFn(args,{capture:true,facade:false});}
-else{return Event._attach(args,{facade:false});}},sanitize=Y.cached(function(str){return str.replace(/[|,:]/g,'~');});Y.Env.evt.plugins.delegate={on:function(type,fn,el,delegateType,spec){var args=Y.Array(arguments,0,true);args.splice(3,1);args[0]=delegateType;return Y.delegate.apply(Y,args);}};Event.delegate=function(type,fn,el,spec){if(!spec){return false;}
-var args=Y.Array(arguments,0,true),element=el,availHandle;if(Lang.isString(el)){element=Y.Selector.query(el,null,true);if(!element){availHandle=Event.onAvailable(el,function(){availHandle.handle=Event.delegate.apply(Event,args);},Event,true,false);return availHandle;}}
-element=Y.Node.getDOMNode(element);var guid=Y.stamp(element),ename='delegate:'+guid+type+sanitize(spec),delegateKey=type+guid,delegate=delegates[delegateKey],domEventHandle,ceHandle,listeners;if(!delegate){delegate={};if(specialTypes[type]){if(!Event._fireMouseEnter){return false;}
-type=specialTypes[type];delegate.fn=Event._fireMouseEnter;}
-domEventHandle=attach(type,delegateKey,element);Y.after(function(sub){if(domEventHandle.sub==sub){delete delegates[delegateKey];Y.detachAll(ename);}},domEventHandle.evt,"_delete");delegate.handle=domEventHandle;delegates[delegateKey]=delegate;}
-listeners=delegate.listeners;delegate.listeners=listeners?(listeners+1):1;delegate[spec]=ename;args[0]=ename;args.splice(2,2);ceHandle=Y.on.apply(Y,args);Y.after(function(){delegate.listeners=(delegate.listeners-1);if(delegate.listeners===0){delegate.handle.detach();}},ceHandle,"detach");return ceHandle;};Y.delegate=Event.delegate;},'3.0.0',{requires:['node-base']});
+YUI.add('event-delegate',function(Y){var toArray=Y.Array,YLang=Y.Lang,isString=YLang.isString,isObject=YLang.isObject,isArray=YLang.isArray,selectorTest=Y.Selector.test,detachCategories=Y.Env.evt.handles;function delegate(type,fn,el,filter){var args=toArray(arguments,0,true),query=isString(el)?el:null,typeBits,synth,container,categories,cat,i,len,handles,handle;if(isObject(type)){handles=[];if(isArray(type)){for(i=0,len=type.length;i<len;++i){args[0]=type[i];handles.push(Y.delegate.apply(Y,args));}}else{args.unshift(null);for(i in type){if(type.hasOwnProperty(i)){args[0]=i;args[1]=type[i];handles.push(Y.delegate.apply(Y,args));}}}
+return new Y.EventHandle(handles);}
+typeBits=type.split(/\|/);if(typeBits.length>1){cat=typeBits.shift();type=typeBits.shift();}
+synth=Y.Node.DOM_EVENTS[type];if(isObject(synth)&&synth.delegate){handle=synth.delegate.apply(synth,arguments);}
+if(!handle){if(!type||!fn||!el||!filter){return;}
+container=(query)?Y.Selector.query(query,null,true):el;if(!container&&isString(el)){handle=Y.on('available',function(){Y.mix(handle,Y.delegate.apply(Y,args),true);},el);}
+if(!handle&&container){args.splice(2,2,container);handle=Y.Event._attach(args,{facade:false});handle.sub.filter=filter;handle.sub._notify=delegate.notifySub;}}
+if(handle&&cat){categories=detachCategories[cat]||(detachCategories[cat]={});categories=categories[type]||(categories[type]=[]);categories.push(handle);}
+return handle;}
+delegate.notifySub=function(thisObj,args,ce){args=args.slice();if(this.args){args.push.apply(args,this.args);}
+var currentTarget=delegate._applyFilter(this.filter,args,ce),e,i,len,ret;if(currentTarget){currentTarget=toArray(currentTarget);e=args[0]=new Y.DOMEventFacade(args[0],ce.el,ce);e.container=Y.one(ce.el);for(i=0,len=currentTarget.length;i<len&&!e.stopped;++i){e.currentTarget=Y.one(currentTarget[i]);ret=this.fn.apply(this.context||e.currentTarget,args);if(ret===false){break;}}
+return ret;}};delegate.compileFilter=Y.cached(function(selector){return function(target,e){return selectorTest(target._node,selector,e.currentTarget._node);};});delegate._applyFilter=function(filter,args,ce){var e=args[0],container=ce.el,target=e.target||e.srcElement,match=[],isContainer=false;if(target.nodeType===3){target=target.parentNode;}
+args.unshift(target);if(isString(filter)){while(target){isContainer=(target===container);if(selectorTest(target,filter,(isContainer?null:container))){match.push(target);}
+if(isContainer){break;}
+target=target.parentNode;}}else{args[0]=Y.one(target);args[1]=new Y.DOMEventFacade(e,container,ce);while(target){if(filter.apply(args[0],args)){match.push(target);}
+if(target===container){break;}
+target=target.parentNode;args[0]=Y.one(target);}
+args[1]=e;}
+if(match.length<=1){match=match[0];}
+args.shift();return match;};Y.delegate=Y.Event.delegate=delegate;},'3.3.0',{requires:['node-base']});

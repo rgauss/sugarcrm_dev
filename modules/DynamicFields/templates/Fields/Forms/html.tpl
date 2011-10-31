@@ -67,8 +67,12 @@ SUGAR.ajaxLoad = true;
 {/if}
 {literal}
 document.popup_form.presave = function(){
-    var inst = tinyMCE.get("htmlarea").getContent();
-    document.getElementById('ext4').value =inst;
+    var tiny = tinyMCE.getInstanceById('htmlarea');
+    if ( (null != tiny) || ("undefined" != typeof(tiny)) ) {
+         document.getElementById('ext4').value = tiny.getContent();
+    } else {
+         document.getElementById('ext4').value = document.getElementById('htmlarea').value;
+    }
     document.getElementById('ext4').style.display = '';
 };
 </script>

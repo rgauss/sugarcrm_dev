@@ -41,6 +41,7 @@ if(!defined('sugarEntry'))define('sugarEntry', true);
  * and calls serve method which takes the request and send response back to the client  
  */
 ob_start();
+chdir(dirname(__FILE__).'/../../');
 require('include/entryPoint.php');
 require_once('soap/SoapError.php');
 require_once('SoapHelperWebService.php');

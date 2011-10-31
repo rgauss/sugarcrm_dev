@@ -479,8 +479,9 @@ class SugarChart {
 			if (isset($drill_down) && $drill_down){
 				if ($this->group_by[0] == 'm'){
 					$additional_param = '&date_closed_advanced=' . urlencode($key);					
-				}
-				else{
+				} else if ( $this->group_by[0] == 'sales_stage' ) {
+                    $additional_param = '&sales_stage_advanced[]='.urlencode(array_search($key,$GLOBALS['app_list_strings']['sales_stage_dom']));
+                } else{
 					$additional_param = "&" . $this->group_by[0] . "=" . urlencode($key);	
 				}
 				$url = $this->constructURL() . $additional_param;					
@@ -530,40 +531,64 @@ class SugarChart {
 			$processed = array();
 				
 			if (isset($drill_down) && $drill_down != ''){
-				for($i =0; $i < count($new_data[$groupByKey]); $i++){
-					if ($new_data[$groupByKey][$i][$group_by] == $groupByKey){
-						if ($drill_down == 'user_name'){
-							$drill_down_param = '&assigned_user_id[]=' . urlencode($new_data[$groupByKey][$i]['assigned_user_id']);
-						}
-						else if ($drill_down == 'm'){
-							$drill_down_param = '&date_closed_advanced=' . urlencode($new_data[$groupByKey][$i][$drill_down]);
-						}
-						else{
-							$paramValue = (isset($new_data[$groupByKey][$i][$drill_down."_dom_option"]) && $new_data[$groupByKey][$i][$drill_down."_dom_option"] != '') ? $new_data[$groupByKey][$i][$drill_down."_dom_option"] : $new_data[$groupByKey][$i][$drill_down];
-							$drill_down_param = '&' . $drill_down . '=' . urlencode($paramValue);
-						}
-						
-						if($this->is_currency) {
-						  $sub_amount = $this->formatNumber($this->convertCurrency($new_data[$groupByKey][$i]['total']));
-						  $sub_amount_formatted = $this->currency_symbol . $sub_amount . 'K';
-						  //bug: 38877 - do not format the amount for the value as it breaks the chart
-						  $sub_amount = $this->convertCurrency($new_data[$groupByKey][$i]['total']);
-						} else {
-						  $sub_amount = $new_data[$groupByKey][$i]['total'];
-						  $sub_amount_formatted = $sub_amount;
-						}
-						
-						$data .= $this->processDataGroup(4, $new_data[$groupByKey][$i][$drill_down],
-														    $sub_amount,
-														    $sub_amount_formatted,
-														    $url . $drill_down_param );
-						array_push($processed, $new_data[$groupByKey][$i][$drill_down]);
-					}
-				}
-				$not_processed = array_diff($this->super_set, $processed);
-				foreach ($not_processed as $title){
-					$data .= $this->processDataGroup(4, $title, 'NULL', '', $url);
-				}			
+				/*
+                                        * We have to iterate users in order they are in super_set for every group.  
+                                        * That is required for correct pileup user links to user colors in a chart.
+                                        */ 
+                                        foreach ($this->super_set as $superSetKey => $superSetValue)
+                                        {
+                                            $objectInSaleStage = false;
+                                            foreach ($value as $internalKey => $internalValue)
+                                            {
+                                                if ($internalValue[$drill_down] == $superSetValue)
+                                                {
+                                                    $objectInSaleStage = $value[$internalKey];
+                                                }
+                                            }
+
+                                            if ($objectInSaleStage)
+                                            {
+                                                if (isset($objectInSaleStage[$group_by]) && $objectInSaleStage[$group_by] == $groupByKey)
+                                                {
+                                                    if ($drill_down == 'user_name')
+                                                    {
+                                                        $drill_down_param = '&assigned_user_id[]=' . urlencode($objectInSaleStage['assigned_user_id']);
+                                                    } 
+                                                    else if ($drill_down == 'm')
+                                                    {
+                                                        $drill_down_param = '&date_closed_advanced=' . urlencode($objectInSaleStage[$drill_down]);
+                                                    } 
+                                                    else
+                                                    {
+                                                        $paramValue = (isset($objectInSaleStage[$drill_down . "_dom_option"]) && $objectInSaleStage[$drill_down . "_dom_option"] != '') ? $objectInSaleStage[$drill_down . "_dom_option"] : $objectInSaleStage[$drill_down];
+                                                        $drill_down_param = '&' . $drill_down . '=' . urlencode($paramValue);
+                                                    }
+
+                                                    if ($this->is_currency)
+                                                    {
+                                                        $sub_amount = $this->formatNumber($this->convertCurrency($objectInSaleStage['total']));
+                                                        $sub_amount_formatted = $this->currency_symbol . $sub_amount . 'K';
+                                                        //bug: 38877 - do not format the amount for the value as it breaks the chart
+                                                        $sub_amount = $this->convertCurrency($objectInSaleStage['total']);
+                                                    } 
+                                                    else
+                                                    {
+                                                        $sub_amount = $objectInSaleStage['total'];
+                                                        $sub_amount_formatted = $sub_amount;
+                                                    }
+
+                                                    $data .= $this->processDataGroup(4, $objectInSaleStage[$drill_down], $sub_amount, $sub_amount_formatted, $url . $drill_down_param);
+                                                } 
+                                                else
+                                                {
+                                                    $data .= $this->nullGroup($superSetValue, $url);
+                                                }
+                                            } 
+                                            else
+                                            {
+                                                $data .= $this->nullGroup($superSetValue, $url);
+                                            }
+                                        }
 			}
 
 			$data .= $this->tab('</subgroups>',3);
@@ -571,6 +596,10 @@ class SugarChart {
 		}
 		return $data;
 	}
+    
+        public function nullGroup($superSetValue, $url) {
+            return $this->processDataGroup(4, $superSetValue, 'NULL', '', $url);
+        }
     
     /**
      * returns a name for the XML File

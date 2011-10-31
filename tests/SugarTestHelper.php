@@ -98,6 +98,9 @@ $focus->retrieveSettings();
 $focus->saveSetting('system','adminwizard',1);
 
 // include the other test tools
+require_once 'SugarTestObjectUtilities.php';
+require_once 'SugarTestProjectUtilities.php';
+require_once 'SugarTestProjectTaskUtilities.php';
 require_once 'SugarTestUserUtilities.php';
 require_once 'SugarTestLangPackCreator.php';
 require_once 'SugarTestThemeUtilities.php';

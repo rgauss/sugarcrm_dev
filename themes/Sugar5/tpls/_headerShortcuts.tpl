@@ -35,13 +35,18 @@
  ********************************************************************************/
 
 *}
-{if count($SHORTCUT_MENU) > 0 && $MODULE_TAB != 'Home'}
+{* FG - Bug 41467 - Let Home module have Shortcuts *}
+{if count($SHORTCUT_MENU) > 0}
 <div id="shortcuts" class="headerList">
     <b style="white-space:nowrap;">{$APP.LBL_LINK_ACTIONS}:&nbsp;&nbsp;</b>
     <span>
     {foreach from=$SHORTCUT_MENU item=item}
     <span style="white-space:nowrap;">
-        <a href="{$item.URL}">{$item.IMAGE}&nbsp;<span>{$item.LABEL}</span></a>
+        {if $item.URL == "-"}
+          <a></a><span>&nbsp;</span>
+        {else}
+          <a href="{$item.URL}">{$item.IMAGE}&nbsp;<span>{$item.LABEL}</span></a>
+        {/if}
     </span>
     {/foreach}
     </span>

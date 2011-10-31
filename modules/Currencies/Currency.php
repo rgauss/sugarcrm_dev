@@ -471,30 +471,36 @@ function format_money($amount, $for_display = TRUE) {
  *(default ".").  Special case: when num_grp_sep is ".", it will return NULL as the num_grp_sep.
  * @return array Two element array, first item is num_grp_sep, 2nd item is dec_sep
  */
-function get_number_seperators($reset_sep = false) {
+function get_number_seperators($reset_sep = false) 
+{
 	global $current_user, $sugar_config;
 	
 	static $dec_sep = null;
 	static $num_grp_sep = null;
 	
-    if ( $reset_sep ) {
-        // This is typically only used during unit-tests
+    // This is typically only used during unit-tests
+    // TODO: refactor this. unit tests should not have static dependencies
+	if ($reset_sep) 
+	{
         $dec_sep = $num_grp_sep = null;
     }
 	
-	if($dec_sep == null) {
+	if ($dec_sep == null) 
+	{
 		$dec_sep = $sugar_config['default_decimal_seperator'];
-		if(!empty($current_user->id)){
-		$user_dec_sep = $current_user->getPreference('dec_sep');
-		$dec_sep =(empty($user_dec_sep) ? $sugar_config['default_decimal_seperator'] : $user_dec_sep);
+		if (!empty($current_user->id)) {
+		    $user_dec_sep = $current_user->getPreference('dec_sep');
+			$dec_sep = (empty($user_dec_sep) ? $sugar_config['default_decimal_seperator'] : $user_dec_sep);
+		}
 	}
-	}
-	if($num_grp_sep == null) {
+
+	if ($num_grp_sep == null) 
+	{
 		$num_grp_sep = $sugar_config['default_number_grouping_seperator'];
-		if(!empty($current_user->id)){
- 		$user_num_grp_sep = $current_user->getPreference('num_grp_sep');
-		$num_grp_sep =(empty($user_num_grp_sep) ? $sugar_config['default_number_grouping_seperator'] : $user_num_grp_sep);
-	}
+		if (!empty($current_user->id)) {
+ 		    $user_num_grp_sep = $current_user->getPreference('num_grp_sep');
+			$num_grp_sep = (empty($user_num_grp_sep) ? $sugar_config['default_number_grouping_seperator'] : $user_num_grp_sep);
+		}
 	}
 	
 	return array($num_grp_sep, $dec_sep);	
@@ -547,7 +553,7 @@ function getCurrencyDropDown($focus, $field='currency_id', $value='', $view='Det
 		$currency->setCurrencyFields($currency_fields);
 		$html = '<select name="'. $field. '" ';
 		if($view != 'MassUpdate')
-			$html .= 'onchange="CurrencyConvertAll();"';
+			$html .= 'onchange="CurrencyConvertAll(this.form);"';
 		$html .= '>'. $selectCurrency . '</select>';
 		if($view != 'MassUpdate')
 			$html .= $currency->getJavascript();

@@ -38,7 +38,7 @@
 
 <!-- BEGIN: main -->
 <!-- BEGIN: SearchHeader -->
-<script type="text/javascript" src="include/JSON.js?s={SUGAR_VERSION}&amp;c={JS_CUSTOM_VERSION}"></script> <script type="text/javascript" src="modules/Emails/javascript/email_popup_helper.js?s={SUGAR_VERSION}&amp;c={JS_CUSTOM_VERSION}"></script> 
+<script type="text/javascript" src="modules/Emails/javascript/email_popup_helper.js?s={SUGAR_VERSION}&amp;c={JS_CUSTOM_VERSION}"></script> 
 <form action="index.php" method="post" name="popup_query_form" id="popup_query_form">
 	<table cellpadding="0" cellspacing="0" border="0" width="100%" class="edit view">
 		<tr>
@@ -66,7 +66,7 @@
 							<input type="hidden" name="populate_parent" value="false" />
 							<input type="hidden" name="record_id" value="" />
 							<input type="hidden" name="html" value="Email_picker" />
-							<input type="submit" name="button" class="button" title="{APP.LBL_SEARCH_BUTTON_TITLE}" accesskey="{APP.LBL_SEARCH_BUTTON_KEY}" value="{APP.LBL_SEARCH_BUTTON_LABEL}" />
+							<input type="submit" name="button" class="button" id="search_form_submit" title="{APP.LBL_SEARCH_BUTTON_TITLE}" accesskey="{APP.LBL_SEARCH_BUTTON_KEY}" value="{APP.LBL_SEARCH_BUTTON_LABEL}" />
 						</td>
 					</tr>
 					<tr>
@@ -88,12 +88,7 @@
 		</tr>
 	</table>
 </form>
-<script type="text/javascript">
-<!--
-/* initialize the popup request from the parent */
-window.document.forms['popup_query_form'].request_data.value = JSON.stringify(window.opener.get_popup_request_data());
--->
-</script>
+
 <p>
 <div id='addformlink'>
 	{CREATECONTACT} 

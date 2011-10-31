@@ -178,7 +178,7 @@ if (isset($_POST['campaign_id']) && !empty($_POST['campaign_id'])) {
     				echo '<form name="redirect" action="' .$_POST['redirect_url']. '" method="GET">';
     
     				foreach($_POST as $param => $value) {
-    					if($param != 'redirect_url' ||$param != 'submit') {
+    					if($param != 'redirect_url' || $param != 'submit') {
     						echo '<input type="hidden" name="'.$param.'" value="'.$value.'">';
     					}
     				}

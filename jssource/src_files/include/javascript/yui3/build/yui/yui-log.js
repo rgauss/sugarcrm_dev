@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('yui-log', function(Y) {
 
@@ -13,13 +13,14 @@ YUI.add('yui-log', function(Y) {
  * @module yui
  * @submodule yui-log
  */
-(function() {
 
 var INSTANCE = Y,
     LOGEVENT = 'yui:log',
     UNDEFINED = 'undefined',
-    LEVELS = { debug: 1, info: 1, warn: 1, error: 1 },
-    _published;
+    LEVELS = { debug: 1,
+               info: 1,
+               warn: 1,
+               error: 1 };
 
 /**
  * If the 'debug' config is true, a 'yui:log' event will be
@@ -35,33 +36,35 @@ var INSTANCE = Y,
  * @param  {String}  msg  The message to log.
  * @param  {String}  cat  The log category for the message.  Default
  *                        categories are "info", "warn", "error", time".
- *                        Custom categories can be used as well. (opt)
- * @param  {String}  src  The source of the the message (opt)
- * @param  {boolean} silent If true, the log event won't fire
- * @return {YUI}      YUI instance
+ *                        Custom categories can be used as well. (opt).
+ * @param  {String}  src  The source of the the message (opt).
+ * @param  {boolean} silent If true, the log event won't fire.
+ * @return {YUI}      YUI instance.
  */
 INSTANCE.log = function(msg, cat, src, silent) {
-    var Y = INSTANCE, c = Y.config, bail = false, excl, incl, m, f;
+    var bail, excl, incl, m, f,
+        Y = INSTANCE,
+        c = Y.config,
+        publisher = (Y.fire) ? Y : YUI.Env.globalEvents;
     // suppress log message if the config is off or the event stack
     // or the event call stack contains a consumer of the yui:log event
     if (c.debug) {
         // apply source filters
         if (src) {
-            excl = c.logExclude; 
+            excl = c.logExclude;
             incl = c.logInclude;
-
             if (incl && !(src in incl)) {
                 bail = 1;
             } else if (excl && (src in excl)) {
                 bail = 1;
             }
         }
-
         if (!bail) {
-
             if (c.useBrowserConsole) {
                 m = (src) ? src + ': ' + msg : msg;
-                if (typeof console != UNDEFINED && console.log) {
+                if (Y.Lang.isFunction(c.logFn)) {
+                    c.logFn.call(Y, msg, cat, src);
+                } else if (typeof console != UNDEFINED && console.log) {
                     f = (cat && console[cat] && (cat in LEVELS)) ? cat : 'log';
                     console[f](m);
                 } else if (typeof opera != UNDEFINED) {
@@ -69,19 +72,17 @@ INSTANCE.log = function(msg, cat, src, silent) {
                 }
             }
 
-            if (Y.fire && !silent) {
-                if (!_published) {
-                    Y.publish(LOGEVENT, {
-                        broadcast: 2,
-                        emitFacade: 1
+            if (publisher && !silent) {
+
+                if (publisher == Y && (!publisher.getEvent(LOGEVENT))) {
+                    publisher.publish(LOGEVENT, {
+                        broadcast: 2
                     });
-
-                    _published = 1;
-
                 }
-                Y.fire(LOGEVENT, {
-                    msg: msg, 
-                    cat: cat, 
+
+                publisher.fire(LOGEVENT, {
+                    msg: msg,
+                    cat: cat,
                     src: src
                 });
             }
@@ -99,16 +100,14 @@ INSTANCE.log = function(msg, cat, src, silent) {
  * @param  {String}  msg  The message to log.
  * @param  {String}  cat  The log category for the message.  Default
  *                        categories are "info", "warn", "error", time".
- *                        Custom categories can be used as well. (opt)
- * @param  {String}  src  The source of the the message (opt)
- * @param  {boolean} silent If true, the log event won't fire
- * @return {YUI}      YUI instance
+ *                        Custom categories can be used as well. (opt).
+ * @param  {String}  src  The source of the the message (opt).
+ * @param  {boolean} silent If true, the log event won't fire.
+ * @return {YUI}      YUI instance.
  */
 INSTANCE.message = function() {
     return INSTANCE.log.apply(INSTANCE, arguments);
 };
 
-})();
 
-
-}, '3.0.0' ,{requires:['yui-base']});
+}, '3.3.0' ,{requires:['yui-base']});

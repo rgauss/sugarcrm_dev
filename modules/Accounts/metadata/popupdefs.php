@@ -127,6 +127,7 @@ $popupMeta = array(
 		'billing_address_city', 
 		'billing_address_state',
 		'billing_address_country',
+		'email',
 		array(
 			'name' => 'assigned_user_id', 
 			'label'=>'LBL_ASSIGNED_TO', 

@@ -137,6 +137,8 @@ $params = array('massupdate' => true, 'export' => false, 'handleMassupdate' => f
 $ListView->displayColumns = $displayColumns;
 $ListView->lvd->listviewName = $focus->merge_module; //27633, this will make the $module to be merge_module instead of 'MergeRecords'. Then the key of  offset and orderby will be correct.
 $where = $focus->generate_where_statement($focus->create_where_statement());
+$ListView->showMassupdateFields=false;
+$ListView->email=false;
 $ListView->setup($this->bean, 'include/ListView/ListViewGeneric.tpl', $where, $params);
 $ListView->force_mass_update=true;
 $ListView->show_mass_update_form=false;

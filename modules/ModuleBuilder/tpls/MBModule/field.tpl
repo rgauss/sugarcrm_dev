@@ -120,4 +120,4 @@ function validate_type_selection(){
 {/literal}
 ModuleBuilder.helpSetup('fieldsEditor','{$help_group}');
 </script>
-
+<script>//Need this to work in FF4. Bug where last script isn't executed.</script>

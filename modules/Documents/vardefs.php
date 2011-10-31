@@ -125,7 +125,7 @@ $dictionary['Document'] = array('table' => 'documents',
     'type' => 'enum',
     'len' => 100,
     'options' => 'document_category_dom',
-    'reportable'=>false,
+    'reportable'=>true,
   ),
 
   'subcategory_id' =>
@@ -135,7 +135,7 @@ $dictionary['Document'] = array('table' => 'documents',
     'type' => 'enum',
     'len' => 100,
     'options' => 'document_subcategory_dom',
-    'reportable'=>false,
+    'reportable'=>true,
   ),
 
   'status_id' =>

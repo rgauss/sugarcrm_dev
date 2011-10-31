@@ -127,16 +127,16 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 						field.innerHTML = CurrencySymbols[id] + formatNumber(toDecimal(ConvertFromDollar(ConvertToDollar(unformattedNumber, lastRate), ConversionRates[id])), num_grp_sep, dec_sep, 2, 2);
 						lastRate = ConversionRates[id];
 					}
-					function CurrencyConvertAll(){
+					function CurrencyConvertAll(form){
                         try {
-                        var id = document.EditView.currency_id.options[document.EditView.currency_id.selectedIndex].value;
+                        var id = form.currency_id.options[form.currency_id.selectedIndex].value;
 						var fields = new Array();
 						
 						for(i in currencyFields){
 							var field = currencyFields[i];
-							if(typeof(document.EditView[field]) != 'undefined'){
-								document.EditView[field].value = unformatNumber(document.EditView[field].value, num_grp_sep, dec_sep);
-								fields.push(document.EditView[field]);
+							if(typeof(form[field]) != 'undefined'){
+								form[field].value = unformatNumber(form[field].value, num_grp_sep, dec_sep);
+								fields.push(form[field]);
 							}
 							
 						}

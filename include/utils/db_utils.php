@@ -189,14 +189,41 @@ function run_sql_file( $filename )
     if ($ensureUnique)
     {
         $md5str = md5($name);
-        $tail = substr ( $name, -11) ;
+        $tail = substr ( $name, -8) ;
         $temp = substr($md5str , strlen($md5str)-4 );
-        $result = substr ( $name, 0, 10) . $temp . $tail ;
+        $result = substr ( $name, 0, 7) . $temp . $tail ;
     }else if ($len > ($maxLen - 5))
     {
-        $result = substr ( $name, 0, 11) . substr ( $name, 11 - $maxLen + 5);
+        $result = substr ( $name, 0, 8) . substr ( $name, 8 - $maxLen + 5);
     }
     return strtolower ( $result ) ;
 }
+
+/**
+ * Utility to perform the check during install to ensure a database name entered by the user
+ * is valid based on the type of database server
+ * @param string $name Proposed name for the DB
+ * @param string $dbType Type of database server
+ * @return bool true or false based on the validity of the DB name
+ */
+function isValidDBName($name, $dbType) {
+    switch ($dbType){
+        case 'mssql':
+            $pattern = '/^[0-9#@]+|[\"\'\*\/\\?\:\\<\>\-\ \&\!\(\)\[\]\{\}\;\,\.\`\~\|\\\\]+/i';
+            break;
+        case 'oci8':
+            $pattern = '/[\#\"\'\*\/\\?\:\\<\>\-\ \&\!\(\)\[\]\{\}\;\,\.\`\~\|\\\\]+/i';
+            break;
+        case 'mysql':
+            $pattern = '/[\/\.\\\\]/i';
+            break;
+        default:
+            $pattern = '/[\/\.\\\\]/i';
+            break;
+    }
+    return preg_match($pattern, $name)==0?true:false;
+}
+
+
 
 ?>

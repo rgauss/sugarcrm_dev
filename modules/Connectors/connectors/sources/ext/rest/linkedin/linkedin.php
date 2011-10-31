@@ -42,10 +42,10 @@ class ext_rest_linkedin extends ext_rest {
 		$this->_enable_in_wizard = false;
 		$this->_enable_in_hover = true;
 	}
-	
+
 	/*
 	 * getItem
-	 * 
+	 *
 	 * As the linked in connector does not have a true API call, we simply
 	 * override this abstract method
 	 */
@@ -54,16 +54,11 @@ class ext_rest_linkedin extends ext_rest {
 
 	/*
 	 * getList
-	 * 
+	 *
 	 * As the linked in connector does not have a true API call, we simply
 	 * override this abstract method
-	 */	
+	 */
 	public function getList($args=array(), $module=null){}
-	
-	
-	public function __destruct(){
-		parent::__destruct();
-	}
 }
- 
+
 ?>

@@ -58,7 +58,7 @@ class UpgradeHistory extends SugarBean
     var $id_name;
     var $manifest;
     var $enabled;
-
+    var $tracker_visibility = false;
     var $table_name = "upgrade_history";
     var $object_name = "UpgradeHistory";
     var $column_fields = Array( "id", "filename", "md5sum", "type", "version", "status", "date_entered" );

@@ -86,7 +86,7 @@ class TabGroupHelper{
         	   continue;
         	
         	$labelID = (!empty($params['tablabelid_' . $index]))?$params['tablabelid_' . $index]: 'LBL_GROUPTAB' . $count . '_'. time();
-        	$labelValue = $params['tablabel_' . $index];
+        	$labelValue = remove_xss(from_html($params['tablabel_' . $index]));
         	$app_strings = return_application_language($grouptab_lang);
         	if(empty($app_strings[$labelID]) || $app_strings[$labelID] != $labelValue){
         		$contents = return_custom_app_list_strings_file_contents($grouptab_lang);

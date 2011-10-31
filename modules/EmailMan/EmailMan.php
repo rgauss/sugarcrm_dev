@@ -802,11 +802,18 @@ class EmailMan extends SugarBean{
 
 			//parse and replace bean variables.
             $macro_nv=array();
+            $focus_name = 'Contacts';
+            if($module->module_dir == 'Accounts')
+            {
+                $focus_name = 'Accounts';
+            }
+            
+
 			$template_data=  $this->current_emailtemplate->parse_email_template(array('subject'=>$this->current_emailtemplate->subject,
 																					  'body_html'=>$this->current_emailtemplate->body_html,
 																					  'body'=>$this->current_emailtemplate->body,
 																					  )
-																					  ,'Contacts', $module
+																					  ,$focus_name, $module
                                                                                       ,$macro_nv);
 
             //add email address to this list.

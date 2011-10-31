@@ -105,7 +105,22 @@ class ImportViewStep1 extends SugarView
     	
 	    return $returnArray;
     }
-    
+	
+    private function _retrieveParams() {
+		$selectedData = new stdClass();
+		foreach ($_POST as $key => &$value) {
+			trim(strip_tags($value));
+			$selectedData->$key = $value;
+		}
+		if (isset($selectedData->custom_enclosure)) {			
+			if ($selectedData->custom_enclosure != '&quot;' and $selectedData->custom_enclosure != '&#039;' and $selectedData->custom_enclosure != '') {
+				$selectedData->custom_other = true; 
+			}
+		}
+		$this->ss->assign('selectedData', $selectedData);
+		return $selectedData;
+	}
+	
  	/** 
      * @see SugarView::display()
      */
@@ -113,13 +128,15 @@ class ImportViewStep1 extends SugarView
     {
         global $mod_strings, $app_strings, $current_user;
         global $sugar_config;
+		
+	$selectedData = $this->_retrieveParams();
         
         $this->ss->assign("MODULE_TITLE", $this->getModuleTitle());
         $this->ss->assign("DELETE_INLINE_PNG",  SugarThemeRegistry::current()->getImage('delete_inline','align="absmiddle" alt="'.$app_strings['LNK_DELETE'].'" border="0"'));
         $this->ss->assign("PUBLISH_INLINE_PNG",  SugarThemeRegistry::current()->getImage('publish_inline','align="absmiddle" alt="'.$mod_strings['LBL_PUBLISH'].'" border="0"'));
         $this->ss->assign("UNPUBLISH_INLINE_PNG",  SugarThemeRegistry::current()->getImage('unpublish_inline','align="absmiddle" alt="'.$mod_strings['LBL_UNPUBLISH'].'" border="0"'));
         $this->ss->assign("IMPORT_MODULE", $_REQUEST['import_module']);
-        $this->ss->assign("JAVASCRIPT", $this->_getJS());
+        $this->ss->assign("JAVASCRIPT", $this->_getJS(isset($selectedData->source) ? $selectedData->source : false));
         
         
         // handle publishing and deleting import maps
@@ -235,9 +252,15 @@ class ImportViewStep1 extends SugarView
     /**
      * Returns JS used in this view
      */
-    private function _getJS()
+    private function _getJS($sourceType = false)
     {
         global $mod_strings;
+		
+	if (!$sourceType) {
+		$sourceType = 'csv';
+	}
+	$getElementById = "document.getElementById('source_{$sourceType}')";
+	$sourceType = "defineEnclosureSelectPosition('{$sourceType}', {$getElementById});";
         
         return <<<EOJAVASCRIPT
 <script type="text/javascript">
@@ -283,13 +306,13 @@ document.getElementById('gonext').onclick = function()
 
 YAHOO.util.Event.onDOMReady(function()
 { 
-    var inputs = document.getElementsByTagName('input');
-    for (var i = 0; i < inputs.length; ++i ){ 
-        if (inputs[i].name == 'source' ) {
-            inputs[i].onclick = function() 
+    var defineEnclosureSelectPosition = function(sourceType, inputElement) 
             {
-                parentRow = this.parentNode.parentNode;
-                switch(this.value) {
+		if (typeof (sourceType) == 'undefined') {
+			sourceType = this.value;
+		}
+                parentRow = inputElement.parentNode.parentNode;
+                switch(sourceType) {
                 case 'other':
                     enclosureRow = document.getElementById('customEnclosure').parentNode.removeChild(document.getElementById('customEnclosure'));
                     parentRow.parentNode.insertBefore(enclosureRow, document.getElementById('customDelimiter').nextSibling);
@@ -307,8 +330,16 @@ YAHOO.util.Event.onDOMReady(function()
                     document.getElementById('customEnclosure').style.display = 'none';
                 }
             }
+
+    var inputs = document.getElementsByTagName('input');
+    for (var i = 0; i < inputs.length; ++i ){ 
+        if (inputs[i].name == 'source' ) {
+            inputs[i].onclick = function () {
+		defineEnclosureSelectPosition(this.value, this);
+	  }
         }
     }
+	{$sourceType}
 });
 -->
 </script>

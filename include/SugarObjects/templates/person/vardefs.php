@@ -75,6 +75,7 @@ $vardefs =array(
 			'rname' => 'name',
 			'vname' => 'LBL_NAME',
 			'type' => 'name',
+			'link' => true, // bug 39288 
 			'fields' => array('first_name', 'last_name'),
 			'sort_on' => 'last_name',
 			'source' => 'non-db',
@@ -134,6 +135,20 @@ $vardefs =array(
 			'comment' => 'Home phone number of the contact',
             'merge_filter' => 'enabled',
 		),
+		//bug 42902
+		'email'=> array(
+			'name' => 'email',
+			'type' => 'email',
+			'query_type' => 'default',
+			'source' => 'non-db',
+			'operator' => 'subquery',
+			'subquery' => 'SELECT eabr.bean_id FROM email_addr_bean_rel eabr JOIN email_addresses ea ON (ea.id = eabr.email_address_id) WHERE eabr.deleted=0 AND ea.email_address LIKE',
+			'db_field' => array(
+				'id',
+			),
+			'vname' =>'LBL_ANY_EMAIL',
+			'studio' => array('visible'=>false, 'searchview'=>true),
+		),
 	'phone_mobile' =>
 		array (
 			'name' => 'phone_mobile',
@@ -190,7 +205,8 @@ $vardefs =array(
 			'source'	=> 'non-db',
 			'group'=>'email1',
             'merge_filter' => 'enabled',
-		    'studio' => array('editField' => true),
+		    'studio' => array('editField' => true, 'searchview' => false, 'popupsearch' => false), // bug 46859 
+			
 		),
 	'email2' => 
 		array(
@@ -223,6 +239,7 @@ $vardefs =array(
 		    'massupdate' => false,
 			'studio'=>'false',
 		),
+		
 	'primary_address_street' =>
 		array (
 			'name' => 'primary_address_street',
@@ -376,6 +393,7 @@ $vardefs =array(
 			'comment' => 'Phone number of the assistant of the contact',
             'merge_filter' => 'enabled',
 		),
+		
 	'email_addresses_primary' => 
 		array (
             'name' => 'email_addresses_primary',

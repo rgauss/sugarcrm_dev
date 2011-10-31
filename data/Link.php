@@ -94,6 +94,7 @@ class Link {
 
 		$this->_db = DBManagerFactory::getInstance();
 
+	
 		//Following behavior is tied to a property(ignore_role) value in the vardef. It alters the values of 2 properties, ignore_role_filter and add_distinct.
 		//the property values can be altered again before any requests are made.
 		if (!empty($fieldDef) && is_array($fieldDef)) {

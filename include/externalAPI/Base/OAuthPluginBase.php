@@ -40,9 +40,19 @@ require_once('include/externalAPI/Base/ExternalAPIBase.php');
 class OAuthPluginBase extends ExternalAPIBase implements ExternalOAuthAPIPlugin {
     public $authMethod = 'oauth';
     protected $oauthParams = array();
+    protected $oauth_keys_initialized = false;
 
     public function __construct()
     {
+    }
+
+    /**
+     * Setup oauth parameters from connector
+     */
+    public function setupOauthKeys()
+    {
+        if($this->oauth_keys_initialized) return;
+
         $connector = $this->getConnector();
         if(!empty($connector)) {
             $cons_key = $connector->getProperty('oauth_consumer_key');
@@ -54,6 +64,7 @@ class OAuthPluginBase extends ExternalAPIBase implements ExternalOAuthAPIPlugin 
                 $this->oauthParams['consumerSecret'] = $cons_secret;
             }
         }
+        $this->oauth_keys_initialized = true;
     }
 
     /**
@@ -137,7 +148,7 @@ class OAuthPluginBase extends ExternalAPIBase implements ExternalOAuthAPIPlugin 
      */
     public function getOauth()
     {
-
+        $this->setupOauthKeys();
         $oauth = new SugarOAuth($this->oauthParams['consumerKey'], $this->oauthParams['consumerSecret'], $this->getOauthParams());
 
         if ( isset($this->oauth_token) && !empty($this->oauth_token) ) {
@@ -160,11 +171,11 @@ class OAuthPluginBase extends ExternalAPIBase implements ExternalOAuthAPIPlugin 
             $oauthReq = $this->getOauthRequestURL();
             $callback_url = $sugar_config['site_url'].'/index.php?module=EAPM&action=oauth&record='.$this->eapmBean->id;
             $callback_url = $this->formatCallbackURL($callback_url);
-            
+
             $GLOBALS['log']->debug("OAuth request token: {$oauthReq} callback: $callback_url");
-            
+
             $request_token_info = $oauth->getRequestToken($oauthReq, $callback_url);
-            
+
             $GLOBALS['log']->debug("OAuth token: ".var_export($request_token_info, true));
 
             if(empty($request_token_info['oauth_token_secret']) || empty($request_token_info['oauth_token'])){

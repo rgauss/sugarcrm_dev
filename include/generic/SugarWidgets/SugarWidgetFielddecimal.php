@@ -42,7 +42,16 @@ class SugarWidgetFieldDecimal extends SugarWidgetFieldInt
  function displayListPlain($layout_def)
  {
  	
-     return format_number(parent::displayListPlain($layout_def), 2, 2);	
+     //Bug40995
+	if($layout_def['precision']!='')
+	 {
+		return format_number(parent::displayListPlain($layout_def), $layout_def['precision'], $layout_def['precision']);
+	 }
+	 //Bug40995
+	 else
+	 {
+		return format_number(parent::displayListPlain($layout_def), 2, 2);
+	 }
  }
 }
 

@@ -38,7 +38,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 
 
 require_once('include/generic/SugarWidgets/SugarWidget.php');
-
+require_once('include/generic/SugarWidgets/SugarWidgetFieldint.php');
 
 global $current_user;
 

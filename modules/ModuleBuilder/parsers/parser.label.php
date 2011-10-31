@@ -62,10 +62,9 @@ class ParserLabel extends ModuleBuilderParser
         {
             if (preg_match ( '/^label_/', $key ) && strcmp ( $value, 'no_change' ) != 0)
             {
-                $labels [ strtoupper(substr ( $key, 6 )) ] = $value ;
+                $labels [ strtoupper(substr ( $key, 6 )) ] = remove_xss(from_html($value),false);
             }
         }
-
         if (!empty($this->packageName)) //we are in Module builder
         {
             return self::addLabels ( $language, $labels, $this->moduleName, "custom/modulebuilder/packages/{$this->packageName}/modules/{$this->moduleName}/language" ) ;
@@ -73,6 +72,80 @@ class ParserLabel extends ModuleBuilderParser
         {
             return self::addLabels ( $language, $labels, $this->moduleName ) ;
         }
+    }
+
+    /*
+     * Remove a label from the language pack for a module
+     * @param string $language      Language key, for example 'en_us'
+     * @param string $label         The label to remove
+     * @param string $labelvalue    The value of the label to remove
+     * @param string $moduleName    Name of the module to which to add these labels
+     * @param string $basepath      base path of the language file
+     * @param string $forRelationshipLabel      whether this is a relationship label
+     */
+    static function removeLabel($language, $label, $labelvalue, $moduleName, $basepath = null, $forRelationshipLabel = false) {
+        $GLOBALS [ 'log' ]->debug ( "ParserLabel->removeLabels($language, \$label, \$labelvalue, $moduleName, $basepath );" ) ;
+        if (is_null ( $basepath ))
+        {
+            $deployedModule = true ;
+            $basepath = "custom/modules/$moduleName/language" ;
+            if($forRelationshipLabel){
+            	$basepath = "custom/modules/$moduleName/Ext/Language" ;
+            }
+            if (! is_dir ( $basepath ))
+            {
+                $GLOBALS ['log']->debug("$basepath is not a directory.");
+                return false;
+            }
+        }
+
+        $filename = "$basepath/$language.lang.php" ;
+        if($forRelationshipLabel){
+        	$filename = "$basepath/$language.lang.ext.php" ;
+     	}
+
+        $dir_exists = is_dir ( $basepath ) ;
+
+        $mod_strings = array ( ) ;
+
+        if ($dir_exists)
+        {
+            if (file_exists ($filename))
+            {
+                // obtain $mod_strings
+                include ($filename) ;
+            } else {
+                $GLOBALS ['log']->debug("file $filename does not exist.");
+                return false;
+            }
+        } else {
+            $GLOBALS ['log']->debug("directory $basepath does not exist.");
+            return false ;
+        }
+
+        $changed = false ;
+
+        if (isset($mod_strings[$label]) && $mod_strings[$label]==$labelvalue) {
+            unset($mod_strings[$label]);
+            $changed = true;
+        }
+
+        if ($changed)
+        {
+            if (! write_array_to_file ( "mod_strings", $mod_strings, $filename )) {
+                $GLOBALS [ 'log' ]->fatal ( "Could not write $filename" ) ;
+            } else {
+                // if we have a cache to worry about, then clear it now
+                if ($deployedModule) {
+                    $GLOBALS ['log']->debug ( "PaserLabel->addLabels: clearing language cache" ) ;
+                    $cache_key = "module_language." . $language . $moduleName ;
+                    sugar_cache_clear ( $cache_key ) ;
+                    LanguageManager::clearLanguageCache ( $moduleName, $language ) ;
+                }
+            }
+        }
+
+        return true ;
     }
 
     /*

@@ -116,7 +116,7 @@
 				<th scope='col' width='{$params.width}%' nowrap="nowrap">
 					<div style='white-space: nowrap;'width='100%' align='{$params.align|default:'left'}'>
 	                {if $params.sortable|default:true}              
-		                <a href='#' onclick='location.href="{$pageData.urls.orderBy}{$params.orderBy|default:$colHeader|lower}"; return sListView.save_checks(0, "{$moduleString}");' class='listViewThLinkS1'>{sugar_translate label=$params.label module=$pageData.bean.moduleDir}&nbsp;&nbsp;
+		                <a href="{$pageData.urls.orderBy}{$params.orderBy|default:$colHeader|lower}" onclick='sListView.save_checks(0, "{$moduleString}");' class='listViewThLinkS1'>{sugar_translate label=$params.label module=$pageData.bean.moduleDir}</a>&nbsp;&nbsp;
 						{if $params.orderBy|default:$colHeader|lower == $pageData.ordering.orderBy}
 							{if $pageData.ordering.sortOrder == 'ASC'}
 								{capture assign="imageName"}arrow_down.{$arrowExt}{/capture}
@@ -129,7 +129,6 @@
 							{capture assign="imageName"}arrow.{$arrowExt}{/capture}
 							<img border='0' src='{sugar_getimagepath file=$imageName}' width='{$arrowWidth}' height='{$arrowHeight}' align='absmiddle' alt='{$arrowAlt}'>
 						{/if}
-						</a>
 					{else}
 						{sugar_translate label=$params.label module=$pageData.bean.moduleDir}
 					{/if}

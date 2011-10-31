@@ -57,7 +57,10 @@ function checkForDuplicates($prefix){
 	}else{
 		$query = $baseQuery ."  last_name = '". $_POST[$prefix.'last_name'] ."'";
 	}
-
+	if(!empty($_POST[$prefix.'record'])) {
+		$query .= " AND  id != '". $_POST[$prefix.'record'] ."'";
+	}
+	
     $rows = array();
     global $db;
 	$result = $db->query($query);
@@ -603,7 +606,7 @@ function handleSave($prefix, $redirect=true, $useRequired=false){
 	}
 
     
-	if (empty($_POST['record']) && empty($_POST['dup_checked'])) {
+	if (empty($_POST['dup_checked'])) {
 
 		$duplicateContacts = $this->checkForDuplicates($prefix);
 		if(isset($duplicateContacts)){
@@ -801,7 +804,13 @@ function handleRedirect($return_id){
         $return_id = $_POST['return_id'];
 	}
 
-	header("Location: index.php?action=$return_action&module=$return_module&record=$return_id");
+	//eggsurplus Bug 23816: maintain VCR after an edit/save. If it is a duplicate then don't worry about it. The offset is now worthless.
+ 	$redirect_url = "Location: index.php?action=$return_action&module=$return_module&record=$return_id";
+ 	if(isset($_REQUEST['offset']) && empty($_REQUEST['duplicateSave'])) {
+ 	    $redirect_url .= "&offset=".$_REQUEST['offset'];
+ 	}
+    	
+    header($redirect_url);
 }
 
 }

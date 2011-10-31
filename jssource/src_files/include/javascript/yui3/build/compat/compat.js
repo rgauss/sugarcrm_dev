@@ -1,20 +1,24 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('compat', function(Y) {
 
 
-var COMPAT_ARG = '~yui|2|compat~';
+/*global YAHOO*/
+/*global YUI*/
+/*global YUI_config*/
+
+var COMPAT_ARG = '~yui|2|compat~', o, L;
 
 
 if (window.YAHOO != YUI) {
 
     // get any existing YAHOO obj props
-    var o = (window.YAHOO) ? YUI.merge(window.YAHOO) : null;
+    o = (window.YAHOO) ? YUI.merge(window.YAHOO) : null;
 
     // Make the YUI global the YAHOO global
     window.YAHOO = YUI;
@@ -31,7 +35,7 @@ Y.namespace("util", "widget", "example");
 // case/location change
 Y.env = (Y.env) ? Y.mix(Y.env, Y.Env) : Y.Env;
 Y.lang = (Y.lang) ? Y.mix(Y.lang, Y.Lang) : Y.Lang;
-Y.env.ua = Y.UA; 
+Y.env.ua = Y.UA;
 
 // support Y.register
 Y.mix(Y.env, {
@@ -42,22 +46,29 @@ Y.mix(Y.env, {
         }
 });
 
-var L = Y.lang;
+L = Y.lang;
 
-// add old lang properties 
+// add old lang properties
 Y.mix(L, {
 
     augmentObject: function(r, s) {
-        var a = arguments, wl = (a.length > 2) ? Y.Array(a, 2, true) : null;
-        return Y.mix(r, s, (wl), wl);
-    },
- 
-    augmentProto: function(r, s) {
-        var a = arguments, wl = (a.length > 2) ? Y.Array(a, 2, true) : null;
-        return Y.mix(r, s, (wl), wl, 1);
+        var a = arguments, wl = (a.length > 2) ? Y.Array(a, 2, true) : null,
+            ov = (wl), args = [r, s, ov];
+
+        if (wl && wl[0] !== true) {
+            args.push(wl);
+        }
+
+        return Y.mix.apply(Y, args);
     },
 
-    // extend: Y.bind(Y.extend, Y), 
+    augmentProto: function(r, s) {
+        var a = arguments, wl = (a.length > 2) ? Y.Array(a, 2, true) : null,
+            ov = (wl), args = [r, s, ov];
+        return Y.augment.apply(Y, args);
+    },
+
+    // extend: Y.bind(Y.extend, Y),
     extend: Y.extend,
     // merge: Y.bind(Y.merge, Y)
     merge: Y.merge
@@ -99,7 +110,7 @@ Y.mix(Y, {
 });
 
 // add old load listeners
-if ("undefined" !== typeof YAHOO_config) {
+if ("undefined" != typeof YAHOO_config) {
     var l=YAHOO_config.listener,ls=Y.Env.listeners,unique=true,i;
     if (l) {
         // if YAHOO is loaded multiple times we need to check to see if
@@ -116,14 +127,14 @@ if ("undefined" !== typeof YAHOO_config) {
         }
     }
 }
-    
+
 // add old registration for yahoo
-Y.register("yahoo", Y, {version: "3.0.0", build: "1549"});
+Y.register("yahoo", Y, {version: "3.3.0", build: "3167"});
 
 if (Y.Event) {
 
-    var o = {
-        
+    o = {
+
         /**
          * Safari detection
          * @property isSafari
@@ -132,7 +143,7 @@ if (Y.Event) {
          * @deprecated use Y.Env.UA.webkit
          */
         isSafari: Y.UA.webkit,
-        
+
         /**
          * webkit version
          * @property webkit
@@ -161,9 +172,9 @@ if (Y.Event) {
             25: 9      // SHIFT-TAB (Safari provides a different key code in
                        // this case, even though the shiftKey modifier is set)
         },
-        
+
         /**
-         * IE detection 
+         * IE detection
          * @property isIE
          * @private
          * @static
@@ -192,7 +203,7 @@ if (Y.Event) {
         },
 
         /**
-         * Returns the scrollTop and scrollLeft.  Used to calculate the 
+         * Returns the scrollTop and scrollLeft.  Used to calculate the
          * pageX and pageY in Internet Explorer
          * @method _getScroll
          * @static
@@ -279,7 +290,7 @@ if (Y.Event) {
         },
 
         /**
-         * Returns the event's related target 
+         * Returns the event's related target
          * @method getRelatedTarget
          * @param {Event} ev the event
          * @return {HTMLElement} the event's relatedTarget
@@ -311,7 +322,7 @@ if (Y.Event) {
                 var t = new Date().getTime();
                 try {
                     ev.time = t;
-                } catch(ex) { 
+                } catch(ex) {
                     this.lastError = ex;
                     return t;
                 }
@@ -366,7 +377,7 @@ if (Y.Event) {
          * @method getTarget
          * @param {Event} ev the event
          * @param {boolean} resolveTextNode when set to true the target's
-         *                  parent will be returned if the target is a 
+         *                  parent will be returned if the target is a
          *                  text node.  @deprecated, the text node is
          *                  now resolved automatically
          * @return {HTMLElement} the event's target
@@ -395,7 +406,7 @@ if (Y.Event) {
         },
 
         /**
-         * We cache elements bound by id because when the unload event 
+         * We cache elements bound by id because when the unload event
          * fires, we can no longer use document.getElementById
          * @method getEl
          * @static
@@ -403,7 +414,7 @@ if (Y.Event) {
          * @deprecated Elements are not cached any longer
          */
         getEl: function(id) {
-            return Y.get(id);
+            return Y.one(id);
         }
     };
 
@@ -471,9 +482,9 @@ if (Y.Event) {
         return newOnavail(id, fn, p_obj, p_override, true, true);
     };
 
-    Y.Event.onDOMReady = function(fn) {
+    Y.Event.onDOMReady = function() {
         var a = Y.Array(arguments, 0, true);
-        a.unshift('event:ready');
+        a.unshift('domready');
         return Y.on.apply(Y, a);
     };
 
@@ -509,7 +520,7 @@ if (Y.Event) {
 
     /**
      * Subscriber listener sigature constant.  The FLAT type returns two
-     * parameters: the first argument passed to fire and the optional 
+     * parameters: the first argument passed to fire and the optional
      * custom object
      * @property YAHOO.util.CustomEvent.FLAT
      * @static
@@ -532,6 +543,9 @@ if (Y.Event) {
     Y.extend(EP, Y.EventTarget, {
 
         createEvent: function(type, o) {
+            // if (!this._yuievt) {
+            //     Y.EventTarget.call(this);
+            // }
             o = o || {};
             o.signature = o.signature || CE.FLAT;
             return this.publish(type, o);
@@ -546,7 +560,7 @@ if (Y.Event) {
                 // a[1] = obj;
             }
 
-            Y.EventTarget.prototype.subscribe.apply(this, a);
+            Y.EventTarget.prototype.on.apply(this, a);
         },
 
         fireEvent: function(type) {
@@ -554,6 +568,9 @@ if (Y.Event) {
         },
 
         hasEvent: function(type) {
+            if (!this._yuievt) {
+                Y.EventTarget.call(this);
+            }
             return this.getEvent(type);
         }
     });
@@ -563,7 +580,7 @@ if (Y.Event) {
 }
 
 
-Y.register("event", Y, {version: "3.0.0", build: "1549"});
+Y.register("event", Y.util.Event, {version: "3.3.0", build: "3167"});
 
 
 var propertyCache = {};
@@ -572,29 +589,34 @@ var patterns = {
     ROOT_TAG: /^body|html$/i, // body for quirks mode, html for standards,
     OP_SCROLL:/^(?:inline|table-row)$/i
 };
+var slice = [].slice;
 
 var hyphenToCamel = function(property) {
     if ( !patterns.HYPHEN.test(property) ) {
         return property; // no hyphens
     }
-    
+
     if (propertyCache[property]) { // already converted
         return propertyCache[property];
     }
-   
+
     var converted = property;
 
     while( patterns.HYPHEN.exec(converted) ) {
         converted = converted.replace(RegExp.$1,
                 RegExp.$1.substr(1).toUpperCase());
     }
-    
+
     propertyCache[property] = converted;
     return converted;
     //return property.replace(/-([a-z])/gi, function(m0, m1) {return m1.toUpperCase()}) // cant use function as 2nd arg yet due to safari bug
 };
 
 var Dom = {
+    _firstChild: function(node) {
+        return Y.Selector.query('> *', node, true);
+    },
+
     get: function(el) {
         if (el) {
             if (el.nodeType || el.item) { // Node, or NodeList
@@ -604,13 +626,13 @@ var Dom = {
             if (typeof el === 'string') { // id
                 return document.getElementById(el);
             }
-            
-            if ('length' in el) { // array-like 
+
+            if ('length' in el) { // array-like
                 var c = [];
                 for (var i = 0, len = el.length; i < len; ++i) {
                     c[c.length] = Dom.get(el[i]);
                 }
-                
+
                 return c;
             }
 
@@ -627,18 +649,18 @@ var Dom = {
     inDocument: function(el) {
         return Dom.isAncestor(Y.config.doc.documentElement, el);
     },
-   
-    batch: function(el, method, o, override, args) {
-        el = (el && (el.tagName || el.item)) ? el : Dom.get(el); // skip get() when possible 
 
-        if (!el || !method) { 
-            return false; 
-        }  
+    batch: function(el, method, o, override, args) {
+        el = (el && (el.tagName || el.item)) ? el : Dom.get(el); // skip get() when possible
+
+        if (!el || !method) {
+            return false;
+        }
         if (args) {
             args = Y.Array(args);
         }
-        var scope = (override) ? o : window; 
-         
+        var scope = (override) ? o : window;
+
         var apply = function(el) {
             if (args) {
                 var tmp = slice.call(args);
@@ -649,16 +671,16 @@ var Dom = {
             }
         };
 
-        if (el.tagName || el.length === undefined) { // element or not array-like  
-            return apply(el); 
-        }  
+        if (el.tagName || el.length === undefined) { // element or not array-like
+            return apply(el);
+        }
 
-        var collection = []; 
-         
-        for (var i = 0, len = el.length; i < len; ++i) { 
+        var collection = [];
+
+        for (var i = 0, len = el.length; i < len; ++i) {
             collection[collection.length] = apply(el[i]);
-        } 
-        
+        }
+
         return collection;
     },
 
@@ -694,7 +716,7 @@ var Dom = {
 
     getElementsByClassName: function(className, tag, root) {
         tag = tag || '*';
-        root = (root) ? Dom.get(root) : Y.config.doc; 
+        root = (root) ? Dom.get(root) : Y.config.doc;
         var nodes = [];
         if (root) {
             nodes = Y.Selector.query(tag + '.' + className, root);
@@ -706,10 +728,8 @@ var Dom = {
         tag = tag || '*';
         root = (root) ? Dom.get(root) : null || document;
 
-        var nodes = [];
-        if (root) {
-            nodes = YUI.DOM.byTag(tag, root, method);
-        }
+
+        var nodes = Y.Selector.query(tag, root);
         return nodes;
     },
 
@@ -719,7 +739,6 @@ var Dom = {
     getDocumentHeight: YUI.DOM.docHeight,
     getDocumentScrollTop: YUI.DOM.docScrollY,
     getDocumentScrollLeft: YUI.DOM.docScrollX,
-    getDocumentHeight: YUI.DOM.docHeight,
 
     _guid: function(el, prefix) {
         prefix = prefix || 'yui-gen';
@@ -727,14 +746,14 @@ var Dom = {
 
         if (el && el.id) { // do not override existing ID
             return el.id;
-        } 
+        }
 
         var id = prefix + Dom._id_counter++;
 
         if (el) {
             el.id = id;
         }
-        
+
         return id;
     },
 
@@ -762,7 +781,6 @@ var Dom = {
     }
 };
 
-var slice = [].slice;
 
 var wrap = function(fn, name) {
     Dom[name] = function() {
@@ -780,8 +798,8 @@ var wrapped = {
     getPreviousSibling: YUI.DOM.previous,
     getNextSiblingBy: YUI.DOM.next,
     getNextSibling: YUI.DOM.next,
-    getFirstChildBy: YUI.DOM.firstChild,
-    getFirstChild: YUI.DOM.firstChild,
+    getFirstChildBy: Dom._firstChild,
+    getFirstChild: Dom._firstChild,
     getLastChildBy: YUI.DOM.lastChild,
     getLastChild: YUI.DOM.lastChild,
     getChildrenBy: YUI.DOM.children,
@@ -803,8 +821,8 @@ var batched = {
     setXY: YUI.DOM.setXY,
     getX: YUI.DOM.getX,
     getY: YUI.DOM.getY,
-    setX: YUI.DOM.setX, 
-    setY: YUI.DOM.setY, 
+    setX: YUI.DOM.setX,
+    setY: YUI.DOM.setY,
     getRegion: Dom._region,
     hasClass: YUI.DOM.hasClass,
     addClass: Dom._addClass,
@@ -832,9 +850,9 @@ YAHOO.util.Region = function(t, r, b, l) {
 };
 
 YAHOO.util.Region.prototype.contains = function(region) {
-    return ( region.left   >= this.left   && 
-             region.right  <= this.right  && 
-             region.top    >= this.top    && 
+    return ( region.left   >= this.left   &&
+             region.right  <= this.right  &&
+             region.top    >= this.top    &&
              region.bottom <= this.bottom    );
 
 };
@@ -848,7 +866,7 @@ YAHOO.util.Region.prototype.intersect = function(region) {
     var r = Math.min( this.right,  region.right  );
     var b = Math.min( this.bottom, region.bottom );
     var l = Math.max( this.left,   region.left   );
-    
+
     if (b >= t && r >= l) {
         return new YAHOO.util.Region(t, r, b, l);
     } else {
@@ -867,10 +885,10 @@ YAHOO.util.Region.prototype.union = function(region) {
 
 YAHOO.util.Region.prototype.toString = function() {
     return ( "Region {"    +
-             "top: "       + this.top    + 
-             ", right: "   + this.right  + 
-             ", bottom: "  + this.bottom + 
-             ", left: "    + this.left   + 
+             "top: "       + this.top    +
+             ", right: "   + this.right  +
+             ", bottom: "  + this.bottom +
+             ", left: "    + this.left   +
              "}" );
 };
 
@@ -883,14 +901,16 @@ YAHOO.util.Point = function(x, y) {
       y = x[1]; // dont blow away x yet
       x = x[0];
    }
-   
+
     this.x = this.right = this.left = this[0] = x;
     this.y = this.top = this.bottom = this[1] = y;
 };
 
 YAHOO.util.Point.prototype = new YAHOO.util.Region();
 
+YAHOO.register("dom", YAHOO.util.Dom, {version: "3.3.0", build: "3167"});
 
 
-}, '3.0.0' ,{requires:['dom','event']});
-YUI._setup(); YUI.use('dom', 'event', 'compat');
+
+}, '3.3.0' ,{requires:['dom','dom-style-ie','event-base','dump','substitute']});
+YUI._setup(); YUI.use('compat');

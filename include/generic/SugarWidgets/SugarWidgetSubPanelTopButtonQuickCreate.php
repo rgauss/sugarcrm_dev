@@ -43,6 +43,7 @@ require_once('include/generic/SugarWidgets/SugarWidgetSubPanelTopButton.php');
 class SugarWidgetSubPanelTopButtonQuickCreate extends SugarWidgetSubPanelTopButton
 {
 
+
 	function &_get_form($defines, $additionalFormFields = null)
 	{
 		global $app_strings;
@@ -74,6 +75,7 @@ class SugarWidgetSubPanelTopButtonQuickCreate extends SugarWidgetSubPanelTopButt
 		}
 
 		$defines['parent_bean_name'] = get_class( $defines['focus']);
+
 		$relationship_name = $this->get_subpanel_relationship_name($defines);
 
 		$form = 'form' . $relationship_name;
@@ -94,7 +96,11 @@ class SugarWidgetSubPanelTopButtonQuickCreate extends SugarWidgetSubPanelTopButt
             		$button .= "<input type='hidden' name='". $GLOBALS['dictionary'][ $childFocusName ]["fields"][$relationship_name .'_name']['id_name'] ."' value='".$defines['focus']->id."'>";
             	}
             }
+            
+            //Set the return_name form variable that will allow EditView2.php 
+            $additionalFormFields['return_name'] = $defines['focus']->name;
 		}
+		
 		if(!empty($defines['view']))
 		$button .= '<input type="hidden" name="target_view" value="'. $defines['view'] . '" />';
 		$button .= '<input type="hidden" name="to_pdf" value="true" />';

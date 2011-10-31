@@ -69,7 +69,7 @@ var AjaxObject = {
 	 * gets an estimate of how many rows to process
 	 */
 	refreshEstimate : function(o) {
-		this.ret = JSON.parse(o.responseText);
+		this.ret = YAHOO.lang.JSON.parse(o.responseText);
 		document.getElementById('repairXssDisplay').style.display = 'inline';
 		document.getElementById('repairXssCount').value = this.ret.count;
 		
@@ -78,7 +78,7 @@ var AjaxObject = {
 	showRepairXssResult : function(o) {
 		var resultCounter = document.getElementById('repairXssResultCount');
 		
-		this.ret = JSON.parse(o.responseText);
+		this.ret = YAHOO.lang.JSON.parse(o.responseText);
 		document.getElementById('repairXssResults').style.display = 'inline';
 		
 		if(this.ret.msg == 'success') {

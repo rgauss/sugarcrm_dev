@@ -118,6 +118,7 @@ class ProjectTask extends SugarBean {
 	
 	function save($check_notify = FALSE){
 		$id = parent::save($check_notify);
+        $this->updateParentProjectTaskPercentage();
         return $id;
 	}
 	
@@ -350,9 +351,40 @@ class ProjectTask extends SugarBean {
 	        }           
         }
         return $query;
-    }	
+    }
 
-	
+
+	public function updateParentProjectTaskPercentage()
+	{
+		if (empty($this->parent_task_id))
+		{
+			return;
+		}
+		$projectId = $this->project_id;
+		if (!empty($projectId))
+		{
+			$project = new Project();
+			$project->retrieve($projectId);
+			$projectTasks = $project->getAllProjectTasks();
+			$dependentTaskId = $this->parent_task_id;
+			$collectPercentage = 0;
+			$parentProjectTask = false;
+			foreach ($projectTasks as $key => $value)
+			{
+				if ($value->project_task_id == $dependentTaskId)
+				{
+					$parentProjectTask = $value;
+					continue;
+				}
+				$collectPercentage += $value->percent_complete;
+			}
+			if ($parentProjectTask)
+			{
+				$parentProjectTask->percent_complete = round($collectPercentage / (count($projectTasks) - 1));
+				$parentProjectTask->save(isset($GLOBALS['check_notify']) ? $GLOBALS['check_notify'] : '');
+			}
+		}
+	}
 }
 
 function getUtilizationDropdown($focus, $field, $value, $view) {

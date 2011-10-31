@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('json-parse', function(Y) {
 
@@ -44,6 +44,9 @@ YUI.add('json-parse', function(Y) {
 
 
 // All internals kept private for security reasons
+function fromGlobal(ref) {
+    return (Y.config.win || this || {})[ref];
+}
 
 
     /**
@@ -53,8 +56,11 @@ YUI.add('json-parse', function(Y) {
      * @type {Object}
      * @private
      */
-var _JSON  = Y.config.win.JSON,
+var _JSON  = fromGlobal('JSON'),
+    // Create an indirect reference to eval to allow for minification
+    _eval  = fromGlobal('eval'),
     Native = (Object.prototype.toString.call(_JSON) === '[object JSON]' && _JSON),
+    useNative = !!Native,
 
     /**
      * Replace certain Unicode characters that JavaScript may handle incorrectly
@@ -172,30 +178,47 @@ var _JSON  = Y.config.win.JSON,
     // JavaScript implementation in lieu of native browser support.  Based on
     // the json2.js library from http://json.org
     _parse = function (s,reviver) {
-        if (typeof s === 'string') {
-            // Replace certain Unicode characters that are otherwise handled
-            // incorrectly by some browser implementations.
-            // NOTE: This modifies the input if such characters are found!
-            s = s.replace(_UNICODE_EXCEPTIONS, _escapeException);
-            
-            // Test for any remaining invalid characters
-            if (!_UNSAFE.test(s.replace(_ESCAPES,'@').
-                                 replace(_VALUES,']').
-                                 replace(_BRACKETS,''))) {
+        // Replace certain Unicode characters that are otherwise handled
+        // incorrectly by some browser implementations.
+        // NOTE: This modifies the input if such characters are found!
+        s = s.replace(_UNICODE_EXCEPTIONS, _escapeException);
+        
+        // Test for any remaining invalid characters
+        if (!_UNSAFE.test(s.replace(_ESCAPES,'@').
+                            replace(_VALUES,']').
+                            replace(_BRACKETS,''))) {
 
-                // Eval the text into a JavaScript data structure, apply any
-                // reviver function, and return
-                return _revive( eval('(' + s + ')'), reviver );
-            }
+            // Eval the text into a JavaScript data structure, apply any
+            // reviver function, and return
+            return _revive( _eval('(' + s + ')'), reviver );
         }
 
         throw new SyntaxError('JSON.parse');
     };
     
 Y.namespace('JSON').parse = function (s,reviver) {
-    return Native && Y.JSON.useNativeParse ?
-        Native.parse(s,reviver) : _parse(s,reviver);
+        if (typeof s !== 'string') {
+            s += '';
+        }
+
+        return Native && Y.JSON.useNativeParse ?
+            Native.parse(s,reviver) : _parse(s,reviver);
 };
+
+function workingNative( k, v ) {
+    return k === "ok" ? true : v;
+}
+
+// Double check basic functionality.  This is mainly to catch early broken
+// implementations of the JSON API in Firefox 3.1 beta1 and beta2
+if ( Native ) {
+    try {
+        useNative = ( Native.parse( '{"ok":false}', workingNative ) ).ok;
+    }
+    catch ( e ) {
+        useNative = false;
+    }
+}
 
 /**
  * Leverage native JSON parse if the browser has a native implementation.
@@ -208,10 +231,10 @@ Y.namespace('JSON').parse = function (s,reviver) {
  * @default true
  * @static
  */
-Y.JSON.useNativeParse = !!Native;
+Y.JSON.useNativeParse = useNative;
 
 
-}, '3.0.0' );
+}, '3.3.0' );
 YUI.add('json-stringify', function(Y) {
 
 /**
@@ -222,13 +245,14 @@ YUI.add('json-stringify', function(Y) {
  * @for JSON
  * @static
  */
-var _JSON     = Y.config.win.JSON,
+var _JSON     = (Y.config.win || {}).JSON,
     Lang      = Y.Lang,
     isFunction= Lang.isFunction,
     isObject  = Lang.isObject,
     isArray   = Lang.isArray,
     _toStr    = Object.prototype.toString,
     Native    = (_toStr.call(_JSON) === '[object JSON]' && _JSON),
+    useNative = !!Native,
     UNDEFINED = 'undefined',
     OBJECT    = 'object',
     NULL      = 'null',
@@ -258,9 +282,11 @@ var _JSON     = Y.config.win.JSON,
     COLON     = ':',
     COLON_SP  = ': ',
     QUOTE     = '"',
+
     // Regex used to capture characters that need escaping before enclosing
     // their containing string in quotes.
     _SPECIAL_CHARS = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
+
     // Character substitution map for common escapes and special characters.
     _CHARS = {
         '\b': '\\b',
@@ -418,6 +444,16 @@ function _stringify(o,w,space) {
     return _serialize({'':o},'');
 }
 
+// Double check basic native functionality.  This is primarily to catch broken
+// early JSON API implementations in Firefox 3.1 beta1 and beta2.
+if ( Native ) {
+    try {
+        useNative = ( '0' === Native.stringify(0) );
+    } catch ( e ) {
+        useNative = false;
+    }
+}
+
 Y.mix(Y.namespace('JSON'),{
     /**
      * Leverage native JSON stringify if the browser has a native
@@ -430,7 +466,7 @@ Y.mix(Y.namespace('JSON'),{
      * @default true
      * @static
      */
-    useNativeStringify : !!Native,
+    useNativeStringify : useNative,
 
     /**
      * Serializes a Date instance as a UTC date string.  Used internally by
@@ -440,6 +476,7 @@ Y.mix(Y.namespace('JSON'),{
      * @method dateToString
      * @param d {Date} The Date to serialize
      * @return {String} stringified Date in UTC format YYYY-MM-DDTHH:mm:SSZ
+     * @deprecated Use a replacer function
      * @static
      */
     dateToString : function (d) {
@@ -489,8 +526,8 @@ Y.mix(Y.namespace('JSON'),{
 });
 
 
-}, '3.0.0' );
+}, '3.3.0' );
 
 
-YUI.add('json', function(Y){}, '3.0.0' ,{use:['json-parse', 'json-stringify']});
+YUI.add('json', function(Y){}, '3.3.0' ,{use:['json-parse', 'json-stringify']});
 

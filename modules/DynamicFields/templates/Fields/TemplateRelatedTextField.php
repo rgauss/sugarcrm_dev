@@ -228,6 +228,7 @@ class TemplateRelatedTextField extends TemplateText{
 	            $idName = $basename.++$count.'_c' ;
 	        }
 	        $id->name = $idName ;
+			$id->reportable = false;				
 	        $id->save($df);
 	        
 	        // record the id field's name, and save

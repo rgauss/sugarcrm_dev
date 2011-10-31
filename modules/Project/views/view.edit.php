@@ -36,8 +36,6 @@
  ********************************************************************************/
 
 
- require_once('include/MVC/View/views/view.edit.php');
-
 class ProjectViewEdit extends ViewEdit {
 
  	function ProjectViewEdit(){

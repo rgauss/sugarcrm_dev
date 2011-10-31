@@ -102,7 +102,13 @@ $viewdefs['Documents']['DetailView'] = array(
 	       'related_doc_rev_number',
 	    ),
 
-        
+       array (
+        array (
+            'name' => 'assigned_user_name',
+            'label' => 'LBL_ASSIGNED_TO_NAME',
+            ),
+
+        ),
       ),
       'LBL_REVISIONS_PANEL' => 
       array (

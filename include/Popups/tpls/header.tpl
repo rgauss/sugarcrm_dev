@@ -36,8 +36,6 @@
 
 *}
 <script type="text/javascript" src="{sugar_getjspath file='include/javascript/sugar_3.js'}"></script>
-<script type="text/javascript" src="{sugar_getjspath file="jscalendar/lang/calendar-$lang.js"} . '"></script>
-<script type="text/javascript" src="{sugar_getjspath file='include/JSON.js'}"></script>
 <script type="text/javascript" src="{sugar_getjspath file='include/javascript/popup_helper.js'}"></script>
 <script type='text/javascript' src='{sugar_getjspath file='include/javascript/sugar_grp_overlib.js'}'></script>
 <script type="text/javascript">
@@ -76,11 +74,11 @@ function clearAll() {
 <input type="hidden" name="hide_clear_button" value="true" />
 <input type="hidden" name="record_id" value="" />
 {$MODE}
-<input type="submit" name="button" class="button"
+<input type="submit" name="button" class="button" id="search_form_submit"
 	title="{$APP.LBL_SEARCH_BUTTON_TITLE}"
 	accessKey="{$APP.LBL_SEARCH_BUTTON_KEY}"
 	value="{$APP.LBL_SEARCH_BUTTON_LABEL}" />
-<input type="reset" onclick="SUGAR.searchForm.clear_form(this.form); return false;" class="button"
+<input type="reset" onclick="SUGAR.searchForm.clear_form(this.form); return false;" class="button" id="search_form_clear"
 	title="{$APP.LBL_CLEAR_BUTTON_TITLE}"
 	accessKey="{$APP.LBL_CLEAR_BUTTON_KEY}"
 	value="{$APP.LBL_CLEAR_BUTTON_LABEL}"/>

@@ -66,7 +66,7 @@
 	<table width="100%" cellpadding="0" cellspacing="0" border="0">
 		<tr>
 			<td>
-				<input title="{APP.LBL_SAVE_BUTTON_TITLE}" accessKey="{APP.LBL_SAVE_BUTTON_KEY}" class="button" onclick="this.form.action.value='Save'; {CHOOSER_SCRIPT} this.form.return_id.value='{RETURN_ID}'; return checkformdata()" type="submit" name="button" value="  {APP.LBL_SAVE_BUTTON_LABEL}  " {IE_DISABLED}>
+				<input title="{APP.LBL_SAVE_BUTTON_TITLE}" accessKey="{APP.LBL_SAVE_BUTTON_KEY}" class="button" onclick="this.form.action.value='Save'; {CHOOSER_SCRIPT} this.form.return_id.value='{RETURN_ID}'; return checkformdata()" type="submit" name="button" id="button" value="  {APP.LBL_SAVE_BUTTON_LABEL}  " {IE_DISABLED}>
 				<input title="{APP.LBL_CANCEL_BUTTON_TITLE}" accessKey="{APP.LBL_CANCEL_BUTTON_KEY}" class="button" onclick="this.form.action.value='{RETURN_ACTION}'; this.form.module.value='{RETURN_MODULE}'; this.form.record.value='{RETURN_ID}'; if(this.form.record.value == '' && this.form.origin_id.value != '') this.form.record.value=this.form.origin_id.value;" type="submit" name="button" value="  {APP.LBL_CANCEL_BUTTON_LABEL}  ">
 				<input title="{MOD.LBL_TEST_BUTTON_TITLE}"
 					type='button'
@@ -93,7 +93,7 @@
 			<td valign="top" scope="row" width="15%" NOWRAP>
 				<slot>{MOD.LBL_NAME}: <span class="required">{APP.LBL_REQUIRED_SYMBOL}</span>&nbsp;</slot></td>
 			<td valign="top"  width="35%">
-				<slot><input name='name' tabindex='10' size='30' maxlength='255' type="text" value="{NAME}" {IE_DISABLED}></slot></td>
+				<slot><input name='name' id='name' tabindex='10' size='30' maxlength='255' type="text" value="{NAME}" {IE_DISABLED}></slot></td>
 			<td valign="top" scope="row">
 				<slot>{MOD.LBL_STATUS}:&nbsp;</slot></td>
 			<td valign="top"  width="35%"><slot>
@@ -108,7 +108,7 @@
 				<slot>{MOD.LBL_LOGIN}:
 				<span class="required">{APP.LBL_REQUIRED_SYMBOL}</span>&nbsp;</slot></td>
 			<td valign="top"  width="35%">
-				<slot><input name='email_user' tabindex='70' size='30' maxlength='100' type="text" value="{USER}" autocomplete="off" {IE_DISABLED}></slot></td>
+				<slot><input name='email_user' id='email_user' tabindex='70' size='30' maxlength='100' type="text" value="{USER}" autocomplete="off" {IE_DISABLED}></slot></td>
 		</tr>
 		<tr>
 			<td valign="top" scope="row" width="15%" NOWRAP>
@@ -198,7 +198,7 @@
 			 <input name='is_auto_import' style="{AUTO_IMPORT_STYLE}" id='is_auto_import' onclick="showWarningsIfChaningAutoImport();"tabindex='45' type='checkbox' {IS_AUTO_IMPORT}>
 			</td>
 			<td valign="top" scope="row" width="15%" NOWRAP>
-				<slot>{MOD.LBL_FROM_ADDR}:<span class="required">{APP.LBL_REQUIRED_SYMBOL}</span>&nbsp;</slot></td>
+				<slot>{MOD.LBL_FROM_ADDR}:<span class="required">{APP.LBL_REQUIRED_SYMBOL}</span><span valign="bottom" onmouseout="return nd();" onmouseover="return overlib('{MOD.LBL_FROM_ADDR_DESC}', FGCLASS, 'olFgClass', CGCLASS, 'olCgClass', BGCLASS, 'olBgClass', TEXTFONTCLASS, 'olFontClass', CAPTIONFONTCLASS, 'olCapFontClass', CLOSEFONTCLASS, 'olCloseFontClass' );">&nbsp;<img src="index.php?entryPoint=getImage&themeName={THEME}&imageName=helpInline.gif"></span></slot></td>
 			<td valign="top"  width="35%">
 				<slot><input tabindex="310" name="from_addr" id="from_addr" value="{FROM_ADDR}" {IE_DISABLED}></slot></td>
 		</tr>

@@ -48,6 +48,12 @@ class XssTest extends Sugar_PHPUnit_Framework_TestCase
             array("some data<script>alert('xss!')</script>", "some data<>alert('xss!')</>"),
             array("some data<script src=\" http://localhost/xss.js\"></script>", "some data< src=\" http://localhost/xss.js\"></>"),
             array("some data<applet></applet><script src=\" http://localhost/xss.js\"></script>", "some data<></>< src=\" http://localhost/xss.js\"></>"),
+            array('some data before<img alt="<script>" src="http://www.symbolset.org/images/peace-sign-2.jpg"; onload="alert(35)" width="1" height="1"/>some data after', 'some data before<img alt="<>" src="http://www.symbolset.org/images/peace-sign-2.jpg"; ="alert(35)" width="1" height="1"/>some data after'),
+            array('some data before<img src="http://www.symbolset.org/images/peace-sign-2.jpg"; onload="alert(35)" width="1" height="1"/>some data after', 'some data before<img src="http://www.symbolset.org/images/peace-sign-2.jpg"; ="alert(35)" width="1" height="1"/>some data after'),
+            array('some data before<img src="http://www.symbolset.org/images/peace-sign-2.jpg"; width="1" height="1"/>some data after', 'some data before<img src="http://www.symbolset.org/images/peace-sign-2.jpg"; width="1" height="1"/>some data after'),
+            array('<div style="font-family:Calibri;">Roger Smith</div>', '<div style="font-family:Calibri;">Roger Smith</div>'),
+            array('some data before<img onmouseover onload onmouseover=\'alert(8)\' src="http://www.docspopuli.org/images/Symbol.jpg";\'/>some data after', 'some data before<img   =\'alert(8)\' src="http://www.docspopuli.org/images/Symbol.jpg";\'/>some data after'),
+                        
             );
     }
 

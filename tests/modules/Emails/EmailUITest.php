@@ -45,6 +45,7 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
     {
         global $current_user;
         $this->_user = SugarTestUserUtilities::createAnonymousUser();
+        $this->_user->is_admin = 1;
         $GLOBALS['current_user'] = $this->_user;
         $this->eui = new EmailUIMock();
 
@@ -93,7 +94,7 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
         $this->assertEquals($newFolderName, $sf->name);
         
     }
-    
+
     /**
      * Save the user preference for list view order per IE account.
      *
@@ -119,13 +120,13 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
     	$account = new Account();
     	$account->name = "emailTestAccount";
     	$account->save(false);
-    	
+
     	$relatedBeanInfo = array('related_bean_id' => $account->id,  "related_bean_type" => "Accounts");
     	
     	//First pass should return a blank query as are no related items
     	$qArray = $this->eui->getRelatedEmail("LBL_DROPDOWN_LIST_ALL", array(), $relatedBeanInfo);
     	$this->assertEquals("", $qArray['query']);
-        
+
     	//Now create a related Contact
     	$contact = new Contact();
     	$contact->name = "emailTestContact";
@@ -133,7 +134,7 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
     	$contact->account_name = $account->name;
     	$contact->email1 = "test@test.com";
     	$contact->save(false);
-    	
+
     	//Now we should get a result
         $qArray = $this->eui->getRelatedEmail("LBL_DROPDOWN_LIST_ALL", array(), $relatedBeanInfo);
         $r = $account->db->limitQuery($qArray['query'], 0, 25, true);
@@ -142,11 +143,11 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
         $person['bean_id'] = $a['id'];
         $person['bean_module'] = $a['module'];
         $person['email'] = $a['email_address'];
-        
+
         //Cleanup
     	$GLOBALS['db']->query("DELETE FROM accounts WHERE id= '{$account->id}'");
     	$GLOBALS['db']->query("DELETE FROM contacts WHERE id= '{$contact->id}'");
-        
+
         $this->assertEquals("test@test.com", $person['email']);
     }
     
@@ -159,7 +160,7 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
 
         $this->assertEquals(array('Bugs','Cases','Contacts', 'Leads', 'Tasks'), $qArray);
     }
-    
+
     /**
      * @ticket 29521
      */
@@ -186,7 +187,7 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
         
         $this->assertEquals(array('Bugs','Cases','Contacts', 'Leads', 'Tasks', 'Users'), $qArray);
     }
-    
+
     /**
      * @ticket 29521
      */
@@ -213,7 +214,7 @@ class EmailUITest extends Sugar_PHPUnit_Framework_TestCase
         
         $this->assertEquals(array('Bugs','Cases','Contacts', 'Leads', 'Tasks'), $qArray);
     }
-    
+
     /**
      * @ticket 29521
      */

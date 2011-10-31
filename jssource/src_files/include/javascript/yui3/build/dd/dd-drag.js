@@ -1,20 +1,20 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dd-drag', function(Y) {
 
 
     /**
-     * The Drag & Drop Utility allows you to create a draggable interface efficiently, buffering you from browser-level abnormalities and enabling you to focus on the interesting logic surrounding your particular implementation. This component enables you to create a variety of standard draggable objects with just a few lines of code and then, using its extensive API, add your own specific implementation logic.
+     * Provides the ability to drag a Node.
      * @module dd
      * @submodule dd-drag
      */     
     /**
-     * This class provides the ability to drag a Node.
+     * Provides the ability to drag a Node.
      * @class Drag
      * @extends Base
      * @constructor
@@ -27,14 +27,18 @@ YUI.add('dd-drag', function(Y) {
         DRAG_NODE = 'dragNode',
         OFFSET_HEIGHT = 'offsetHeight',
         OFFSET_WIDTH = 'offsetWidth',        
-        MOUSE_UP = 'mouseup',
-        MOUSE_DOWN = 'mousedown',
-        DRAG_START = 'dragstart',
+        /**
+        * @event drag:mouseup
+        * @description Handles the mouseup DOM event, does nothing internally just fires.
+        * @bubbles DDM
+        * @type {Event.Custom}
+        */
         /**
         * @event drag:mouseDown
         * @description Handles the mousedown DOM event, checks to see if you have a valid handle then starts the drag timers.
         * @preventable _defMouseDownFn
-        * @param {Event.Facade} ev The mousedown event.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl><dt>ev</dt><dd>The original mousedown event.</dd></dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -42,7 +46,8 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:afterMouseDown
         * @description Fires after the mousedown event has been cleared.
-        * @param {Event.Facade} ev The mousedown event.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl><dt>ev</dt><dd>The original mousedown event.</dd></dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -50,6 +55,8 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:removeHandle
         * @description Fires after a handle is removed.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl><dt>handle</dt><dd>The handle that was removed.</dd></dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -57,6 +64,8 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:addHandle
         * @description Fires after a handle is added.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl><dt>handle</dt><dd>The handle that was added.</dd></dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -64,6 +73,8 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:removeInvalid
         * @description Fires after an invalid selector is removed.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl><dt>handle</dt><dd>The handle that was removed.</dd></dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -71,6 +82,8 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:addInvalid
         * @description Fires after an invalid selector is added.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl><dt>handle</dt><dd>The handle that was added.</dd></dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -78,6 +91,12 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:start
         * @description Fires at the start of a drag operation.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>pageX</dt><dd>The original node position X.</dd>
+        * <dt>pageY</dt><dd>The original node position Y.</dd>
+        * <dt>startTime</dt><dd>The startTime of the event. getTime on the current Date object.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -85,6 +104,13 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:end
         * @description Fires at the end of a drag operation.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>pageX</dt><dd>The current node position X.</dd>
+        * <dt>pageY</dt><dd>The current node position Y.</dd>
+        * <dt>startTime</dt><dd>The startTime of the event, from the start event.</dd>
+        * <dt>endTime</dt><dd>The endTime of the event. getTime on the current Date object.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -92,6 +118,13 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:drag
         * @description Fires every mousemove during a drag operation.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>pageX</dt><dd>The current node position X.</dd>
+        * <dt>pageY</dt><dd>The current node position Y.</dd>
+        * <dt>scroll</dt><dd>Should a scroll action occur.</dd>
+        * <dt>info</dt><dd>Object hash containing calculated XY arrays: start, xy, delta, offset</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -100,6 +133,11 @@ YUI.add('dd-drag', function(Y) {
         * @event drag:align
         * @preventable _defAlignFn
         * @description Fires when this node is aligned.
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>pageX</dt><dd>The current node position X.</dd>
+        * <dt>pageY</dt><dd>The current node position Y.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -107,30 +145,55 @@ YUI.add('dd-drag', function(Y) {
         /**
         * @event drag:over
         * @description Fires when this node is over a Drop Target. (Fired from dd-drop)
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>drop</dt><dd>The drop object at the time of the event.</dd>
+        * <dt>drag</dt><dd>The drag object at the time of the event.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
         /**
         * @event drag:enter
         * @description Fires when this node enters a Drop Target. (Fired from dd-drop)
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>drop</dt><dd>The drop object at the time of the event.</dd>
+        * <dt>drag</dt><dd>The drag object at the time of the event.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
         /**
         * @event drag:exit
         * @description Fires when this node exits a Drop Target. (Fired from dd-drop)
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>drop</dt><dd>The drop object at the time of the event.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
         /**
         * @event drag:drophit
         * @description Fires when this node is dropped on a valid Drop Target. (Fired from dd-ddm-drop)
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>drop</dt><dd>The best guess on what was dropped on.</dd>
+        * <dt>drag</dt><dd>The drag object at the time of the event.</dd>
+        * <dt>others</dt><dd>An array of all the other drop targets that was dropped on.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
         /**
         * @event drag:dropmiss
         * @description Fires when this node is dropped on an invalid Drop Target. (Fired from dd-ddm-drop)
+        * @param {Event.Facade} event An Event Facade object with the following specific property added:
+        * <dl>
+        * <dt>pageX</dt><dd>The current node position X.</dd>
+        * <dt>pageY</dt><dd>The current node position Y.</dd>
+        * </dl>
         * @bubbles DDM
         * @type {Event.Custom}
         */
@@ -146,32 +209,37 @@ YUI.add('dd-drag', function(Y) {
     };
 
     Drag.NAME = 'drag';
+    
+    /**
+    * This property defaults to "mousedown", but when drag-gestures is loaded, it is changed to "gesturemovestart"
+    * @static
+    * @property START_EVENT
+    */
+    Drag.START_EVENT = 'mousedown';
 
     Drag.ATTRS = {
         /**
         * @attribute node
-        * @description Y.Node instanace to use as the element to initiate a drag operation
+        * @description Y.Node instance to use as the element to initiate a drag operation
         * @type Node
         */
         node: {
             setter: function(node) {
-                var n = Y.get(node);
+                var n = Y.one(node);
                 if (!n) {
                     Y.error('DD.Drag: Invalid Node Given: ' + node);
-                } else {
-                    n = n.item(0);
                 }
                 return n;
             }
         },
         /**
         * @attribute dragNode
-        * @description Y.Node instanace to use as the draggable element, defaults to node
+        * @description Y.Node instance to use as the draggable element, defaults to node
         * @type Node
         */
         dragNode: {
             setter: function(node) {
-                var n = Y.Node.get(node);
+                var n = Y.one(node);
                 if (!n) {
                     Y.error('DD.Drag: Invalid dragNode Given: ' + node);
                 }
@@ -185,6 +253,14 @@ YUI.add('dd-drag', function(Y) {
         */
         offsetNode: {
             value: true
+        },
+        /**
+        * @attribute startCentered
+        * @description Center the dragNode to the mouse position on drag:start: default false
+        * @type Boolean
+        */
+        startCentered: {
+            value: false
         },
         /**
         * @attribute clickPixelThresh
@@ -328,7 +404,11 @@ YUI.add('dd-drag', function(Y) {
                 if (g) {
                     this._handles = {};
                     Y.each(g, function(v, k) {
-                        this._handles[v] = true;
+                        var key = v;
+                        if (v instanceof Y.Node || v instanceof Y.NodeList) {
+                            key = v._yuid;
+                        }
+                        this._handles[key] = v;
                     }, this);
                 } else {
                     this._handles = null;
@@ -337,17 +417,34 @@ YUI.add('dd-drag', function(Y) {
             }
         },
         /**
+        * @deprecated
         * @attribute bubbles
-        * @description Controls the default bubble parent for this Drag instance. Default: Y.DD.DDM. Set to false to disable bubbling.
+        * @description Controls the default bubble parent for this Drag instance. Default: Y.DD.DDM. Set to false to disable bubbling. Use bubbleTargets in config
         * @type Object
         */
         bubbles: {
-            writeOnce: true,
-            value: Y.DD.DDM
+            setter: function(t) {
+                this.addTarget(t);
+                return t;
+            }
+        },
+        /**
+        * @attribute haltDown
+        * @description Should the mousedown event be halted. Default: true
+        * @type Boolean
+        */
+        haltDown: {
+            value: true
         }
     };
 
     Y.extend(Drag, Y.Base, {
+        /**
+        * @private
+        * @property _bubbleTargets
+        * @description The default bubbleTarget for this object. Default: Y.DD.DDM
+        */
+        _bubbleTargets: Y.DD.DDM,
         /**
         * @method addToGroup
         * @description Add this Drag instance to a group, this should be used for on-the-fly group additions.
@@ -397,7 +494,7 @@ YUI.add('dd-drag', function(Y) {
                     if (!Y.Lang.isObject(config)) {
                         config = {};
                     }
-                    config.bubbles = ('bubbles' in config) ? config.bubbles : this.get('bubbles');
+                    config.bubbleTargets = ('bubbleTargets' in config) ? config.bubbleTargets : Y.Object.values(this._yuievt.targets);
                     config.node = this.get(NODE);
                     config.groups = config.groups || this.get('groups');
                     this.target = new Y.DD.Drop(config);
@@ -445,6 +542,7 @@ YUI.add('dd-drag', function(Y) {
             });
             
             this.publish(EV_END, {
+                defaultFn: this._defEndFn,
                 preventedFn: this._prevEndFn,
                 queuable: false,
                 emitFacade: true,
@@ -476,12 +574,6 @@ YUI.add('dd-drag', function(Y) {
                     prefix: 'drag'
                 });
             }, this);
-
-            if (this.get('bubbles')) {
-                this.addTarget(this.get('bubbles'));
-            }
-            
-           
         },
         /**
         * @private
@@ -601,6 +693,7 @@ YUI.add('dd-drag', function(Y) {
         * @param {Event.Facade}
         */
         _handleMouseUp: function(ev) {
+            this.fire('drag:mouseup');
             this._fixIEMouseUp();
             if (DDM.activeDrag) {
                 DDM._end();
@@ -633,7 +726,7 @@ YUI.add('dd-drag', function(Y) {
         * @method _fixIEMouseDown
         * @description This method copies the onselectstart listner on the document to the _ieSelectFix property
         */
-        _fixIEMouseDown: function() {
+        _fixIEMouseDown: function(e) {
             if (Y.UA.ie) {
                 this._ieSelectBack = Y.config.doc.body.onselectstart;
                 Y.config.doc.body.onselectstart = this._ieSelectFix;
@@ -666,6 +759,7 @@ YUI.add('dd-drag', function(Y) {
         */
         _defMouseDownFn: function(e) {
             var ev = e.ev;
+
             this._dragThreshMet = false;
             this._ev_md = ev;
             
@@ -673,8 +767,13 @@ YUI.add('dd-drag', function(Y) {
                 return false;
             }
             if (this.validClick(ev)) {
-                this._fixIEMouseDown();
-                ev.halt();
+                this._fixIEMouseDown(ev);
+                if (this.get('haltDown')) {
+                    ev.halt();
+                } else {
+                    ev.preventDefault();
+                }
+                
                 this._setStartPosition([ev.pageX, ev.pageY]);
 
                 DDM.activeDrag = this;
@@ -694,10 +793,23 @@ YUI.add('dd-drag', function(Y) {
             tar = ev.target,
             hTest = null,
             els = null,
+            nlist = null,
             set = false;
             if (this._handles) {
                 Y.each(this._handles, function(i, n) {
-                    if (Y.Lang.isString(n)) {
+                    if (i instanceof Y.Node || i instanceof Y.NodeList) {
+                        if (!r) {
+                            nlist = i;
+                            if (nlist instanceof Y.Node) {
+                                nlist = new Y.NodeList(i._node);
+                            }
+                            nlist.each(function(nl) {
+                                if (nl.contains(tar)) {
+                                    r = true;
+                                }
+                            });
+                        }
+                    } else if (Y.Lang.isString(n)) {
                         //Am I this or am I inside this
                         if (tar.test(n + ', ' + n + ' *') && !hTest) {
                             hTest = n;
@@ -706,7 +818,7 @@ YUI.add('dd-drag', function(Y) {
                     }
                 });
             } else {
-                n = this.get(NODE)
+                n = this.get(NODE);
                 if (n.contains(tar) || n.compareTo(tar)) {
                     r = true;
                 }
@@ -725,7 +837,7 @@ YUI.add('dd-drag', function(Y) {
             }
             if (r) {
                 if (hTest) {
-                    els = ev.currentTarget.queryAll(hTest);
+                    els = ev.currentTarget.all(hTest);
                     set = false;
                     els.each(function(n, i) {
                         if ((n.contains(tar) || n.compareTo(tar)) && !set) {
@@ -749,7 +861,7 @@ YUI.add('dd-drag', function(Y) {
             this.startXY = xy;
             
             this.nodeXY = this.lastXY = this.realXY = this.get(NODE).getXY();
-
+            
             if (this.get('offsetNode')) {
                 this.deltaXY = [(this.startXY[0] - this.nodeXY[0]), (this.startXY[1] - this.nodeXY[1])];
             } else {
@@ -762,7 +874,7 @@ YUI.add('dd-drag', function(Y) {
         * @description The method passed to setTimeout to determine if the clickTimeThreshold was met.
         */
         _timeoutCheck: function() {
-            if (!this.get('lock') && !this._dragThreshMet) {
+            if (!this.get('lock') && !this._dragThreshMet && this._ev_md) {
                 this._fromTimeout = this._dragThreshMet = true;
                 this.start();
                 this._alignNode([this._ev_md.pageX, this._ev_md.pageY], true);
@@ -776,8 +888,12 @@ YUI.add('dd-drag', function(Y) {
         * @chainable
         */
         removeHandle: function(str) {
-            if (this._handles[str]) {
-                delete this._handles[str];
+            var key = str;
+            if (str instanceof Y.Node || str instanceof Y.NodeList) {
+                key = str._yuid;
+            }
+            if (this._handles[key]) {
+                delete this._handles[key];
                 this.fire(EV_REMOVE_HANDLE, { handle: str });
             }
             return this;
@@ -793,10 +909,12 @@ YUI.add('dd-drag', function(Y) {
             if (!this._handles) {
                 this._handles = {};
             }
-            if (Y.Lang.isString(str)) {
-                this._handles[str] = true;
-                this.fire(EV_ADD_HANDLE, { handle: str });
+            var key = str;
+            if (str instanceof Y.Node || str instanceof Y.NodeList) {
+                key = str._yuid;
             }
+            this._handles[key] = str;
+            this.fire(EV_ADD_HANDLE, { handle: str });
             return this;
         },
         /**
@@ -833,7 +951,7 @@ YUI.add('dd-drag', function(Y) {
         * @method initializer
         * @description Internal init handler
         */
-        initializer: function() {
+        initializer: function(cfg) {
             this.get(NODE).dd = this;
 
             if (!this.get(NODE).get('id')) {
@@ -867,9 +985,9 @@ YUI.add('dd-drag', function(Y) {
             this._dragThreshMet = false;
             var node = this.get(NODE);
             node.addClass(DDM.CSS_PREFIX + '-draggable');
-            node.on(MOUSE_DOWN, Y.bind(this._handleMouseDownEvent, this));
-            node.on(MOUSE_UP, Y.bind(this._handleMouseUp, this));
-            node.on(DRAG_START, Y.bind(this._fixDragStart, this));
+            node.on(Drag.START_EVENT, Y.bind(this._handleMouseDownEvent, this));
+            node.on('mouseup', Y.bind(this._handleMouseUp, this));
+            node.on('dragstart', Y.bind(this._fixDragStart, this));
         },
         /**
         * @private
@@ -889,7 +1007,7 @@ YUI.add('dd-drag', function(Y) {
         */
         start: function() {
             if (!this.get('lock') && !this.get(DRAGGING)) {
-                var node = this.get(NODE), ow = node.get(OFFSET_WIDTH), oh = node.get(OFFSET_HEIGHT);
+                var node = this.get(NODE), ow, oh, xy;
                 this._startTime = (new Date()).getTime();
 
                 DDM._start();
@@ -899,8 +1017,16 @@ YUI.add('dd-drag', function(Y) {
                     pageY: this.nodeXY[1],
                     startTime: this._startTime
                 });
-                var xy = this.nodeXY;
-
+                node = this.get(DRAG_NODE);
+                xy = this.nodeXY;
+                
+                ow = node.get(OFFSET_WIDTH);
+                oh = node.get(OFFSET_HEIGHT);
+                
+                if (this.get('startCentered')) {
+                    this._setStartPosition([xy[0] + (ow / 2), xy[1] + (oh / 2)]);
+                }
+                
                 
                 this.region = {
                     '0': xy[0], 
@@ -926,8 +1052,8 @@ YUI.add('dd-drag', function(Y) {
             if (this._clickTimeout) {
                 this._clickTimeout.cancel();
             }
-            this._dragThreshMet = false;
-            this._fromTimeout = false;
+            this._dragThreshMet = this._fromTimeout = false;
+
             if (!this.get('lock') && this.get(DRAGGING)) {
                 this.fire(EV_END, {
                     pageX: this.lastXY[0],
@@ -944,12 +1070,24 @@ YUI.add('dd-drag', function(Y) {
         },
         /**
         * @private
+        * @method _defEndFn
+        * @description Handler for fixing the selection in IE
+        */
+        _defEndFn: function(e) {
+            this._fixIEMouseUp();
+            this._ev_md = null;
+        },
+        /**
+        * @private
         * @method _prevEndFn
         * @description Handler for preventing the drag:end event. It will reset the node back to it's start position
         */
         _prevEndFn: function(e) {
+            this._fixIEMouseUp();
             //Bug #1852577
             this.get(DRAG_NODE).setXY(this.nodeXY);
+            this._ev_md = null;
+            this.region = null;
         },
         /**
         * @private
@@ -1097,4 +1235,4 @@ YUI.add('dd-drag', function(Y) {
 
 
 
-}, '3.0.0' ,{requires:['dd-ddm-base'], skinnable:false});
+}, '3.3.0' ,{requires:['dd-ddm-base'], skinnable:false});

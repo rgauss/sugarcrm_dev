@@ -45,8 +45,6 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
  * Contributor(s): ______________________________________..
  ********************************************************************************/
 
-require_once('include/MVC/View/views/view.edit.php');
-
 class OpportunitiesViewEdit extends ViewEdit {
 
  	function OpportunitiesViewEdit(){

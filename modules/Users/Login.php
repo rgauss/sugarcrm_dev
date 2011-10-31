@@ -42,11 +42,22 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
  * All Rights Reserved.
  * Contributor(s): ______________________________________..
  ********************************************************************************/
-if(isset($_SESSION['authenticated_user_id'])) {
-	ob_clean();
-   	header("Location: index.php?module=Home&action=index");
+if (isset($_SESSION['authenticated_user_id']))
+{
+    ob_clean();
+    // fixing bug #46837: Previosly links/URLs to records in Sugar from MSO Excel/Word were referred to the home screen and not the record
+    // It used to appear when default browser was not MS IE 
+    $nav = '';
+    $nav .= (isset($_GET['login_module'])) ? '&module='.$_GET['login_module'] : '';
+    $nav .= (isset($_GET['login_action'])) ? '&action='.$_GET['login_action'] : '';
+    $nav .= (isset($_GET['login_record'])) ? '&record='.$_GET['login_record'] : '';
+    
+    ($nav == '') 
+        ? header("Location: index.php?module=Home&action=index") 
+        : header("Location: index.php?".substr($nav, 1));
+    
     sugar_cleanup(true);
-   	return;
+    return;
 }
 global $current_language, $mod_strings, $app_strings;
 if(isset($_REQUEST['login_language'])){

@@ -320,7 +320,7 @@ class DynamicField {
         $relID = $field_def['id_name'];
         $ret_array['rel_table'] = $rel_table;
         $ret_array['name_field'] = $name_field;
-        $ret_array['select'] = ", $name_field {$field_def['name']} ";
+        $ret_array['select'] = ", {$tableName}.{$relID}, {$name_field} {$field_def['name']} ";
         $ret_array['from'] = " LEFT JOIN $rel_table $joinTableAlias ON $tableName.$relID = $joinTableAlias.id"
                             . " AND $joinTableAlias.deleted=0 ";
         return $ret_array;
@@ -509,7 +509,7 @@ class DynamicField {
         $fmd = new FieldsMetaData();
         $id =  $fmd->retrieve($object_name.$db_name,true, false);
         $is_update = false;
-        $label = $field->label;
+        $label = strtoupper( $field->label );
         if(!empty($id)){
             $is_update = true;
         }else{
@@ -544,12 +544,27 @@ class DynamicField {
         $this->buildCache($this->module);
         if($field){
             if(!$is_update){
+                //Do two SQL calls here in this case
+            	//The first is to create the column in the custom table without the default value
+            	//The second is to modify the column created in the custom table to set the default value
+            	//We do this so that the existing entries in the custom table don't have the default value set
+            	$field->default = '';
+            	$field->default_value = '';
                 $query = $field->get_db_add_alter_table($this->bean->table_name . '_cstm');
+                if(!empty($query)){
+                	$GLOBALS['db']->query($query);
+	                $field->default = $fmd->default_value;
+	                $field->default_value = $fmd->default_value;
+	                $query = $field->get_db_modify_alter_table($this->bean->table_name . '_cstm');
+	                if(!empty($query)){
+	                	$GLOBALS['db']->query($query);
+	            	}                   
+                }
             }else{
                 $query = $field->get_db_modify_alter_table($this->bean->table_name . '_cstm');
-            }
-            if(!empty($query)){
-                $GLOBALS['db']->query($query);
+                if(!empty($query)){
+                	$GLOBALS['db']->query($query);
+            	}                
             }
             $this->saveExtendedAttributes($field, array_keys($fmd->field_defs));
         }
@@ -761,9 +776,17 @@ class DynamicField {
         foreach($this->bean->field_defs as $name=>$data){
             if(empty($data['source']) || $data['source'] != 'custom_fields')
                 continue;
-            if(!empty($compareFieldDefs[$name])) {
+            /**
+             * @bug 43471
+             * @issue 43471
+             * @itr 23441
+             * 
+             * force the name to be lower as it needs to be lower since that is how it's put into the key
+             * in the get_columns() call above.
+             */
+            if(!empty($compareFieldDefs[strtolower($name)])) {
                 continue;
-        }
+            }
             $out .= $this->add_existing_custom_field($data, $execute);
         }
         if (!empty($out))
@@ -875,16 +898,18 @@ class DynamicField {
 
     }
 
-   function populateXTPL(&$xtpl, $view){
+   function populateXTPL(&$xtpl, $view) {
+
         if($this->bean->hasCustomFields()){
             $results = $this->getAllFieldsView($view, 'xtpl');
             foreach($results as $name=>$value){
-                if(is_array($value['xtpl'])){
-                    foreach($value['xtpl'] as $xName=>$xValue){
+                if(is_array($value['xtpl']))
+                {
+                    foreach($value['xtpl'] as $xName=>$xValue)
+                    {
                         $xtpl->assign(strtoupper($xName), $xValue);
-
                     }
-                }else{
+                } else {
                     $xtpl->assign(strtoupper($name), $value['xtpl']);
                 }
             }
@@ -900,20 +925,23 @@ class DynamicField {
     function getAllFieldsView($view, $type){
         $results = array();
          foreach($this->bean->field_defs as $name=>$data){
-            if(empty($data['source']) || $data['source'] != 'custom_fields')continue;
+            if(empty($data['source']) || $data['source'] != 'custom_fields')
+            {
+            	continue;
+            }
             require_once ('modules/DynamicFields/FieldCases.php');
             $field = get_widget ( $data ['type'] );
             $field->populateFromRow($data);
             $field->view = $view;
             $field->bean =& $this->bean;
-            switch(strtolower($type)){
+            switch(strtolower($type))
+            {
                 case 'xtpl':
                     $results[$name] = array('xtpl'=>$field->get_xtpl());
                     break;
                 case 'html':
                     $results[$name] = array('html'=> $field->get_html(), 'label'=> $field->get_html_label(), 'fieldType'=>$field->data_type, 'isCustom' =>true);
                     break;
-
             }
 
         }

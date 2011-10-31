@@ -1,20 +1,20 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dd-plugin', function(Y) {
 
 
        /**
-        * This is a simple Drag plugin that can be attached to a Node via the plug method.
+        * Simple Drag plugin that can be attached to a Node via the plug method.
         * @module dd
         * @submodule dd-plugin
         */
        /**
-        * This is a simple Drag plugin that can be attached to a Node via the plug method.
+        * Simple Drag plugin that can be attached to a Node via the plug method.
         * @class Drag
         * @extends DD.Drag
         * @constructor
@@ -24,7 +24,7 @@ YUI.add('dd-plugin', function(Y) {
 
         var Drag = function(config) {
             config.node = ((Y.Widget && config.host instanceof Y.Widget) ? config.host.get('boundingBox') : config.host);
-            Drag.superclass.constructor.apply(this, arguments);
+            Drag.superclass.constructor.call(this, config);
         };
         
         /**
@@ -50,4 +50,4 @@ YUI.add('dd-plugin', function(Y) {
 
 
 
-}, '3.0.0' ,{skinnable:false, requires:['dd-drag'], optional:['dd-constrain', 'dd-proxy']});
+}, '3.3.0' ,{requires:['dd-drag'], skinnable:false, optional:['dd-constrain', 'dd-proxy']});

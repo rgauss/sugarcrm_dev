@@ -36,7 +36,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
  ********************************************************************************/
 
 
-global $sugar_config, $dbconfig, $beanList, $beanFiles, $app_strings, $app_list_strings;
+global $sugar_config, $dbconfig, $beanList, $beanFiles, $app_strings, $app_list_strings,$current_user;
 
 
 if ( !empty($_REQUEST['user_id'])) {

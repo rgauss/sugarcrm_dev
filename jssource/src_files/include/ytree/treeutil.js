@@ -172,7 +172,7 @@ function loadDataForNode(node, onCompleteCallback) {
 	var callback =	{
 		  success: function(o) {    
 	   			node=o.argument[0];
-    			var nodes=JSON.parse(o.responseText);
+    			var nodes=YAHOO.lang.JSON.parse(o.responseText);
 				var tmpNode;
 			   	for (nodedata in nodes) {
 					for (node1 in nodes[nodedata]) {

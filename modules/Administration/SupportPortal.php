@@ -87,22 +87,26 @@ switch ($_REQUEST['view']) {
                 $send_module = 'ProspectLists';
         if ($send_module == 'Targets')
                 $send_module = 'Prospects';                            
+		// FG - Bug 39819 - Check for custom help files
 		$helpPath = 'modules/'.$send_module.'/language/'.$send_lang.'.help.'.$send_action.'.html';
-
+		if (sugar_is_file("custom/" . $helpPath)) {
+		    $helpPath = 'custom/' . $helpPath;
+		}
 		$sugar_smarty = new Sugar_Smarty();
 
-		//if the language is english then be sure to skip this check, otherwise go to the support
-		//portal if the file is not found.
-		if ($send_lang != 'en_us' && file_exists($helpPath))
+		//go to the support portal if the file is not found.
+		// FG - Bug 39820 - Devs can write help files also in english, so skip check for language not equals "en_us" !
+		if (file_exists($helpPath))
 		{
 			$sugar_smarty->assign('helpFileExists', TRUE);
+			$sugar_smarty->assign('MOD', $mod_strings);
+			$sugar_smarty->assign('modulename', $send_module);
 			$sugar_smarty->assign('helpPath', $helpPath);
-			$sugar_smarty->assign('helpBar', getHelpBar($send_module));
-			$sugar_smarty->assign('bookmarkScript', bookmarkJS());
+			$sugar_smarty->assign('currentURL', getCurrentURL());
 			$sugar_smarty->assign('title', $mod_strings['LBL_SUGARCRM_HELP'] . " - " . $send_module);
 			$sugar_smarty->assign('styleSheet', SugarThemeRegistry::current()->getCSS());
-			$sugar_smarty->assign('table', getTable());
-			$sugar_smarty->assign('endtable', endTable());
+			$sugar_smarty->assign('table', "<table class='tabForm'><tr><td>");
+			$sugar_smarty->assign('endtable', "</td></tr></table>");
 			$sugar_smarty->assign('charset', $app_strings['LBL_CHARSET']);
 			echo $sugar_smarty->fetch('modules/Administration/SupportPortal.tpl');			
 			
@@ -219,52 +223,3 @@ switch ($_REQUEST['view']) {
 		}
 		break;
 }
-
-
-function getHelpBar($moduleName)
-{
-	global $mod_strings;
-
-	$helpBar = "<table width='100%'><tr><td align='right'>" .
-			"<a href='javascript:window.print()'>" . $mod_strings['LBL_HELP_PRINT'] . "</a> - " .
-			"<a href='mailto:?subject=" . $mod_strings['LBL_SUGARCRM_HELP'] . "&body=" . rawurlencode(getCurrentURL()) . "'>" . $mod_strings['LBL_HELP_EMAIL'] . "</a> - " .
-			"<a href='#' onmousedown=\"createBookmarkLink('" . $mod_strings['LBL_SUGARCRM_HELP'] . " - " . $moduleName . "', '" . getCurrentURL() . "'" .")\">" . $mod_strings['LBL_HELP_BOOKMARK'] . "</a>" .
-			"</td></tr></table>";
-
-	return $helpBar;
-}
-
-function getTable()
-{
-	$table = "<table class='tabForm'><tr><td>";
-
-	return $table;
-}
-
-function endTable()
-{
-	$endtable = "</td></tr></table>";
-
-	return $endtable;
-}
-
-function bookmarkJS() {
-
-$script =
-<<<EOQ
-<script type="text/javascript" language="JavaScript">
-<!-- Begin
-function createBookmarkLink(title, url){
-	if (document.all)
-		window.external.AddFavorite(url, title);
-	else if (window.sidebar)
-		window.sidebar.addPanel(title, url, "")
-}
-//  End -->
-</script>
-EOQ;
-
-return $script;
-}
-
-?>

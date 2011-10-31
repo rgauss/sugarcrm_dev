@@ -124,26 +124,8 @@ class SugarFieldBase {
     }
 
     function getListViewSmarty($parentFieldArray, $vardef, $displayParams, $col) {
-        // FIXME: Rework the listview to use two-pass rendering like the DetailView
-
         $tabindex = 1;
-        $isArray = is_array($parentFieldArray);
-        $fieldName = $vardef['name'];
-
-        if ( $isArray ) {
-        	$fieldNameUpper = strtoupper($fieldName);
-            if ( isset($parentFieldArray[$fieldNameUpper])) {
-                $parentFieldArray[$fieldName] = $this->formatField($parentFieldArray[$fieldNameUpper],$vardef);
-            } else {
-                $parentFieldArray[$fieldName] = '';
-            }
-        } else {
-            if ( isset($parentFieldArray->$fieldName) ) {
-                $parentFieldArray->$fieldName = $this->formatField($parentFieldArray->$fieldName,$vardef);
-            } else {
-                $parentFieldArray->$fieldName = '';
-            }
-        }
+		$parentFieldArray = $this->setupFieldArray($parentFieldArray, $vardef);
     	$this->setup($parentFieldArray, $vardef, $displayParams, $tabindex, false);
 
         $this->ss->left_delimiter = '{';
@@ -275,10 +257,29 @@ class SugarFieldBase {
     function getEditView() {
     }
 
-    function getSearchInput() {
+    /**
+     * getSearchInput
+     *
+     * This function allows the SugarFields to handle returning the search input value given arguments (typically from $_REQUEST/$_POST)
+     * and a search string.
+     *
+     * @param $key String value of key to search for
+     * @param $args Mixed value containing haystack to search for value in
+     * @return $value Mixed value that the SugarField should return
+     */
+    function getSearchInput($key='', $args=array())
+    {
+    	//Nothing specified return empty string
+    	if(empty($key) || empty($args))
+    	{
+    		return '';
+    	}
+
+    	return isset($args[$key]) ? $args[$key] : '';
     }
 
     function getQueryLike() {
+
     }
 
     function getQueryIn() {
@@ -340,20 +341,30 @@ class SugarFieldBase {
 
     }
 
-	     /**
+     /**
      * This should be called when the bean is saved. The bean itself will be passed by reference
      * @param SugarBean bean - the bean performing the save
      * @param array params - an array of paramester relevant to the save, most likely will be $_REQUEST
      */
-	public function save($bean, $params, $field, $properties, $prefix = ''){
+    public function save($bean, $params, $field, $properties, $prefix = '') {
          if ( isset($params[$prefix.$field]) ) {
-             if(isset($properties['len']) && isset($properties['type']) && 'varchar' == $properties['type']){
-             	 $bean->$field = trim($this->unformatField($params[$prefix.$field],$properties));
+             if(isset($properties['len']) && isset($properties['type']) && $this->isTrimmable($properties['type'])){
+                 $bean->$field = trim($this->unformatField($params[$prefix.$field], $properties));
              }
-         	 else {
-                 $bean->$field = $this->unformatField($params[$prefix.$field],$properties);
+             else {
+                 $bean->$field = $this->unformatField($params[$prefix.$field], $properties);
          	 }
          }
+     }
+
+     /**
+      * Check if the field is allowed to be trimmed
+      *
+      * @param string $type
+      * @return boolean
+      */
+     protected function isTrimmable($type) {
+         return in_array($type, array('varchar', 'name'));
      }
 
     /**
@@ -390,4 +401,39 @@ class SugarFieldBase {
     {
      	return !empty($vardef['enable_range_search']) && !empty($_REQUEST['action']) && $_REQUEST['action']!='Popup';
     }
+
+    /**
+     * setupFieldArray
+     * This method takes the $parentFieldArray mixed variable which may be an Array or object and attempts
+     * to call any custom fieldSpecific formatting to the value depending on the field type.
+     *
+     * @see SugarFieldEnum.php, SugarFieldInt.php, SugarFieldFloat.php, SugarFieldRelate.php
+     * @param	mixed	$parentFieldArray Array or Object of data where the field's value comes from
+     * @param	array	$vardef The vardef entry linked to the SugarField instance
+     * @return	array   $parentFieldArray The formatted $parentFieldArray with the formatField method possibly applied
+     */
+    protected function setupFieldArray($parentFieldArray, $vardef)
+    {
+        $fieldName = $vardef['name'];
+        if ( is_array($parentFieldArray) )
+        {
+            $fieldNameUpper = strtoupper($fieldName);
+            if ( isset($parentFieldArray[$fieldNameUpper]))
+            {
+                $parentFieldArray[$fieldName] = $this->formatField($parentFieldArray[$fieldNameUpper],$vardef);
+            } else {
+                $parentFieldArray[$fieldName] = '';
+            }
+        } elseif (is_object($parentFieldArray)) {
+            if ( isset($parentFieldArray->$fieldName) )
+            {
+                $parentFieldArray->$fieldName = $this->formatField($parentFieldArray->$fieldName,$vardef);
+            } else {
+                $parentFieldArray->$fieldName = '';
+            }
+        }
+        return $parentFieldArray;
+    }
+
 }
+?>

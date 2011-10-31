@@ -48,8 +48,8 @@ function displayAddRemoveDragButtons(Add_All_Fields,Remove_All_Fields){var addRe
 else if(grid3.getRecordSet().getLength()==0&&grid4.getRecordSet().getLength()==0){addRemove.setAttribute('value',Add_All_Fields);addRemove.setAttribute('title',Add_All_Fields);}}
 function displayAddRemoveButtons(Add_All_Fields,Remove_All_Fields){var addRemove=document.getElementById("lead_add_remove_button");if(grid2.getRecordSet().getLength()>1){addRemove.setAttribute('value',Add_All_Fields);addRemove.setAttribute('title',Add_All_Fields);}
 else{addRemove.setAttribute('value',Remove_All_Fields);addRemove.setAttribute('title',Remove_All_Fields);}}
-function dragDropAllFields(Add_All_Fields,Remove_All_Fields){grid2=SUGAR_GRID_grid0;grid3=SUGAR_GRID_grid1;grid4=SUGAR_GRID_grid2;var addRemove=document.getElementById("lead_add_remove_button");var availibleSet=grid2.getRecordSet();var availibleCount=availibleSet.getLength();if(addRemove.value==Add_All_Fields&&availibleCount>1){for(var i=0;i<availibleCount;i++){if(i%2==0&&availibleSet.getRecord(i).getData()[0]!=" "){grid3.addRow(availibleSet.getRecord(i).getData(),(i/2));}
-if(i%2==1&&availibleSet.getRecord(i).getData()[0]!=" "){grid4.addRow(availibleSet.getRecord(i).getData(),((i-1)/2));}}
+function dragDropAllFields(Add_All_Fields,Remove_All_Fields){grid2=SUGAR_GRID_grid0;grid3=SUGAR_GRID_grid1;grid4=SUGAR_GRID_grid2;var addRemove=document.getElementById("lead_add_remove_button");var availibleSet=grid2.getRecordSet();var availibleCount=availibleSet.getLength();if(addRemove.value==Add_All_Fields&&availibleCount>1){for(var i=0;i<availibleCount;i++){if(i%2==0&&availibleSet.getRecord(i).getData()[0]!=" "){grid3.addRow(availibleSet.getRecord(i).getData(),(i / 2));}
+if(i%2==1&&availibleSet.getRecord(i).getData()[0]!=" "){grid4.addRow(availibleSet.getRecord(i).getData(),((i-1)/ 2));}}
 for(i=availibleCount-1;i>=0;i--){if(grid2.getRecord(i)!=null&&grid2.getRecord(i).getData()[0]!=" "){grid2.deleteRow(i);}}}
 else if(addRemove.value==Remove_All_Fields){var count=0;if(grid3.getRecordSet().getLength()>=grid4.getRecordSet().getLength()){count=grid3.getRecordSet().getLength();}
 else{count=grid4.getRecordSet().getLength();}

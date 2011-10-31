@@ -202,7 +202,6 @@ class ParserModifyListView extends ModuleBuilderParser
 		if (strcmp ( $key, 'deleted' ) == 0 || (isset ( $def [ 'name' ] ) && strpos ( $def [ 'name' ], "_name" ) !== false))
 	       return false;
 
-	    _pp($def); 
 	    //If none of the "ifs" are true, the field is valid
 	    return true;
 	}

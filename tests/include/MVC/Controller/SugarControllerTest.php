@@ -262,6 +262,83 @@ class SugarControllerTest extends Sugar_PHPUnit_Framework_TestCase
         
         rmdir_recursive("modules/$module_name");
     }
+    
+    public function testPostDelete()
+    {
+        $_REQUEST['return_module'] = 'foo';
+        $_REQUEST['return_action'] = 'bar';
+        $_REQUEST['return_id'] = '123';
+        
+        $controller = new SugarControllerMock;
+        $controller->post_delete();
+        
+        unset($_REQUEST['return_module']);
+        unset($_REQUEST['return_action']);
+        unset($_REQUEST['return_id']);
+        
+        $this->assertEquals("index.php?module=foo&action=bar&record=123",$controller->redirect_url);
+    }
+    
+    /**
+     * @ticket 23816
+     */
+    public function testPostDeleteWithOffset()
+    {
+        $_REQUEST['return_module'] = 'foo';
+        $_REQUEST['return_action'] = 'bar';
+        $_REQUEST['return_id'] = '123';
+        $_REQUEST['offset'] = '2';
+        
+        $controller = new SugarControllerMock;
+        $controller->post_delete();
+        
+        unset($_REQUEST['return_module']);
+        unset($_REQUEST['return_action']);
+        unset($_REQUEST['return_id']);
+        unset($_REQUEST['offset']);
+        
+        $this->assertEquals("index.php?module=foo&action=bar&record=123&offset=2",$controller->redirect_url);
+    }
+    
+    /**
+     * @ticket 23816
+     */
+    public function testPostDeleteWithOffsetAndDuplicateSave()
+    {
+        $_REQUEST['return_module'] = 'foo';
+        $_REQUEST['return_action'] = 'bar';
+        $_REQUEST['return_id'] = '123';
+        $_REQUEST['offset'] = '2';
+        $_REQUEST['duplicateSave'] = true;
+        
+        $controller = new SugarControllerMock;
+        $controller->post_delete();
+        
+        unset($_REQUEST['return_module']);
+        unset($_REQUEST['return_action']);
+        unset($_REQUEST['return_id']);
+        unset($_REQUEST['offset']);
+        unset($_REQUEST['duplicateSave']);
+        
+        $this->assertEquals("index.php?module=foo&action=bar&record=123",$controller->redirect_url);
+    }
+    
+    public function testPostDeleteWithDefaultValues()
+    {
+        $backupDefaultModule = $GLOBALS['sugar_config']['default_module'];
+        $backupDefaultAction = $GLOBALS['sugar_config']['default_action'];
+        
+        $GLOBALS['sugar_config']['default_module'] = 'yuck';
+        $GLOBALS['sugar_config']['default_action'] = 'yuckyuck';
+        
+        $controller = new SugarControllerMock;
+        $controller->post_delete();
+        
+        $GLOBALS['sugar_config']['default_module'] = $backupDefaultModule;
+        $GLOBALS['sugar_config']['default_action'] = $backupDefaultAction;
+        
+        $this->assertEquals("index.php?module=yuck&action=yuckyuck&record=",$controller->redirect_url);
+    }
 }
 
 class SugarControllerMock extends SugarController
@@ -271,5 +348,10 @@ class SugarControllerMock extends SugarController
     public function callLegacyCode()
     {
         return parent::callLegacyCode();
+    }
+    
+    public function post_delete()
+    {
+        parent::post_delete();
     }
 }

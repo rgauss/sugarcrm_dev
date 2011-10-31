@@ -77,7 +77,6 @@ document.body.setAttribute("class", "yui-skin-sam");
 
 <script type="text/javascript" src="{sugar_getjspath file='include/javascript/sugar_grp_yui_widgets.js'}"></script>
 <script type="text/javascript" src="{sugar_getjspath file='include/javascript/dashlets.js'}"></script>
-<script type="text/javascript" src='{sugar_getjspath file='include/JSON.js'}'></script>
 <script type='text/javascript' src='{sugar_getjspath file='include/MySugar/javascript/MySugar.js'}'></script>
 <link rel='stylesheet' href='{sugar_getjspath file='include/ytree/TreeView/css/folders/tree.css'}'>
 

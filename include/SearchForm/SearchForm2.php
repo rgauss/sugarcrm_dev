@@ -132,7 +132,7 @@ require_once('include/EditView/EditView2.php');
                                 'name'   => 'advanced',
                                 'displayDiv' => 'display:none');
         }
-        if($this->showCustom){
+        if(isset($this->showCustom) && is_array($this->showCustom)){
             foreach($this->showCustom as $v){
                 $this->nbTabs++;
                 $this->tabs[]=array('title'  => $GLOBALS['app_strings']["LNK_" . strtoupper($v)],
@@ -440,15 +440,15 @@ require_once('include/EditView/EditView2.php');
 					$long_name = $name.'_'.$SearchName;           
 					/*nsingh 21648: Add additional check for bool values=0. empty() considers 0 to be empty Only repopulates if value is 0 or 1:( */
                 	if(isset($array[$long_name]) && !$this->isEmptyDropdownField($long_name, $array[$long_name]) && ( $array[$long_name] !== '' || (isset($this->fieldDefs[$long_name]['type']) && $this->fieldDefs[$long_name]['type'] == 'bool'&& ($array[$long_name]=='0' || $array[$long_name]=='1'))))
-					{ //advanced*/				
+					{ 				
                         $this->searchFields[$name]['value'] = $array[$long_name];
                         if(empty($this->fieldDefs[$long_name]['value'])) {
                         	$this->fieldDefs[$long_name]['value'] = $array[$long_name];
                         }
                     }else if(!empty($array[$name]) && !$fromMergeRecords && !$this->isEmptyDropdownField($name, $array[$name])) { //basic        	
                     	$this->searchFields[$name]['value'] = $array[$name];
-                        if(empty($this->fieldDefs[$name]['value'])) {
-                        	$this->fieldDefs[$name]['value'] = $array[$name];
+                        if(empty($this->fieldDefs[$long_name]['value'])) {
+                        	$this->fieldDefs[$long_name]['value'] = $array[$name];
                         }
                     }
                     
@@ -463,7 +463,8 @@ require_once('include/EditView/EditView2.php');
 					if(!empty($params['is_date_field']) && isset($this->searchFields[$name]['value']))
 					{
 						global $timedate;
-						$date_value = $timedate->to_db_date($this->searchFields[$name]['value']);
+                                                // FG - bug 45287 - to db conversion is ok, but don't adjust timezone (not now), otherwise you'll jump to the day before (if at GMT-xx)
+						$date_value = $timedate->to_db_date($this->searchFields[$name]['value'], false);
 						$this->searchFields[$name]['value'] = $date_value == '' ? $this->searchFields[$name]['value'] : $date_value;
 					}                    
                 }
@@ -482,8 +483,12 @@ require_once('include/EditView/EditView2.php');
                                 if (!empty($params['type']) && $params['type'] == 'parent'
                                     && !empty($params['type_name']) && !empty($this->searchFields[$key]['value']))
                                 {
+                                	    require_once('include/SugarFields/SugarFieldHandler.php');
+										$sfh = new SugarFieldHandler();
+                   						$sf = $sfh->getSugarField('Parent');
+                                	
                                         $this->searchFields[$params['type_name']] = array('query_type' => 'default',
-                                                                                          'value'      => $array[$params['type_name']]);
+                                                                                          'value'      => $sf->getSearchInput($params['type_name'], $array));
                                 }
                                 
                                 if(empty($this->fieldDefs[$long_name]['value'])) {
@@ -552,6 +557,13 @@ require_once('include/EditView/EditView2.php');
 						$this->searchFields[$real_field]['operator'] = 'between';
 						$parms['value'] = $this->searchFields[$real_field]['value'];
 						$parms['operator'] = 'between';
+
+					        $field_type = isset($this->seed->field_name_map[$real_field]['type']) ? $this->seed->field_name_map[$real_field]['type'] : '';					
+					        if($field_type == 'datetimecombo' || $field_type == 'datetime')
+					        {
+					   	    $type = $field_type;
+					        }
+
 						$field = $real_field;
 						unset($this->searchFields[$end_field]['value']);
 					}
@@ -562,7 +574,7 @@ require_once('include/EditView/EditView2.php');
 					if($parms['operator'] == '=')
 					{
 					   $field_type = isset($this->seed->field_name_map[$real_field]['type']) ? $this->seed->field_name_map[$real_field]['type'] : '';					
-					   if($field_type == 'datetimecombo' || $field_type == 'datetime')
+					   if($field_type == 'datetimecombo' || $field_type == 'datetime' || $field_type == 'int')
 					   {
 					   	  $type = $field_type;
 					   }
@@ -777,9 +789,25 @@ require_once('include/EditView/EditView2.php');
 
                         if($type == 'datetime' || $type == 'datetimecombo') {
                         	try {
-	                            $dates = $timedate->getDayStartEndGMT($field_value);
-	                            $field_value = $dates["start"] . "<>" . $dates["end"];
-	                            $operator = 'between';
+                                // FG - bug45287 - If User asked for a range, takes edges from it.
+                                $placeholderPos = strpos($field_value, "<>");
+                                if ($placeholderPos !== FALSE && $placeholderPos > 0)
+                                {
+                                    $datesLimit = explode("<>", $field_value);
+                                    $dateStart = $timedate->getDayStartEndGMT($datesLimit[0]);
+                                    $dateEnd = $timedate->getDayStartEndGMT($datesLimit[1]);
+                                    $dates = $dateStart;
+                                    $dates['end'] = $dateEnd['end'];
+                                    $dates['enddate'] = $dateEnd['enddate'];
+                                    $dates['endtime'] = $dateEnd['endtime'];
+                                }
+                                else
+                                {
+                                    $dates = $timedate->getDayStartEndGMT($field_value);
+                                }
+                                // FG - bug45287 - Note "start" and "end" are the correct interval at GMT timezone
+                                $field_value = $dates["start"] . "<>" . $dates["end"];
+                                $operator = 'between';
                         	} catch(Exception $timeException) {
                         		//In the event that a date value is given that cannot be correctly processed by getDayStartEndGMT method,
                         		//just skip searching on this field and continue.  This may occur if user switches locale date formats 
@@ -787,6 +815,71 @@ require_once('include/EditView/EditView2.php');
                         		$GLOBALS['log']->error($timeException->getMessage());
                         		continue;
                         	}
+                        }
+
+                        // adjust date searches to take account for user timezone
+                        // 'equals' and 'is between' cases are handled above.
+                        if ($type =='' && !empty($parms['enable_range_search']) && $parms['enable_range_search']==true) {
+                            // check if value is a db date or db datetime format
+                            if (preg_match('/^(\d{4}-\d{2}-\d{2})( \d{2}:\d{2}:\d{2})?$/', $field_value)) {
+                                if ($operator == 'not_equal') {
+                                    $adjDate = $timedate->getDayStartEndGMT($field_value);
+                                    $field_value = $adjDate['start'] . '<>' . $adjDate['end'];
+                                    $operator = 'date_not_equal';
+                                } elseif ($operator == 'greater_than' || $operator == 'less_than_equals') {
+                                    $adjDate = $timedate->getDayStartEndGMT($field_value);
+                                    $field_value = $adjDate['end'];
+                                } elseif ($operator == 'less_than' || $operator == 'greater_than_equals') {
+                                    $adjDate = $timedate->getDayStartEndGMT($field_value);
+                                    $field_value = $adjDate['start'];
+                                }
+                                // check if value is something like [last_month]|[next_7_days]|[this_year]|etc...
+                            } elseif (preg_match('/^\[[(this|last|next)_][_a-z0-9]*\]$/', $field_value)) {
+                                switch($operator) {
+                                    case 'last_7_days':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', time() - (6 * TimeDate::SECONDS_IN_A_DAY)));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y'));
+                                        break;
+                                    case 'next_7_days':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y'));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', time() + (6 * TimeDate::SECONDS_IN_A_DAY)));
+                                        break;
+                                    case 'next_month':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, date("m")+1, 01,   date("Y"))));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, -1, date("m")+2, 01,   date("Y"))));
+                                        break;
+                                    case 'last_month':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, date("m")-1, 01,   date("Y"))));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, -1, date("m"), 01,   date("Y"))));
+                                        break;
+                                    case 'this_month':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, date("m"), 01,   date("Y"))));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, -1, date("m")+1, 01,   date("Y"))));
+                                        break;
+                                    case 'last_30_days':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', time() - (29 * TimeDate::SECONDS_IN_A_DAY)));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y'));
+                                        break;
+                                    case 'next_30_days':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y'));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', time() + (29 * TimeDate::SECONDS_IN_A_DAY)));
+                                        break;
+                                    case 'this_year':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, 01, 01,   date("Y"))));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, 12, 31,   date("Y"))));
+                                        break;
+                                    case 'last_year':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, 01, 01,   date("Y")-1)));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, 12, 31,   date("Y")-1)));
+                                        break;
+                                    case 'next_year':
+                                        $startDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, 01, 01,   date("Y")+1)));
+                                        $endDate = $timedate->getDayStartEndGMT(date('m/d/Y', mktime(0, 0, 0, 12, 31,   date("Y")+1)));
+                                        break;
+                                }
+                                $field_value = $startDate['start'] . "<>" . $endDate['end'];
+                                $operator = 'between';
+                            }
                         }
                         
                     	if($type == 'decimal' || $type == 'float' || $type == 'currency' || (!empty($parms['enable_range_search']) && empty($parms['is_date_field']))) {
@@ -827,7 +920,7 @@ require_once('include/EditView/EditView2.php');
 								$first_between = false;								
 							}
 								
-							if(!empty($parms['enable_range_search']) && $parms['operator'] == '=')
+							if(!empty($parms['enable_range_search']) && $parms['operator'] == '=' && $type != 'int')
 							{
 								// Databases can't really search for floating point numbers, because they can't be accurately described in binary,
 								// So we have to fuzz out the math a little bit								
@@ -880,7 +973,8 @@ require_once('include/EditView/EditView2.php');
 
                             case 'like':
                                 if($type == 'bool' && $field_value == 0) {
-                                    $where .=  $db_field . " = '0' OR " . $db_field . " IS NULL";
+                                    // Bug 43452 - FG - Added parenthesis surrounding the OR (without them the WHERE clause would be broken)
+                                    $where .=  "( " . $db_field . " = '0' OR " . $db_field . " IS NULL )";
                                 }
                                 else {
                                 	//check to see if this is coming from unified search or not
@@ -889,8 +983,8 @@ require_once('include/EditView/EditView2.php');
                                 		$UnifiedSearch = true;
                                 	}
 
-                                	//check to see if this is a universal search, AND the field name is "last_name"
-									if($UnifiedSearch && strpos($db_field, 'last_name') !== false){
+                                	//check to see if this is a universal search OR the field has db_concat_fields set in vardefs, AND the field name is "last_name"
+									if(($UnifiedSearch || !empty($this->seed->field_name_map[$field]['db_concat_fields'])) && strpos($db_field, 'last_name') !== false){
 										//split the string value, and the db field name
 										$string = explode(' ', $field_value);
 										$column_name =  explode('.', $db_field);
@@ -904,7 +998,8 @@ require_once('include/EditView/EditView2.php');
 											$where .=  $db_field . " like '".$field_value.$like_char."'";
 										}
 
-									}else {
+									}
+									else {
 
 										//Check if this is a first_name, last_name search
 										if(isset($this->seed->field_name_map) && isset($this->seed->field_name_map[$db_field]))
@@ -965,6 +1060,10 @@ require_once('include/EditView/EditView2.php');
                                 $field_value = explode('<>', $field_value);
                                 $where .= $db_field . " >= '".$field_value[0] . "' AND " .$db_field . " <= '".$field_value[1]."'";
                                 break;
+                            case 'date_not_equal':
+                                $field_value = explode('<>', $field_value);
+                                $where .= $db_field . " < '".$field_value[0] . "' OR " .$db_field . " > '".$field_value[1]."'";
+                                break;
                             case 'innerjoin':
                                 $this->seed->listview_inner_join[] = $parms['innerjoin'] . " '" . $parms['value'] . "%')";
                                 break;
@@ -982,86 +1081,6 @@ require_once('include/EditView/EditView2.php');
 								break;
 							case 'less_than_equals':
 								$where .= $db_field . " <= '". $field_value . "'";
-								break;
-							case 'last_7_days':
-								if($GLOBALS['db']->dbType == 'mysql') {
-									$where .= "LEFT(" . $db_field . ",10) BETWEEN LEFT((current_date - interval '7' day),10) AND LEFT(current_date,10)";	
-								} 
-								elseif ($GLOBALS['db']->dbType == 'mssql') {
-									$where .= "DATEDIFF ( d ,  " . $db_field . " , GETDATE() ) <= 7 and DATEDIFF ( d ,  " . $db_field . " , GETDATE() ) >= 0";
-								} 
-								break;
-							case 'next_7_days':	
-								if($GLOBALS['db']->dbType == 'mysql') {
-									$where .= "LEFT(" . $db_field . ",10)  BETWEEN LEFT(current_date,10) AND LEFT((current_date + interval '7' day),10)";	
-                        		}
-                        		elseif ($GLOBALS['db']->dbType == 'mssql') {
-									$where .= "DATEDIFF ( d , GETDATE() ,  " . $db_field . " ) <= 7 and DATEDIFF ( d , GETDATE() ,  " . $db_field . " ) >= 0";
-                        		} 
-								break;
-							case 'next_month':
-					            if ($GLOBALS['db']->dbType  == 'mysql') {
-					            	$where .= "LEFT(" . $db_field . ",7) = LEFT( (current_date  + interval '1' month),7)";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-									$where .= "(LEFT( ".$db_field.",4) = LEFT( (DATEADD(mm,1,GETDATE())),4)) and (DATEPART(yy, DATEADD(mm,1,GETDATE())) = DATEPART(yy, DATEADD(mm,1,".$db_field.")))";
-					            } 
-								break;
-					        case 'last_month':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					                $where .= "LEFT(" . $db_field . ",7) = LEFT( (current_date  - interval '1' month),7)";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "LEFT(" . $db_field . ",4) = LEFT((DATEADD(mm,-1,GETDATE())),4) and DATEPART(yy," . $db_field . ") = DATEPART(yy, GETDATE())";
-					            } 
-								break;
-					        case 'this_month':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					                $where .= "LEFT(" . $db_field . ",7) = LEFT( current_date,7)";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "LEFT (" . $db_field . ",4) = LEFT( GETDATE(),4) and DATEPART(yy," . $db_field . ") = DATEPART(yy, GETDATE())";
-					            } 
-								break;					
-					        case 'last_30_days':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					                $where .= "LEFT(" . $db_field . ",10) BETWEEN LEFT((current_date - interval '30' day),10) AND LEFT(current_date,10)";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "DATEDIFF ( d ,  " . $db_field . " , GETDATE() ) <= 30 and DATEDIFF ( d ,  " . $db_field . " , GETDATE() ) >= 0";
-					            }
-								break; 					
-					        case 'next_30_days':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					            	$where .= $db_field  . " BETWEEN (current_date) AND (current_date + interval '1' month)";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "DATEDIFF ( d , GETDATE() ,  " . $db_field . " ) <= 30 and DATEDIFF ( d , GETDATE() ,  " . $db_field . " ) >= 0";
-					            } 
-								break; 								
-					        case 'this_year':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					                $where .= "LEFT(" . $db_field . ",4) = EXTRACT(YEAR FROM ( current_date ))";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "DATEPART(yy," . $db_field . ") = DATEPART(yy, GETDATE())";
-					            }
-								break;								            
-					        case 'last_year':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					            	$where .= "LEFT(" . $db_field . ",4) = EXTRACT(YEAR FROM ( current_date  - interval '1' year))";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "DATEPART(yy," . $db_field . ") = DATEPART(yy,( dateadd(yy,-1,GETDATE())))";
-					            } 
-								break; 					
-					        case 'next_year':
-					            if ($GLOBALS['db']->dbType == 'mysql') {
-					                $where .= "LEFT(" . $db_field . ",4) = EXTRACT(YEAR FROM ( current_date  + interval '1' year))";
-					            }
-					            elseif ($GLOBALS['db']->dbType == 'mssql') {
-					                $where .= "DATEPART(yy," . $db_field . ") = DATEPART(yy,( dateadd(yy, 1,GETDATE())))";
-					            } 
 								break;
                             case 'isnull':
                             	// OOTB fields are NULL, custom fields are blank

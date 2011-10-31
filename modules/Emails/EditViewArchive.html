@@ -72,7 +72,7 @@
 				accesskey="{APP.LBL_SAVE_BUTTON_KEY}"
 				value="  {APP.LBL_SAVE_BUTTON_LABEL}  "
 				onclick="this.form.action.value='Save'; return check_form('EditView');" />
-			<input type="submit" name="button" class="button"
+			<input type="submit" name="button" id="CANCEL_HEADER" class="button"
 				title="{APP.LBL_CANCEL_BUTTON_TITLE}"
 				accesskey="{APP.LBL_CANCEL_BUTTON_KEY}"
 				value="  {APP.LBL_CANCEL_BUTTON_LABEL}  "
@@ -119,7 +119,7 @@
 <!-- BEGIN: open_source_1 -->
 					<td colspan="2"><slot></slot></td>
 <!-- END: open_source_1 -->
-					
+
 					<td width="25%" scope="row" valign="top" align="left"><slot>
 						<select tabindex='2' id='parent_type' name='parent_type' onchange="document.EditView.parent_name.value=''; changeQS(); checkParentType(document.EditView.parent_type.value, document.EditView.change_parent);">{TYPE_OPTIONS}</select>&nbsp;
 					
@@ -162,7 +162,7 @@
 					<td colspan="1">&nbsp;</td>
 					<td colspan="4">{MOD.LBL_NOTE_SEMICOLON}</td>
 				</tr>
-			
+
 				<tr valign="top">
 					<td scope="row"><slot>{MOD.LBL_TO}</slot></td>
 					<td colspan="4"  nowrap="nowrap"><slot>
@@ -180,8 +180,8 @@
 						</table>
 					</slot></td>
 				</tr>
-	
-				<tr>	
+
+				<tr>
 					<td scope="row"><slot>{MOD.LBL_CC}</slot></td>
 					<td  colspan="4" nowrap="nowrap"><slot>
 						<table cellspacing="0" cellpadding="0" border="0">
@@ -198,7 +198,7 @@
 						</table>
 					</slot></td>
 				</tr>
-	
+
 				<tr valign="top">
 					<td scope="row"><slot>{MOD.LBL_BCC}</slot></td>
 					<td  colspan="4" nowrap="nowrap"><slot>
@@ -255,11 +255,11 @@
 <!-- BEGIN: htmlarea -->
 					<td colspan="4" ><slot>
 						<textarea name="description_html" id="description_html">{DESCRIPTION_HTML}</textarea>
-						
-						<div id="alt_text_div">						
+
+						<div id="alt_text_div">
 							<input id="toggle_textarea_elem" onclick="toggle_textarea();" type="checkbox" name="toggle_html"> {MOD.LBL_EDIT_ALT_TEXT}
 						</div>
-						
+
 						<div id="text_div" style="display: none;">
 							<textarea tabindex='5' name='description' cols="100" rows="20">
 								{DESCRIPTION}

@@ -43,6 +43,7 @@ if(!defined('sugarEntry'))define('sugarEntry', true);
  ********************************************************************************/
 // moved code to a new location
 require_once('include/entryPoint.php');
+
 require("modules/vCals/Server.php");
 
 ?>

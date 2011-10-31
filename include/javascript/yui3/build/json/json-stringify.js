@@ -1,11 +1,11 @@
 /*
- Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+ Copyright (c) 2010, Yahoo! Inc. All rights reserved.
  Code licensed under the BSD License:
- http://developer.yahoo.net/yui/license.txt
- version: 3.0.0
- build: 1549
+ http://developer.yahoo.com/yui/license.html
+ version: 3.3.0
+ build: 3167
  */
-YUI.add('json-stringify',function(Y){var _JSON=Y.config.win.JSON,Lang=Y.Lang,isFunction=Lang.isFunction,isObject=Lang.isObject,isArray=Lang.isArray,_toStr=Object.prototype.toString,Native=(_toStr.call(_JSON)==='[object JSON]'&&_JSON),UNDEFINED='undefined',OBJECT='object',NULL='null',STRING='string',NUMBER='number',BOOLEAN='boolean',DATE='date',_allowable={'undefined':UNDEFINED,'string':STRING,'[object String]':STRING,'number':NUMBER,'[object Number]':NUMBER,'boolean':BOOLEAN,'[object Boolean]':BOOLEAN,'[object Date]':DATE,'[object RegExp]':OBJECT},EMPTY='',OPEN_O='{',CLOSE_O='}',OPEN_A='[',CLOSE_A=']',COMMA=',',COMMA_CR=",\n",CR="\n",COLON=':',COLON_SP=': ',QUOTE='"',_SPECIAL_CHARS=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,_CHARS={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'};function _type(o){var t=typeof o;return _allowable[t]||_allowable[_toStr.call(o)]||(t===OBJECT?(o?OBJECT:NULL):UNDEFINED);}
+YUI.add('json-stringify',function(Y){var _JSON=(Y.config.win||{}).JSON,Lang=Y.Lang,isFunction=Lang.isFunction,isObject=Lang.isObject,isArray=Lang.isArray,_toStr=Object.prototype.toString,Native=(_toStr.call(_JSON)==='[object JSON]'&&_JSON),useNative=!!Native,UNDEFINED='undefined',OBJECT='object',NULL='null',STRING='string',NUMBER='number',BOOLEAN='boolean',DATE='date',_allowable={'undefined':UNDEFINED,'string':STRING,'[object String]':STRING,'number':NUMBER,'[object Number]':NUMBER,'boolean':BOOLEAN,'[object Boolean]':BOOLEAN,'[object Date]':DATE,'[object RegExp]':OBJECT},EMPTY='',OPEN_O='{',CLOSE_O='}',OPEN_A='[',CLOSE_A=']',COMMA=',',COMMA_CR=",\n",CR="\n",COLON=':',COLON_SP=': ',QUOTE='"',_SPECIAL_CHARS=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,_CHARS={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'};function _type(o){var t=typeof o;return_allowable[t]||_allowable[_toStr.call(o)]||(t===OBJECT?(o?OBJECT:NULL):UNDEFINED);}
 function _char(c){if(!_CHARS[c]){_CHARS[c]='\\u'+('0000'+(+(c.charCodeAt(0))).toString(16)).slice(-4);}
 return _CHARS[c];}
 function _string(s){return QUOTE+s.replace(_SPECIAL_CHARS,_char)+QUOTE;}
@@ -22,10 +22,11 @@ for(i=stack.length-1;i>=0;--i){if(stack[i]===value){throw new Error("JSON.string
 arr=isArray(value);stack.push(value);if(arr){for(i=value.length-1;i>=0;--i){a[i]=_serialize(value,i)||NULL;}}else{keys=w||value;i=0;for(k in keys){if(keys.hasOwnProperty(k)){v=_serialize(value,k);if(v){a[i++]=_string(k)+colon+v;}}}}
 stack.pop();if(space&&a.length){return arr?OPEN_A+CR+_indent(a.join(COMMA_CR),space)+CR+CLOSE_A:OPEN_O+CR+_indent(a.join(COMMA_CR),space)+CR+CLOSE_O;}else{return arr?OPEN_A+a.join(COMMA)+CLOSE_A:OPEN_O+a.join(COMMA)+CLOSE_O;}}
 return _serialize({'':o},'');}
-Y.mix(Y.namespace('JSON'),{useNativeStringify:!!Native,dateToString:function(d){function _zeroPad(v){return v<10?'0'+v:v;}
+if(Native){try{useNative=('0'===Native.stringify(0));}catch(e){useNative=false;}}
+Y.mix(Y.namespace('JSON'),{useNativeStringify:useNative,dateToString:function(d){function _zeroPad(v){return v<10?'0'+v:v;}
 return d.getUTCFullYear()+'-'+
 _zeroPad(d.getUTCMonth()+1)+'-'+
 _zeroPad(d.getUTCDate())+'T'+
 _zeroPad(d.getUTCHours())+COLON+
 _zeroPad(d.getUTCMinutes())+COLON+
-_zeroPad(d.getUTCSeconds())+'Z';},stringify:function(o,w,ind){return Native&&Y.JSON.useNativeStringify?Native.stringify(o,w,ind):_stringify(o,w,ind);}});},'3.0.0');
+_zeroPad(d.getUTCSeconds())+'Z';},stringify:function(o,w,ind){return Native&&Y.JSON.useNativeStringify?Native.stringify(o,w,ind):_stringify(o,w,ind);}});},'3.3.0');

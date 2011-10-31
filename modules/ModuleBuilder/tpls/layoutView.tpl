@@ -241,13 +241,16 @@ var editPanelProperties = function (panelId, view) {
 var editFieldProperties = function (idCount, label) {ldelim}
 	var value_label = document.getElementById('le_label_' + idCount).innerHTML.replace(/^\s+|\s+$/g,''); 
 	var value_tabindex = document.getElementById('le_tabindex_' + idCount).innerHTML.replace(/^\s+|\s+$/g,'');
+	var title_label = '{sugar_translate label="LBL_LABEL_TITLE" module="ModuleBuilder"}';
+	var title_tabindex = '{sugar_translate label="LBL_TAB_ORDER" module="ModuleBuilder"}';
+	
 	ModuleBuilder.getContent(
 	  	'module=ModuleBuilder&action=editProperty'
 	  + '&view_module={$view_module|escape:'url'}' + '{if $fromModuleBuilder}&view_package={$view_package}{/if}'
 	  +	'&view={$view|escape:'url'}&id_label=le_label_' + encodeURIComponent(idCount) 
-	  + '&name_label=label_' + encodeURIComponent(label) + '&title_label={sugar_translate label="LBL_LABEL_TITLE" module="ModuleBuilder"}' 
+	  + '&name_label=label_' + encodeURIComponent(label) + '&title_label=' + encodeURIComponent(title_label)
 	  + '&value_label=' + encodeURIComponent(value_label) + '&id_tabindex=le_tabindex_' + encodeURIComponent(idCount) 
-	  + '&title_tabindex={sugar_translate label="LBL_TAB_ORDER" module="ModuleBuilder"}' 
+	  + '&title_tabindex=' + encodeURIComponent(title_tabindex)
 	  + '&name_tabindex=tabindex&value_tabindex=' + encodeURIComponent(value_tabindex) );
 	
 {rdelim}

@@ -151,6 +151,7 @@ class Viewpackage extends SugarView
  										'imageTitle' => 'package_create',
  										'size' => '64',
 										'help' => 'newPackage',
+                                        'linkId' => 'newPackageLink'
  										);
  		foreach($packages as $package) {
  			$this->buttons[$package] = array(

@@ -163,7 +163,7 @@ class aSubPanel
 		//only email is  being tested becuase other submodules in activites/history such as notes, tasks, meetings and calls cannot be disabled.
 		//as of today these are the only 2 sub-panels that use the union clause.
 		$mod_name = $this->get_module_name () ;
-		if ($mod_name == 'Activities' or $mod_name = 'History')
+		if ($mod_name == 'Activities' || $mod_name == 'History')
 		{
 			global $modListHeader ;
 			global $modules_exempt_from_availability_check ;
@@ -173,7 +173,7 @@ class aSubPanel
 				{
 					foreach ( $button as $property => $value )
 					{
-						if ($value == 'SubPanelTopComposeEmailButton' or $value == 'SubPanelTopArchiveEmailButton')
+						if ($value === 'SubPanelTopComposeEmailButton' || $value === 'SubPanelTopArchiveEmailButton')
 						{
 							//remove this button from the array.
 							unset ( $buttons [ $key ] ) ;
@@ -267,7 +267,7 @@ class aSubPanel
 				{
 					$field = $def['name'];
 					$list_key = isset($listFieldMap[$key][$field]) ? $listFieldMap[$key][$field] : $field;
-					
+
 					if (isset($subpanel->panel_definition['list_fields'][$field]))
 					{
 						$list_fields[$field] = $subpanel->panel_definition['list_fields'][$field];
@@ -275,7 +275,7 @@ class aSubPanel
 				    else if ($list_key != $field && isset($subpanel->panel_definition['list_fields'][$list_key]))
                     {
                         $list_fields[$list_key] = $subpanel->panel_definition['list_fields'][$list_key];
-                    	
+
                     }
 					else {
 						$list_fields[$field] = $display_fields[$vname];

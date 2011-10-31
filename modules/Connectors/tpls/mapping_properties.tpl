@@ -40,7 +40,7 @@
 
 <table border="0">
 <tr>
-<td colspan="2"><span><font size="3">{$module}</font></span></td></tr>
+<td colspan="2"><span><font size="3">{sugar_translate label=$module}</font></span></td></tr>
 <tr>
 <td width="150px"><b>{$mod.LBL_CONNECTOR_FIELDS}</b></td>
 <td><b>{$mod.LBL_MODULE_FIELDS}</b></td>

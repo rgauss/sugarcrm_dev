@@ -1,8 +1,8 @@
 /*
- Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+ Copyright (c) 2010, Yahoo! Inc. All rights reserved.
  Code licensed under the BSD License:
- http://developer.yahoo.net/yui/license.txt
- version: 3.0.0
- build: 1549
+ http://developer.yahoo.com/yui/license.html
+ version: 3.3.0
+ build: 3167
  */
-YUI.add('node-event-delegate',function(Y){Y.Node.prototype.delegate=function(type,fn,selector){var args=Array.prototype.slice.call(arguments,3),a=[type,fn,Y.Node.getDOMNode(this),selector];a=a.concat(args);return Y.delegate.apply(Y,a);};},'3.0.0',{requires:['node-base','event-delegate','pluginhost']});
+YUI.add('node-event-delegate',function(Y){Y.Node.prototype.delegate=function(type){var args=Y.Array(arguments,0,true),index=(Y.Lang.isObject(type)&&!Y.Lang.isArray(type))?1:2;args.splice(index,0,this._node);return Y.delegate.apply(Y,args);};},'3.3.0',{requires:['node-base','event-delegate']});

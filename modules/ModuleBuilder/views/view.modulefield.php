@@ -76,7 +76,9 @@ class ViewModulefield extends SugarView
                                // fields we override this so don't create a new dynamic field instead of updating the existing field
 
         $isClone = false;
-        if(!empty($this->view_object_map['is_clone']) && $this->view_object_map['is_clone'])
+        if(!empty($this->view_object_map['is_clone']) && $this->view_object_map['is_clone']
+            && (strcmp($field_name, "name") != 0)   // bug #35767, do not allow cloning of name field
+            )
             $isClone = true;
 		/*
 		$field_types =  array('varchar'=>'YourField', 'int'=>'Integer', 'float'=>'Decimal','bool'=>'Checkbox','enum'=>'DropDown',
@@ -123,14 +125,25 @@ class ViewModulefield extends SugarView
             'DATE','VARCHAR','VARCHAR2','NVARCHAR2','CHAR','NCHAR','NUMBER','PLS_INTEGER','BINARY_INTEGER','LONG','TIMESTAMP',
 			'INTERVAL','RAW','ROWID','UROWID','MLSLABEL','CLOB','NCLOB','BLOB','BFILE','XMLTYPE',
 			//SugarCRM reserved
-			'ID', 'ID_C',
+        	'ID', 'ID_C', 'PARENT_NAME', 'PARENT_ID',
 			);
+
+
+        //C.L. - Add support to mark related module id columns as reserved keywords
+        require_once 'modules/ModuleBuilder/parsers/relationships/DeployedRelationships.php';
+        $relatedModules = array_keys(DeployedRelationships::findRelatableModules()) ;
+        global $beanList;
+        foreach($relatedModules as $relModule)
+        {
+            if(isset($beanList[$relModule]))
+            {
+                $field_name_exceptions[] = strtoupper($beanList[$relModule]) . '_ID';
+            }
+        }
 
         if(! isset($_REQUEST['view_package']) || $_REQUEST['view_package'] == 'studio' || empty ( $_REQUEST [ 'view_package' ] ) ) {
             $module = new stdClass;
             $moduleName = $_REQUEST['view_module'];
-
-            global $beanList;
 
             $objectName = $beanList[$moduleName];
             $className = $objectName;
@@ -261,9 +274,11 @@ class ViewModulefield extends SugarView
 	        }
 		}
 		
-        if(!empty($vardef['studio']) && is_array($vardef['studio']) && !empty($vardef['studio']['no_duplicate']) && $vardef['studio']['no_duplicate'] == true) {
-            $fv->ss->assign('no_duplicate', true);
-        }
+        if((!empty($vardef['studio']) && is_array($vardef['studio']) && !empty($vardef['studio']['no_duplicate']) && $vardef['studio']['no_duplicate'] == true)
+           || (strcmp($field_name, "name") == 0)) // bug #35767, do not allow cloning of name field
+            {
+               $fv->ss->assign('no_duplicate', true);
+            }
 
         $fv->ss->assign('action',$action);
         $fv->ss->assign('isClone', ($isClone ? 1 : 0));

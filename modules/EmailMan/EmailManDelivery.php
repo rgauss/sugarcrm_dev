@@ -112,6 +112,10 @@ $emailman = new EmailMan();
 
     }
 
+//bug 26926 fix start
+DBManager::setQueryLimit(0);
+//end bug fix
+
 do {
 
 	$no_items_in_queue=true;

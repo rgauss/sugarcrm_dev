@@ -310,7 +310,6 @@ $form3 =<<<eoq2
 	</table>
 </td></tr>
 </table>
-<script type="text/javascript" language="Javascript" src="include/JSON.js"></script>
 <script>
  function fileBrowseLoaded(){
  	//alert(document.the_form.upgrade_zip.value.length);
@@ -359,7 +358,7 @@ $form3 =<<<eoq2
 
     //var file_name = document.getElementById('upgrade_zip').value;
 	var file_name = document.the_form.upgrade_zip.value;
-	postData = 'file_name=' + JSON.stringify(file_name) + '&module=UpgradeWizard&action=UploadFileCheck&to_pdf=1';
+	postData = 'file_name=' + YAHOO.lang.JSON.stringify(file_name) + '&module=UpgradeWizard&action=UploadFileCheck&to_pdf=1';
 	YAHOO.util.Connect.asyncRequest('POST', 'index.php', callback, postData);
    }
 }

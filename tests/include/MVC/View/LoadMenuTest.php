@@ -79,7 +79,10 @@ class LoadMenuTest extends Sugar_PHPUnit_Framework_TestCase
         $module_menu = $view->getMenu($this->_moduleName);
         $this->assertTrue(empty($module_menu),'Assert the module menu array is empty');
 	}
-
+	
+	/**
+	 * @ticket 43497
+	 */
 	public function testMenuExistsCanFindModuleMenu()
 	{
 	    // Create module menu
@@ -95,19 +98,26 @@ EOQ;
 
         $view = new SugarView;
         $module_menu = $view->getMenu($this->_moduleName);
-        $found_custom_menu = false;
+        $found_menu = false;
+        $found_menu_twice = false;
         foreach ($module_menu as $menu_entry) {
         	foreach ($menu_entry as $menu_item) {
         		if (preg_match('/action=bar/', $menu_item)) {
-        		   $found_custom_menu = true;
+        		    if ( $found_menu ) {
+        		        $found_menu_twice = true;
+        		    }
+        		    $found_menu = true;
         		}
         	}
         }
-        $this->assertTrue($found_custom_menu, "Assert that menu was detected");
+        
+        $this->assertTrue($found_menu, "Assert that menu was detected");
+        $this->assertFalse($found_menu_twice, "Assert that menu item wasn't listed twice");
 	}
 
     /**
      * @ticket 29114
+     * @ticket 43497
      */
     public function testMenuExistsCanFindModuleExtMenu()
     {
@@ -126,18 +136,24 @@ EOQ;
         $view = new SugarView;
         $module_menu = $view->getMenu($this->_moduleName);
         $found_custom_menu = false;
+        $found_custom_menu_twice = false;
         foreach ($module_menu as $key => $menu_entry) {
         	foreach ($menu_entry as $id => $menu_item) {
         		if (preg_match('/action=foo/', $menu_item)) {
-        		   $found_custom_menu = true;
+        		    if ( $found_custom_menu ) {
+        		        $found_custom_menu_twice = true;
+        		    }
+        		    $found_custom_menu = true;
         		}
         	}
         }
         $this->assertTrue($found_custom_menu, "Assert that custom menu was detected");
+        $this->assertFalse($found_custom_menu_twice, "Assert that custom menu item wasn't listed twice");
     }
 
     /**
      * @ticket 38935
+     * @ticket 43497
      */
     public function testMenuExistsCanFindModuleExtMenuWhenModuleMenuDefinedGlobal()
     {
@@ -157,16 +173,25 @@ EOQ;
         $view = new SugarView;
         $module_menu = $view->getMenu($this->_moduleName);
         $found_custom_menu = false;
+        $found_custom_menu_twice = false;
         foreach ($module_menu as $key => $menu_entry) {
         	foreach ($menu_entry as $id => $menu_item) {
         		if (preg_match('/action=foo/', $menu_item)) {
-        		   $found_custom_menu = true;
+        		    if ( $found_custom_menu ) {
+        		        $found_custom_menu_twice = true;
+        		    }
+        		    $found_custom_menu = true;
         		}
         	}
         }
+        
         $this->assertTrue($found_custom_menu, "Assert that custom menu was detected");
-    }
-
+        $this->assertFalse($found_custom_menu_twice, "Assert that custom menu item wasn't listed twice");
+    }    
+    
+    /**
+     * @ticket 43497
+     */
     public function testMenuExistsCanFindApplicationExtMenu()
 	{
 	    // Create module ext menu
@@ -191,15 +216,21 @@ EOQ;
         $view = new SugarView;
         $module_menu = $view->getMenu($this->_moduleName);
         $found_application_custom_menu = false;
+        $found_application_custom_menu_twice = false;
         foreach ($module_menu as $key => $menu_entry) {
         	foreach ($menu_entry as $id => $menu_item) {
         		if (preg_match('/action=foobar/', $menu_item)) {
-        		   $found_application_custom_menu = true;
+        		    if ( $found_application_custom_menu ) {
+        		        $found_application_custom_menu_twice = true;
+        		    }
+        		    $found_application_custom_menu = true;
         		}
         	}
         }
+        
         $this->assertTrue($found_application_custom_menu, "Assert that application custom menu was detected");
-
+        $this->assertFalse($found_application_custom_menu_twice, "Assert that application custom menu item wasn't duplicated");
+        
         if($backupCustomMenu) {
             copy('custom/application/Ext/Menus/menu.ext.php.backup', 'custom/application/Ext/Menus/menu.ext.php');
             unlink('custom/application/Ext/Menus/menu.ext.php.backup');
@@ -208,6 +239,9 @@ EOQ;
             unlink('custom/application/Ext/Menus/menu.ext.php');
 	}
 
+	/**
+	 * @ticket 43497
+	 */
 	public function testMenuExistsCanFindModuleMenuAndModuleExtMenu()
 	{
 	    // Create module menu
@@ -236,19 +270,29 @@ EOQ;
         $view = new SugarView;
         $module_menu = $view->getMenu($this->_moduleName);
         $found_custom_menu = false;
+        $found_custom_menu_twice = false;
         $found_menu = false;
+        $found_menu_twice = false;
         foreach ($module_menu as $key => $menu_entry) {
         	foreach ($menu_entry as $id => $menu_item) {
         		if (preg_match('/action=foo/', $menu_item)) {
-        		   $found_menu = true;
+        		    if ( $found_menu ) {
+        		        $found_menu_twice = true;
+        		    }
+        		    $found_menu = true;
         		}
         		if (preg_match('/action=bar/', $menu_item)) {
-        		   $found_custom_menu = true;
+        		    if ( $found_custom_menu ) {
+        		        $found_custom_menu_twice = true;
+        		    }
+        		    $found_custom_menu = true;
         		}
         	}
         }
         $this->assertTrue($found_menu, "Assert that menu was detected");
+        $this->assertFalse($found_menu_twice, "Assert that menu item wasn't duplicated");
         $this->assertTrue($found_custom_menu, "Assert that custom menu was detected");
+        $this->assertFalse($found_custom_menu_twice, "Assert that custom menu item wasn't duplicated");
 	}
 }
 

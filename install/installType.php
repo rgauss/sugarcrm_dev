@@ -138,7 +138,7 @@ $out .= <<<EOQ2
         <table cellspacing="0" cellpadding="0" border="0" class="stdTable">
           <tr>
 
-            <td><input class="button" type="button" value="{$mod_strings['LBL_BACK']}" onclick="document.getElementById('form').submit();" />
+            <td><input class="button" type="button" value="{$mod_strings['LBL_BACK']}" id="button_back_installType" onclick="document.getElementById('form').submit();" />
                 <input type="hidden" name="goto" value="{$mod_strings['LBL_BACK']}" /></td>
                 <td><input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next" /></td>
           </tr>

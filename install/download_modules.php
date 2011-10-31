@@ -38,7 +38,8 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 global $sugar_version, $js_custom_version;
 $lang_curr = $_SESSION['language'];
 require_once('ModuleInstall/PackageManager/PackageManagerDisplay.php');
-if( !isset( $install_script ) || !$install_script ){
+
+if(!isset( $install_script ) || !$install_script || empty($_SESSION['setup_db_admin_user_name'])){
     die($mod_strings['ERR_NO_DIRECT_SCRIPT']);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,7 +197,7 @@ $out =<<<EOQ
    </script>
 </head>
 
-<body onLoad="document.getElementById('defaultFocus').focus();">
+<body onLoad="document.getElementById('button_next2').focus();">
 {$fileMaxSize}
   <table cellspacing="0" width="100%" cellpadding="0" border="0" align="center" class="shell">
       <tr><td colspan="2" id="help"><a href="{$help_url}" target='_blank'>{$mod_strings['LBL_HELP']} </a></td></tr>
@@ -261,7 +262,6 @@ $form =<<<EOQ1
                         </tr>
                     </table>
                     </form>
-<script type="text/javascript" language="Javascript" src="include/JSON.js"></script>
 <script>
  function uploadCheck(){
    var len = escape(document.the_form.language_pack.value).length;
@@ -327,7 +327,7 @@ $out1 =<<<EOQ2
                                    <input type="hidden" name="default_user_name" value="admin">
                                 </td>
                                 <td>
-                                    <input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="defaultFocus" {$disabled} />
+                                    <input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next2" {$disabled} />
                                 </td>
                             </tr>
                         </table>

@@ -264,6 +264,8 @@ function add_contacts_matching_email_address(&$output_list, $email_address, &$se
 	// create a return array of names and email addresses.
 	foreach($contactList as $contact)
 	{
+        if (!is_a($contact, 'Contact')) continue;
+        
 		$output_list[] = Array("name1"	=> $contact->first_name,
 			"name2" => $contact->last_name,
 			"association" => $contact->account_name,
@@ -325,6 +327,8 @@ function add_leads_matching_email_address(&$output_list, $email_address, &$seed_
 	// create a return array of names and email addresses.
 	foreach($leadList as $lead)
 	{
+        if (!is_a($lead, 'Lead')) continue;
+
 		$output_list[] = Array("name1"	=> $lead->first_name,
 			"name2" => $lead->last_name,
 			"association" => $lead->account_name,

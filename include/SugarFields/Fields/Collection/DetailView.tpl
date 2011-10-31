@@ -36,7 +36,6 @@
 
 *}
 <script type="text/javascript" src='{sugar_getjspath file="include/SugarFields/Fields/Collection/SugarFieldCollection.js"}'></script>
-<script type="text/javascript" src='{sugar_getjspath file="include/JSON.js"}'></script>
 <div id='{{sugarvar key='name'}}_div' name='{{sugarvar key='name'}}_div'><img src="{sugar_getimagepath file='sqsWait.gif'}" alt="loading..." id="{{sugarvar key="name"}}_loading_img" style="display:none"></div>
 <script type="text/javascript">
 //{literal}

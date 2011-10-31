@@ -95,7 +95,7 @@ $out =<<<EOQ
    <link REL="SHORTCUT ICON" HREF="$icon">
    <link rel="stylesheet" href="$css" type="text/css" />
 </head>
-<body onload="javascript:document.getElementById('defaultFocus').focus();">
+<body onload="javascript:document.getElementById('button_next2').focus();">
 <form action="install.php" method="post" name="setConfig" id="form">
 <input type="hidden" name="current_step" value="{$next_step}">
 <table cellspacing="0" cellpadding="0" border="0" align="center" class="shell">
@@ -482,7 +482,7 @@ if (!isset($_SERVER['Path'])) {
 if(is_windows()) {
 if(isset($_SERVER['Path']) && !empty($_SERVER['Path'])) { // IIS IUSR_xxx may not have access to Path or it is not set
     if(!strpos($_SERVER['Path'], 'php')) {
-        $error = '<em>'.$mod_strings_scheduler['LBL_NO_PHP_CLI'].'</em>';
+//        $error = '<em>'.$mod_strings_scheduler['LBL_NO_PHP_CLI'].'</em>';
     }
 }
 $cronString = '
@@ -500,7 +500,7 @@ $cronString = '
 } else {
 if(isset($_SERVER['Path']) && !empty($_SERVER['Path'])) { // some Linux servers do not make this available
     if(!strpos($_SERVER['PATH'], 'php')) {
-        $error = '<em>'.$mod_strings_scheduler['LBL_NO_PHP_CLI'].'</em>';
+//        $error = '<em>'.$mod_strings_scheduler['LBL_NO_PHP_CLI'].'</em>';
     }
 }
 $cronString = '
@@ -526,7 +526,7 @@ $out .=<<<EOQ
     </tr>
     <tr>
         <td colspan='3' align='right'>
-                <input type="button" class="button" name="print_summary" value="{$mod_strings['LBL_PRINT_SUMM']}"
+                <input type="button" class="button" name="print_summary" id="button_print_summary_settings" value="{$mod_strings['LBL_PRINT_SUMM']}"
                 onClick='window.print()' onCluck='window.open("install.php?current_step="+(document.setConfig.current_step.value -1)+"&goto={$mod_strings["LBL_NEXT"]}&print=true");' />&nbsp;
       	</td>
     </tr>
@@ -541,10 +541,10 @@ $out .=<<<EOQ
               </td>
                 <td>
                 	<input type="hidden" name="goto" id="goto">
-                    <input class="button" type="button" value="{$mod_strings['LBL_BACK']}" onclick="document.getElementById('goto').value='{$mod_strings['LBL_BACK']}';document.getElementById('form').submit();" />
+                    <input class="button" type="button" value="{$mod_strings['LBL_BACK']}" id="button_back_settings" onclick="document.getElementById('goto').value='{$mod_strings['LBL_BACK']}';document.getElementById('form').submit();" />
                 </td>
                 <td>
-                	<input class="button" type="button" value="{$mod_strings['LBL_LANG_BUTTON_COMMIT']}" onclick="document.getElementById('goto').value='{$mod_strings['LBL_NEXT']}';document.getElementById('form').submit();" id="defaultFocus"/>
+                	<input class="button" type="button" value="{$mod_strings['LBL_LANG_BUTTON_COMMIT']}" onclick="document.getElementById('goto').value='{$mod_strings['LBL_NEXT']}';document.getElementById('form').submit();" id="button_next2"/>
                 </td>
             </tr>
         </table>
@@ -580,12 +580,3 @@ EOQ;
 echo $out;
 
 ?>
-
-
-
-
-
-
-
-
-

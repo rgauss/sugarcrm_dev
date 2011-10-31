@@ -127,7 +127,8 @@ if (!empty ($_REQUEST['display'])) {
 		fseek($fp, $pos , SEEK_END);
 		echo '<pre>';
 		while($line = fgets($fp)){
-			
+
+            $line = remove_xss($line);
 			//preg_match('/[^\]]*\[([0-9]*)\] ([a-zA-Z]+) ([a-zA-Z0-9\.]+) - (.*)/', $line, $result);
 			preg_match('/[^\]]*\[([0-9]*)\]/', $line, $result);
 			ob_flush();

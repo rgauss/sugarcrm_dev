@@ -66,6 +66,8 @@ $mod_strings = array(
 'LBL_ALT_ADDRESS_COUNTRY'=>'Alternate Country',
 'LBL_COUNTRY'=>'Country',
 'LBL_STREET'=>'Other Address',
+'LBL_PRIMARY_STREET'=>'Address',
+'LBL_ALT_STREET'=>'Other Address',
 'LBL_CITY'=>'City',
 'LBL_STATE'=>'State',
 'LBL_POSTALCODE'=>'Postal Code',
@@ -80,4 +82,5 @@ $mod_strings = array(
 'LBL_ASSISTANT_PHONE'=>'Assistant Phone',
 'LBL_WORK_PHONE'=>'Work Phone',
 'LNK_IMPORT_VCARD' => 'Create From vCard',
+'LBL_ANY_EMAIL' => 'Any Email',
 );

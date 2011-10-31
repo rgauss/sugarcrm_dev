@@ -1049,7 +1049,7 @@ class ModuleInstaller{
 					$basepath = "custom/Extension/application/Ext/";
 				}
 
-				foreach (array($filename , "custom" . $filename) as $fn) {
+				foreach (array($filename , "custom" . $filename, $rel_name ."_". $mod. ".php") as $fn) {
 					//remove any vardefs
 					$path = $basepath . "Vardefs/$fn" ;
 					if (file_exists( $path ))
@@ -1064,7 +1064,7 @@ class ModuleInstaller{
 				}
 			}
 
-			foreach (array($filename , "custom" . $filename) as $fn) {
+			foreach (array($filename , "custom" . $filename, $rel_name ."_". $mod. ".php") as $fn) {
 				// remove the table dictionary extension
 				if ( file_exists("custom/Extension/application/Ext/TableDictionary/$fn"))
 				    unlink("custom/Extension/application/Ext/TableDictionary/$fn");

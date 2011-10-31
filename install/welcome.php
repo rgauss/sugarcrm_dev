@@ -60,7 +60,7 @@ $out = <<<EOQ
    <link rel="stylesheet" href="install/install.css" type="text/css">
 </head>
 
-<body onload="javascript:document.getElementById('defaultFocus').focus();">
+<body onload="javascript:document.getElementById('button_next2').focus();">
 	<form action="install.php" method="post" name="form" id="form">
   <table cellspacing="0" cellpadding="0" border="0" align="center" class="shell">
   <tr><td colspan="2" id="help"><a href="{$help_url}" target='_blank'>{$mod_strings['LBL_HELP']} </a></td></tr>
@@ -95,7 +95,7 @@ $out = <<<EOQ
 						    <input type="hidden" name="current_step" value="{$next_step}">
 						</td>
 					    <td>
-					        <input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="defaultFocus" />
+					        <input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next2" />
 			            </td>
           </tr>
         </table>

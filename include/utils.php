@@ -555,7 +555,7 @@ function get_user_array($add_blank=true, $status="Active", $assigned_user="", $u
 	if($from_cache)
 		$user_array = get_register_value('user_array', $add_blank. $status . $assigned_user);
 
-	if(!isset($user_array)) {
+	if(empty($user_array)) {
 		$db = DBManagerFactory::getInstance();
 		$temp_result = Array();
 		// Including deleted users for now.
@@ -657,12 +657,11 @@ function showFullName() {
 	static $showFullName = null;
 
 	if (is_null($showFullName)) {
-		$sysPref = (isset($sugar_config['use_real_names']) && $sugar_config['use_real_names'] == true) ? true : false;
+		$sysPref = !empty($sugar_config['use_real_names']);
 		$userPref = (is_object($current_user)) ? $current_user->getPreference('use_real_names') : null;
 
 		if($userPref != null) {
-			$bool = ($userPref == 'on') ? true : false;
-			$showFullName = $bool;
+			$showFullName = ($userPref == 'on');
 		} else {
 			$showFullName = $sysPref;
 		}
@@ -796,14 +795,23 @@ function return_app_list_strings_language($language)
 function _mergeCustomAppListStrings($file , $app_list_strings){
 	$app_list_strings_original = $app_list_strings;
 	unset($app_list_strings);
+        // FG - bug 45525 - $exemptDropdown array is defined (once) here, not inside the foreach
+        //                  This way, language file can add items to save specific standard codelist from being overwritten
+        $exemptDropdowns = array();
 	include($file);
 	if(!isset($app_list_strings) || !is_array($app_list_strings)){
 		return $app_list_strings_original;
 	}
 	//Bug 25347: We should not merge custom dropdown fields unless they relate to parent fields or the module list.
+
+        // FG - bug 45525 - Specific codelists must NOT be overwritten
+	$exemptDropdowns[] = "moduleList";
+        $exemptDropdowns[] = "parent_type_display";
+        $exemptDropdowns[] = "record_type_display";
+        $exemptDropdowns[] = "record_type_display_notes";
+   
 	foreach($app_list_strings as $key=>$value)
 	{
-		$exemptDropdowns = array("moduleList", "parent_type_display", "record_type_display", "record_type_display_notes");
 		if (!in_array($key, $exemptDropdowns) && array_key_exists($key, $app_list_strings_original))
 		{
 	   		unset($app_list_strings_original["$key"]);
@@ -1247,7 +1255,8 @@ function microtime_diff($a, $b) {
 // check if Studio is displayed.
 function displayStudioForCurrentUser()
 {
-    if ( is_admin($GLOBALS['current_user']) ) {
+    global $current_user;
+    if ( $current_user->isAdmin() ) {
         return true;
     }
 
@@ -1265,10 +1274,15 @@ function displayWorkflowForCurrentUser()
 
 // return an array with all modules where the user is an admin.
 function get_admin_modules_for_user($user) {
-    global $beanList;
-    $admin_modules = array();
+    $GLOBALS['log']->deprecated("get_admin_modules_for_user() is deprecated as of 6.2.2 and may disappear in the future, use Users->getDeveloperModules() instead");
 
-    return ($admin_modules);
+    if(!isset($user)){
+        $modules = array();
+        return $modules;
+    }
+
+    return($user->getDeveloperModules());
+    
 }
 
  function get_workflow_admin_modules_for_user($user){
@@ -1305,7 +1319,7 @@ function get_admin_modules_for_user($user) {
     foreach ($workflow_mod_list as $key=>$val) {
         if(!in_array($val, $workflow_admin_modules) && ($val!='iFrames' && $val!='Feeds' && $val!='Home' && $val!='Dashboard'
             && $val!='Calendar' && $val!='Activities' && $val!='Reports') &&
-            (is_admin_for_module($user,$key))) {
+           ($user->isDeveloperForModule($key))) {
                 $workflow_admin_modules[$key] = $val;
         }
     }
@@ -1315,12 +1329,24 @@ function get_admin_modules_for_user($user) {
 
 // Check if user is admin for at least one module.
 function is_admin_for_any_module($user) {
+    if (!isset($user)){
+        return false;
+    }
+    if($user->isAdmin()) {
+        return true;
+    }
     return false;
 }
 
 
 // Check if user is admin for a specific module.
 function is_admin_for_module($user,$module) {
+    if (!isset($user)) {
+        return false;
+    }
+    if ($user->isAdmin()) {
+        return true;
+    }
     return false;
 }
 
@@ -1332,11 +1358,11 @@ function is_admin_for_module($user,$module) {
  * Contributor(s): ______________________________________..
  */
 function is_admin($user) {
-	if(!empty($user) && ($user->is_admin == '1' || $user->is_admin === 'on')){
-		return true;
-	}
-
-	return false;
+    if(empty($user)) {
+        return false;
+    }
+    
+	return $user->isAdmin();
 }
 
 /**
@@ -1410,6 +1436,9 @@ function get_select_options_with_id_separate_key ($label_list, $key_list, $selec
 	//for setting null selection values to human readable --None--
 	$pattern = "/'0?'></";
 	$replacement = "''>".$app_strings['LBL_NONE']."<";
+    if($massupdate){
+        $replacement .= "/OPTION>\n<OPTION value='__SugarMassUpdateClearField__'><"; // Giving the user the option to unset a drop down list. I.e. none means that it won't get updated
+    }
 
 	if (empty($key_list)) $key_list = array();
 	//create the type dropdown domain and set the selected value if $opp value already exists
@@ -1716,9 +1745,9 @@ function clean_xss($str, $cleanImg=true) {
 	$jsEvents .= "onmouseup|onmouseover|onmousedown|onmouseenter|onmouseleave|onmousemove|onload|onchange|";
 	$jsEvents .= "onreset|onselect|onsubmit|onkeydown|onkeypress|onkeyup|onabort|onerror|ondragdrop";
 
-	$attribute_regex	= "#<[^/>][^>]+({$jsEvents})[^=>]*=[^>]*>#sim";
+	$attribute_regex	= "#<.+({$jsEvents})[^=>]*=[^>]*>#sim";
 	$javascript_regex	= '@<[^/>][^>]+(expression\(|j\W*a\W*v\W*a|v\W*b\W*s\W*c\W*r|&#|/\*|\*/)[^>]*>@sim';
-	$imgsrc_regex		= '#<[^>]+src[^=]*=([^>]*?http://[^>]*)>#sim';
+	$imgsrc_regex		= '#<[^>]+src[^=]*=([^>]*?http(s)?://[^>]*)>#sim';
 	$css_url			= '#url\(.*\.\w+\)#';
 
 
@@ -1726,9 +1755,18 @@ function clean_xss($str, $cleanImg=true) {
 
 	$matches = array_merge(
 	xss_check_pattern($tag_regex, $str),
-	xss_check_pattern($javascript_regex, $str),
-	xss_check_pattern($attribute_regex, $str)
+	xss_check_pattern($javascript_regex, $str)
 	);
+
+
+    $jsMatches = xss_check_pattern($attribute_regex, $str);
+    if(!empty($jsMatches)){
+        preg_match_all($attribute_regex, $str, $newMatches, PREG_PATTERN_ORDER);
+        if(!empty($newMatches[0][0])){
+            $matches2 = array_merge(xss_check_pattern("#({$jsEvents})#sim", $newMatches[0][0]));
+            $matches = array_merge($matches, $matches2);
+        }
+    }
 
 	if($cleanImg) {
 		$matches = array_merge($matches,
@@ -1773,9 +1811,25 @@ function xss_check_pattern($pattern, $str) {
 	return $matches[1];
 }
 
-// Designed to take a string passed in the URL as a parameter and clean all "bad" data from it
-// The second argument is a string, "filter," which corresponds to a regular expression
-function clean_string($str, $filter = "STANDARD") {
+/**
+ * Designed to take a string passed in the URL as a parameter and clean all "bad" data from it
+ *
+ * @param string $str
+ * @param string $filter which corresponds to a regular expression to use; choices are:
+ * 		"STANDARD" ( default )
+ * 		"STANDARDSPACE"
+ * 		"FILE"
+ * 		"NUMBER"
+ * 		"SQL_COLUMN_LIST"
+ * 		"PATH_NO_URL"
+ * 		"SAFED_GET"
+ * 		"UNIFIED_SEARCH"
+ * 		"AUTO_INCREMENT"
+ * 		"ALPHANUM"
+ * @param boolean $dieOnBadData true (default) if you want to die if bad data if found, false if not
+ */
+function clean_string($str, $filter = "STANDARD", $dieOnBadData = true) 
+{
 	global  $sugar_config;
 
 	$filters = Array(
@@ -1783,7 +1837,7 @@ function clean_string($str, $filter = "STANDARD") {
 	"STANDARDSPACE"   => '#[^A-Z0-9\-_\.\@\ ]#i',
 	"FILE"            => '#[^A-Z0-9\-_\.]#i',
 	"NUMBER"          => '#[^0-9\-]#i',
-	"SQL_COLUMN_LIST" => '#[^A-Z0-9,_\.]#i',
+	"SQL_COLUMN_LIST" => '#[^A-Z0-9\(\),_\.]#i',
 	"PATH_NO_URL"     => '#://#i',
 	"SAFED_GET"		  => '#[^A-Z0-9\@\=\&\?\.\/\-_~]#i', /* range of allowed characters in a GET string */
 	"UNIFIED_SEARCH"	=> "#[\\x00]#", /* cn: bug 3356 & 9236 - MBCS search strings */
@@ -1795,7 +1849,10 @@ function clean_string($str, $filter = "STANDARD") {
 		if (isset($GLOBALS['log']) && is_object($GLOBALS['log'])) {
 			$GLOBALS['log']->fatal("SECURITY: bad data passed in; string: {$str}");
 		}
-		die("Bad data passed in; <a href=\"{$sugar_config['site_url']}\">Return to Home</a>");
+		if ( $dieOnBadData ) {
+			die("Bad data passed in; <a href=\"{$sugar_config['site_url']}\">Return to Home</a>");
+		}
+		return false;
 	}
 	else {
 		return $str;
@@ -2226,18 +2283,18 @@ function get_bean_select_array($add_blank=true, $bean_name, $display_columns, $w
 
 		$db = DBManagerFactory::getInstance();
 		$temp_result = Array();
-		$query = "SELECT id, {$display_columns} as display from {$focus->table_name} ";
+		$query = "SELECT {$focus->table_name}.id, {$display_columns} as display from {$focus->table_name} ";
 		$query .= "where ";
 		if ( $where != '')
 		{
 			$query .= $where." AND ";
 		}
-
-		$query .=  " deleted=0";
+		
+		$query .=  " {$focus->table_name}.deleted=0";
 
 		if ( $order_by != '')
 		{
-			$query .= ' order by '.$order_by;
+			$query .= " order by {$focus->table_name}.{$order_by}";
 		}
 
 		$GLOBALS['log']->debug("get_user_array query: $query");
@@ -2699,7 +2756,12 @@ function check_logic_hook_file($module_name, $event, $action_array){
 		} else {
 			$add_logic = true;
 
-			$logic_count = count($hook_array[$event]);
+            $logic_count = 0;
+            if(!empty($hook_array[$event]))
+            {
+			    $logic_count = count($hook_array[$event]);
+            }
+            
 			if($action_array[0]==""){
 				$action_array[0] = $logic_count  + 1;
 			}
@@ -3231,6 +3293,22 @@ function getPhpInfo($level=-1) {
  */
 function string_format($format, $args){
 	$result = $format;
+    
+    /** Bug47277 fix.
+     * If args array has only one argument, and it's empty, so empty single quotes are used '' . That's because
+     * IN () fails and IN ('') works. 
+     */
+    if (count($args) == 1)
+    {
+        reset($args);
+        $singleArgument = current($args);
+        if (empty($singleArgument))
+        {
+            return str_replace("{0}", "''", $result);
+        }
+    }
+    /* End of fix */
+    
 	for($i = 0; $i < count($args); $i++){
 		$result = str_replace('{'.$i.'}', $args[$i], $result);
 	}
@@ -4260,4 +4338,16 @@ function verify_uploaded_image($path, $jpeg_only = false)
 	        return false;
 	}
     return verify_image_file($path, $jpeg_only);
+}
+
+/**
+ * @param $input - the input string to sanitize
+ * @param int $quotes - use quotes
+ * @param string $charset - the default charset
+ * @param bool $remove - strip tags or not
+ * @return string - the sanitized string
+ */
+function sanitize($input, $quotes = ENT_QUOTES, $charset = 'UTF-8', $remove = false)
+{
+    return htmlentities($input, $quotes, $charset);
 }

@@ -223,30 +223,51 @@ function export($type, $records = null, $members = false) {
 		}
 		$pre_id = $val['id'];
 		$vals = array_values($val);
-		foreach ($vals as $key => $value) {
-			//if our value is a datetime field, then apply the users locale
-			if(isset($focus->field_name_map[$fields_array[$key]]['type']) && ($focus->field_name_map[$fields_array[$key]]['type'] == 'datetime' || $focus->field_name_map[$fields_array[$key]]['type'] == 'datetimecombo')){
-				$value = $timedate->to_display_date_time($value);
+		foreach ($vals as $key => $value) 
+		{
+                    //getting content values depending on their types
+                    $fieldType = $focus->field_name_map[$fields_array[$key]]['type']; 
+                    if (isset($fieldType))
+                    {
+                        switch ($fieldType)
+                        {
+                            //if our value is a currency field, then apply the users locale
+                            case 'currency':
+                                require_once('modules/Currencies/Currency.php');
+                                $value = currency_format_number($value, array('currency_symbol' => false));
+                                break;
+                            
+                            //if our value is a datetime field, then apply the users locale
+                            case 'datetime':
+                            case 'datetimecombo':
+                                $value = $timedate->to_display_date_time($value);
 				$value = preg_replace('/([pm|PM|am|AM]+)/', ' \1', $value);
-			}
-			//kbrill Bug #16296
-			if(isset($focus->field_name_map[$fields_array[$key]]['type']) && $focus->field_name_map[$fields_array[$key]]['type'] == 'date'){
-				$value = $timedate->to_display_date($value, false);
-			}
-			// Bug 32463 - Properly have multienum field translated into something useful for the client
-			if(isset($focus->field_name_map[$fields_array[$key]]['type']) && $focus->field_name_map[$fields_array[$key]]['type'] == 'multienum'){
-			    $value = str_replace("^","",$value);
-			    if ( isset($focus->field_name_map[$fields_array[$key]]['options'])
-			            && isset($app_list_strings[$focus->field_name_map[$fields_array[$key]]['options']]) ) {
-                    $valueArray = explode(",",$value);
-                    foreach ( $valueArray as $multikey => $multivalue ) {
-                        if ( isset($app_list_strings[$focus->field_name_map[$fields_array[$key]]['options']][$multivalue]) ) {
-                            $valueArray[$multikey] = $app_list_strings[$focus->field_name_map[$fields_array[$key]]['options']][$multivalue];
+                                break;
+                            
+                            //kbrill Bug #16296
+                            case 'date':
+                                $value = $timedate->to_display_date($value, false);
+                                break;
+                            
+                            // Bug 32463 - Properly have multienum field translated into something useful for the client
+                            case 'multienum':
+                                $value = str_replace("^","",$value);
+                                if (isset($focus->field_name_map[$fields_array[$key]]['options']) && isset($app_list_strings[$focus->field_name_map[$fields_array[$key]]['options']]) ) 
+								{
+                                    $valueArray = explode(",",$value);
+                                    foreach ($valueArray as $multikey => $multivalue ) 
+									{
+                                        if (isset($app_list_strings[$focus->field_name_map[$fields_array[$key]]['options']][$multivalue]) ) 
+										{
+                                            $valueArray[$multikey] = $app_list_strings[$focus->field_name_map[$fields_array[$key]]['options']][$multivalue];
+                                        }
+                                    }
+                                    $value = implode(",",$valueArray);
+                                }
+                                break;
                         }
                     }
-                    $value = implode(",",$valueArray);
-			    }
-			}
+
 			array_push($new_arr, preg_replace("/\"/","\"\"", $value));
 		}
 		$line = implode("\"".getDelimiter()."\"", $new_arr);
@@ -326,5 +347,3 @@ function generateSearchWhere($module, $query) {//this function is similar with f
     return $ret_array;
 }
 
-
-?>

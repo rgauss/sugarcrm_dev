@@ -699,7 +699,7 @@ SE.accounts = {
      * Populates an account's fields in Settings->Accounts
      */
     fillIeAccount:function(jsonstr) {
-        var o = JSON.parse(jsonstr);
+        var o = YAHOO.lang.JSON.parse(jsonstr);
 
         document.getElementById('ie_id').value = o.id;
         document.getElementById('ie_name').value = o.name;
@@ -923,7 +923,11 @@ SE.accounts = {
         var protocol = Dom.get('protocol').value;
         var port = Dom.get('port').value;
         var oe = Dom.get('outbound_email');
-        var oe_value = typeof(oe.options[oe.selectedIndex]) == 'undefined' ? "" : oe.options[oe.selectedIndex].value;
+
+        // Bug 44392: IE9 and possibly previous versions have a quirk where selectedIndex is -1 if you have nothing selected vs 0 for
+        // other browsers. And if you check options[-1] it returns "unknown" instead of undefined. Also other options out of index
+        // return null instead of undefined for other browsers, thus we need to check for all the possible outcomes.
+        var oe_value = (typeof(oe.options[oe.selectedIndex]) === 'undefined' || typeof(oe.options[oe.selectedIndex]) === 'unknown' || typeof(oe.options[oe.selectedIndex]) === null) ? "" : oe.options[oe.selectedIndex].value;
 
         var outboundUserName = Dom.get('inbound_mail_smtpuser').value;
         var outboundPass = Dom.get('inbound_mail_smtppass').value;
@@ -1032,13 +1036,15 @@ SE.accounts = {
     	//Set unread
     	if (typeof(node.data.unseen) != 'undefined') {
     		if (node.data.unseen > 0) {
-				node.setUpLabel('<b>' + node.data.origText + '(' + node.data.unseen + ')<b>');
+				node.setUpLabel(node.data.origText + '(' + node.data.unseen + ')');
+                // Add bold style to label, kinda hacky
+                node.labelStyle += " ygtvlabelbold";
 			}
 			else {
 				node.setUpLabel(node.data.origText);
 			}
     	} else {
-    		node.setUpLabel('<span>' + node.data.origText + '</span>');
+    		node.setUpLabel(node.data.origText);
     	}
     	SE.accounts.setupDDTarget(node);
     },
@@ -1306,8 +1312,8 @@ SE.contextMenus = {
         for(var i=0; i<rows.length; i++) {
             uids[i] = SE.grid.getRecord(rows[i]).getData().uid;
         }
-        var ser = JSON.stringifyNoSecurity(uids);
-
+        var ser = YAHOO.lang.JSON.stringify(uids);
+        
         AjaxObject.startRequest(callbackRelateEmail, urlStandard + '&emailUIAction=getRelateForm&uid=' + ser + "&ieId=" + ieId + "&mbox=" + folder);
     },
 
@@ -1579,7 +1585,7 @@ SE.detailView = {
             document.getElementById('_blank').innerHTML = "";
 	        var ser = [ ];
 			ser.push(uid);
-	        uid = JSON.stringifyNoSecurity(ser);
+	        uid = YAHOO.lang.JSON.stringify(ser);
             this.emailDelete(ieId, uid, mbox);
         }
     },
@@ -2235,7 +2241,7 @@ SE.folders = {
 
     getNodeFromMboxPath : function(path) {
         var tree = YAHOO.widget.TreeView.getTree('frameFolders');
-        var a = JSON.parse(path);
+        var a = YAHOO.lang.JSON.parse(path);
 
         var node = tree.getRoot();
 

@@ -239,13 +239,13 @@ foreach($pages[$activePage]['columns'] as $colNum => $column) {
                 }
 
             	array_push($dashletIds, $id);
-            	
+
 		        $dashlets = $current_user->getPreference('dashlets', 'Home'); // Using hardcoded 'Home' because DynamicAction.php $_REQUEST['module'] value is always Home
 		        $lvsParams = array();
 		        if(!empty($dashlets[$id]['sort_options'])){
 		            $lvsParams = $dashlets[$id]['sort_options'];
     	        }
-		        
+
             	$dashlet->process($lvsParams);
             	try {
 	            	$display[$colNum]['dashlets'][$id]['display'] = $dashlet->display();
@@ -292,7 +292,7 @@ $sugar_smarty->assign('lblAdd', $GLOBALS['app_strings']['LBL_ADD_BUTTON']);
 $sugar_smarty->assign('lblAddDashlets', $GLOBALS['app_strings']['LBL_ADD_DASHLETS']);
 $sugar_smarty->assign('lblLnkHelp', $GLOBALS['app_strings']['LNK_HELP']);
 
-$sugar_smarty->assign('mod', return_module_language($sugar_config['default_language'], 'Home'));
+$sugar_smarty->assign('mod', return_module_language($GLOBALS['current_language'], 'Home'));
 $sugar_smarty->assign('app', $GLOBALS['app_strings']);
 $sugar_smarty->assign('module', 'Home');
 //custom chart code

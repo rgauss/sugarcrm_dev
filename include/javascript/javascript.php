@@ -69,7 +69,9 @@ class javascript{
 	}
 
     function addSpecialField($dispField, $realField, $type, $required, $prefix = '') {
+       if (isset($this->sugarbean->field_name_map[$realField]['vname'])) {
     	$this->addFieldGeneric($dispField, 'date', $this->sugarbean->field_name_map[$realField]['vname'], $required, $prefix );
+       }
     }
 
 	function addField($field,$required, $prefix='', $displayField='', $translate = false){

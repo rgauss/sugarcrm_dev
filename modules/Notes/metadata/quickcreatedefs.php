@@ -82,7 +82,9 @@ array (
               'required' => true,
             ),
           ),
-          'assigned_user_name'
+          array(
+          	'name' => 'assigned_user_name','label' => 'LBL_ASSIGNED_TO',
+          ),
         ),
          
         array (

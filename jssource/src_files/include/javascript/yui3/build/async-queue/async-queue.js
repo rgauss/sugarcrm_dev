@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('async-queue', function(Y) {
 
@@ -126,20 +126,13 @@ Y.extend(Queue, Y.EventTarget, {
      * @protected
      */
     _initEvents : function () {
-        /*
         this.publish({
-            'execute' : { defaultFn : this._defExecFn },
-            'shift'   : { defaultFn : this._defShiftFn },
-            'add'     : { defaultFn : this._defAddFn },
-            'promote' : { defaultFn : this._defPromoteFn },
-            'remove'  : { defaultFn : this._defRemoveFn }
+            'execute' : { defaultFn : this._defExecFn,    emitFacade: true },
+            'shift'   : { defaultFn : this._defShiftFn,   emitFacade: true },
+            'add'     : { defaultFn : this._defAddFn,     emitFacade: true },
+            'promote' : { defaultFn : this._defPromoteFn, emitFacade: true },
+            'remove'  : { defaultFn : this._defRemoveFn,  emitFacade: true }
         });
-        */
-        this.publish('execute' , { defaultFn : this._defExecFn, emitFacade: true });
-        this.publish('shift'   , { defaultFn : this._defShiftFn, emitFacade: true });
-        this.publish('add'     , { defaultFn : this._defAddFn, emitFacade: true });
-        this.publish('promote' , { defaultFn : this._defPromoteFn, emitFacade: true });
-        this.publish('remove'  , { defaultFn : this._defRemoveFn, emitFacade: true });
     },
 
     /**
@@ -533,4 +526,4 @@ Y.extend(Queue, Y.EventTarget, {
 
 
 
-}, '3.0.0' ,{requires:['event-custom']});
+}, '3.3.0' ,{requires:['event-custom']});

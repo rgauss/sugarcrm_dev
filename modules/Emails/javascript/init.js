@@ -320,9 +320,6 @@ function createTreePanel(treeData, params) {
 	
 	//if (treeData.nodes && treeData[0].id == "Home")
 	//	treeData = treeData[0];
-
-	addChildNodes(root, treeData);
-	
 	return tree;
 }
 
@@ -333,8 +330,9 @@ function addChildNodes(parentNode, parentData) {
 	for (i in nodes) {
 		if (typeof(nodes[i]) == 'object') {
 			if (nodes[i].data) {
-				nodes[i].data.href = '#';
-				var node = new YAHOO.widget.TextNode(nodes[i].data, parentNode)
+                // See comment about href below.
+				// nodes[i].data.href = '#';
+				var node = new YAHOO.widget.TextNode(nodes[i].data, parentNode);
 				node.action = nodes[i].data.action;
 			} else {
 				if (nodes[i].id == SUGAR.language.get('app_strings','LBL_EMAIL_HOME_FOLDER')) {
@@ -346,7 +344,10 @@ function addChildNodes(parentNode, parentData) {
 				if (nodes[i].cls) {
 					nodes[i].className = nodes[i].cls;
 				}
-				nodes[i].href = "#";
+                // Previously, span was added in the label so it was rendering in the tree.
+                // Default behavior is to wrap in span if no href property, and since this href
+                // doesn't do anything, remove it so that it will be wrapped in spans.
+                // nodes[i].href = "#";
 				if (nodes[i].text) nodes[i].label = nodes[i].text;
 				//Override YUI child node creation
 				if (nodes[i].children) {

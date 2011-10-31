@@ -139,8 +139,8 @@ else
 }
 
 $xtpl->assign("MAILMERGE_MODULE", $_SESSION['MAILMERGE_MODULE']);
-$xtpl->assign("MAILMERGE_PREV", SugarThemeRegistry::current()->getImage('previous','border="0" style="margin-left: 1px;" alt="Previous" id="prevItems" onClick="decreaseOffset();getObjects();"'));
-$xtpl->assign("MAILMERGE_NEXT", SugarThemeRegistry::current()->getImage('next','border="0" style="margin-left: 1px;" alt="Next" id="nextItems" onClick="increaseOffset();getObjects();"'));
+$xtpl->assign("MAILMERGE_PREV", SugarThemeRegistry::current()->getImage('previous','border="0" style="margin-left: 1px;" alt="Previous" id="prevItems" onClick="decreaseOffset();"'));
+$xtpl->assign("MAILMERGE_NEXT", SugarThemeRegistry::current()->getImage('next','border="0" style="margin-left: 1px;" alt="Next" id="nextItems" onClick="increaseOffset();"'));
 $xtpl->assign("MAILMERGE_RIGHT_TO_LEFT", SugarThemeRegistry::current()->getImage('leftarrow_big','border="0" style="margin-left: 1px;" alt="Remove Item(s)" onClick="moveLeft();"'));
 $xtpl->assign("MAILMERGE_LEFT_TO_RIGHT", SugarThemeRegistry::current()->getImage('rightarrow_big','border="0" style="margin-left: 1px;" alt="Add Item(s)" onClick="moveRight();"'));
 $xtpl->assign("MAIL_MERGE_HEADER_STEP_2", $step_txt);

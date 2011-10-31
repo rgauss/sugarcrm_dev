@@ -72,6 +72,24 @@ $return_id = $focus->id;
 $GLOBALS['log']->debug("Saved record with id of ".$return_id);
 
 
+//copy compaign targets on duplicate
+if( !empty($_REQUEST['duplicateSave']) &&  !empty($_REQUEST['duplicateId']) ){
+	$copyFromCompaign = new Campaign();
+	$copyFromCompaign->retrieve($_REQUEST['duplicateId']);
+	$copyFromCompaign->load_relationship('prospectlists');
+
+	$focus->load_relationship('prospectlists');
+	$target_lists = $copyFromCompaign->prospectlists->get();
+	if(count($target_lists)>0){
+		foreach ($target_lists as $prospect_list_id){
+			$focus->prospectlists->add($prospect_list_id);
+		}
+	}
+
+	$focus->save();
+}
+
+
 //if type is set to newsletter then make sure there are propsect lists attached
 if($focus->campaign_type =='NewsLetter'){
 		//if this is a duplicate, and the "relate_to" and "relate_id" elements are not cleared out, 

@@ -152,6 +152,7 @@
         <td  width='35%'>
             <div id="container_upload"></div>
             <input type='text' id='company_logo' name='company_logo' style="display:none">
+        </td>
     </tr>
 </table>
 

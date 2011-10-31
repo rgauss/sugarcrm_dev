@@ -3942,6 +3942,16 @@ class InboundEmail extends SugarBean {
 		global $sugar_config;
 		global $current_user;
 
+        // Bug # 45477
+        // So, on older versions of PHP (PHP VERSION < 5.3),
+        // calling imap_headerinfo and imap_fetchheader can cause a buffer overflow for exteremly large headers,
+        // This leads to the remaining messages not being read because Sugar crashes everytime it tries to read the headers.
+        // The workaround is to mark a message as read before making trying to read the header of the msg in question
+        // This forces this message not be read again, and we can continue processing remaining msgs.
+
+        // UNCOMMENT THIS IF YOU HAVE THIS PROBLEM!  See notes on Bug # 45477
+        // $this->markEmails($uid, "read");
+
 		$header = imap_headerinfo($this->conn, $msgNo);
 		$fullHeader = imap_fetchheader($this->conn, $msgNo); // raw headers
 
@@ -5714,9 +5724,11 @@ eoq;
 				$meta['is_sugarEmail'] = true;
 			}
 		} else {
-			// mark SugarEmail read
-			$q = "UPDATE emails SET status = 'read' WHERE id = '{$uid}'";
-			$r = $this->db->query($q);
+			if( $this->email->status != 'sent' ){
+				// mark SugarEmail read
+				$q = "UPDATE emails SET status = 'read' WHERE id = '{$uid}'";
+				$r = $this->db->query($q);
+			}
 		}
 
 		$return = array();

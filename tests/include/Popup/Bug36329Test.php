@@ -77,10 +77,10 @@ class Bug36329Test extends Sugar_PHPUnit_Framework_OutputTestCase
 		}
 
 		$GLOBALS['current_language'] = $this->current_language;
-		unset($GLOBALS['mod_strings']);
-		unset($GLOBALS['app_strings']);
-		unset($GLOBALS['beanList']);
-		unset($GLOBALS['beanFiles']);
+		//unset($GLOBALS['mod_strings']);
+		//unset($GLOBALS['app_strings']);
+		//unset($GLOBALS['beanList']);
+		//unset($GLOBALS['beanFiles']);
 	}
 
     public function test_populate_only_no_query()

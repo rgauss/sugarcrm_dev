@@ -152,7 +152,7 @@ $dictionary['ProjectTask'] = array('audited'=>true,
         'duration_unit' => array(
             'name' => 'duration_unit',
             'vname' => 'LBL_DURATION_UNIT',
-            'options' => 'project_duration_units_dom',        
+            'options' => 'project_duration_units_dom',
             'type' => 'text',
         ),
         'actual_duration' => array(
@@ -200,7 +200,7 @@ $dictionary['ProjectTask'] = array('audited'=>true,
 			'dbType' => 'id',
 			'reportable'=>true,
 		),
-		'modified_by_name' => 
+		'modified_by_name' =>
 	  array (
 	    'name' => 'modified_by_name',
 	    'vname' => 'LBL_MODIFIED_NAME',
@@ -212,8 +212,8 @@ $dictionary['ProjectTask'] = array('audited'=>true,
 	    'id_name' => 'modified_user_id',
 	    'module'=>'Users',
 	    'link'=>'modified_user_link',
-	    'duplicate_merge'=>'disabled' 
-	  ),  
+	    'duplicate_merge'=>'disabled'
+	  ),
         'priority' => array(
             'name' => 'priority',
             'vname' => 'LBL_PRIORITY',
@@ -231,7 +231,7 @@ $dictionary['ProjectTask'] = array('audited'=>true,
 			'dbType' => 'id',
 			'reportable'=>true,
 		),
-		'created_by_name' => 
+		'created_by_name' =>
 	  array (
 	    'name' => 'created_by_name',
 		'vname' => 'LBL_CREATED',
@@ -388,7 +388,7 @@ $dictionary['ProjectTask'] = array('audited'=>true,
     'relationship' => 'projects_project_tasks',
     'vname' => 'LBL_PROJECT_NAME',
     'link_type' => 'one',
-    'module'=>'Projects',
+    'module'=>'Project',
     'bean_name'=>'Project',
     'source'=>'non-db',
   ),

@@ -240,6 +240,8 @@ class UserPreference extends SugarBean
     {
         global $sugar_config, $db, $timezones, $timedate, $current_user;
 
+		require_once('include/timezone/timezones.php');
+
         $user = $this->_userFocus;
 
         $prefDate = array();

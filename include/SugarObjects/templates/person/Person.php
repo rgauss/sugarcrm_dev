@@ -42,6 +42,8 @@ require_once('include/SugarObjects/templates/basic/Basic.php');
 class Person extends Basic
 {	
     var $picture;
+    //Variable to control whether or not to invoke the getLocalFormatttedName method with title and salutation
+    var $createLocaleFormattedName = true;
     
 	function Person(){
 		parent::Basic();
@@ -62,14 +64,42 @@ class Person extends Basic
 	function _create_proper_name_field() 
 	{
 		global $locale, $app_list_strings;
-		    // Bug 38648 - If the given saluation doesn't exist in the dropdown, don't display it as part of the full name
-		    $salutation = '';
-		    if(isset($this->field_defs['salutation']['options']) 
-		            && isset($app_list_strings[$this->field_defs['salutation']['options']])
-		            && isset($app_list_strings[$this->field_defs['salutation']['options']][$this->salutation]) ) {
-		        $salutation = $app_list_strings[$this->field_defs['salutation']['options']][$this->salutation];
-		    }
-			$full_name = $locale->getLocaleFormattedName($this->first_name, $this->last_name, $salutation, $this->title);
+
+        // Bug# 46125 - make first name, last name, salutation and title of Contacts respect field level ACLs
+        $first_name = ""; $last_name = ""; $salutation = ""; $title = "";
+
+                // first name has at least read access
+           $first_name = $this->first_name;
+
+                // last name has at least read access
+            $last_name = $this->last_name;
+
+
+                // salutation has at least read access
+            if(isset($this->field_defs['salutation']['options'])
+			  && isset($app_list_strings[$this->field_defs['salutation']['options']])
+			  && isset($app_list_strings[$this->field_defs['salutation']['options']][$this->salutation]) ) {
+
+			        $salutation = $app_list_strings[$this->field_defs['salutation']['options']][$this->salutation];
+			    }   // if
+
+                // last name has at least read access
+            $title = $this->title;
+
+        // Corner Case:
+        // Both first name and last name cannot be empty, at least one must be shown
+        // In that case, we can ignore field level ACL and just display last name...
+        // In the ACL field level access settings, last_name cannot be set to "none"
+        if (empty($first_name) && empty($last_name)) {
+            $full_name = $locale->getLocaleFormattedName("", $last_name, $salutation, $title);
+        } else {
+			if($this->createLocaleFormattedName) {
+				$full_name = $locale->getLocaleFormattedName($first_name, $last_name, $salutation, $title);
+			} else {
+				$full_name = $locale->getLocaleFormattedName($first_name, $last_name);
+			}
+		}
+
 		$this->name = $full_name;
 		$this->full_name = $full_name; //used by campaigns
 	}

@@ -80,6 +80,18 @@ class SugarWidgetFieldInt extends SugarWidgetReportField
  	 return '<input type="text" size="20" value="' . $layout_def['input_name0'] . '" name="' . $layout_def['name'] . '">';
 
  }
+ 
+ function display($layout_def)
+ {
+	   //Bug40995
+	   if(isset($obj->layout_manager->defs['reporter']->focus->field_name_map[$layout_def['name']]['precision']))
+	   {
+		   $precision=$obj->layout_manager->defs['reporter']->focus->field_name_map[$layout_def['name']]['precision'];
+		   $layout_def['precision']=$precision;
+	   }
+	   //Bug40995
+       return parent::display($layout_def);
+ } 
 
 }
 

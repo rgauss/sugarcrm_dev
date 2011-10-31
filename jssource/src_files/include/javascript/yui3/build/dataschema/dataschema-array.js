@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dataschema-array', function(Y) {
 
@@ -45,7 +45,7 @@ var LANG = Y.Lang,
             if(LANG.isArray(data_in)) {
                 if(LANG.isArray(schema.resultFields)) {
                     // Parse results data
-                    data_out = SchemaArray._parseResults(schema.resultFields, data_in, data_out);
+                    data_out = SchemaArray._parseResults.call(this, schema.resultFields, data_in, data_out);
                 }
                 else {
                     data_out.results = data_in;
@@ -82,7 +82,7 @@ var LANG = Y.Lang,
                         field = fields[j];
                         key = (!LANG.isUndefined(field.key)) ? field.key : field;
                         value = (!LANG.isUndefined(item[key])) ? item[key] : item[j];
-                        result[key] = Y.DataSchema.Base.parse(value, field);
+                        result[key] = Y.DataSchema.Base.parse.call(this, value, field);
                     }
                 }
                 else if(type === 0) {
@@ -104,4 +104,4 @@ Y.DataSchema.Array = Y.mix(SchemaArray, Y.DataSchema.Base);
 
 
 
-}, '3.0.0' ,{requires:['dataschema-base']});
+}, '3.3.0' ,{requires:['dataschema-base']});

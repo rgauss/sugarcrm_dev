@@ -266,9 +266,18 @@ class JsChart extends SugarChart {
 	}
 
   	function buildLabelsBarChart($xmlstr) {
-		$content = $this->tab("'label': [\n",1);
+
+        // fix for bug42326: if there is label data that is deeper than that of a normal bar chart, render the labels
+        //    like a stacked bar chart, this applies when a stacked chart has been converted in templates_chart.php to a bar chart due to it
+        //    having nothing but single value columns
+        $xml = new SimpleXMLElement($xmlstr);
+        if (count($xml->data->group[0]->subgroups->group) > 0) {
+            return $this->buildLabelsBarChartStacked($xmlstr);
+        }
+
+        $content = $this->tab("'label': [\n",1);
 		$labels = array();
-		$xml = new SimpleXMLElement($xmlstr);
+
 		foreach($xml->data->group as $group) {
 			$labels[] = $this->tab("'".$this->processSpecialChars($group->title)."'",2);
 		}

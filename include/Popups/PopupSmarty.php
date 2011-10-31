@@ -194,8 +194,18 @@ class PopupSmarty extends ListViewSmarty{
 		
 		
 		$associated_row_data = array();
-		foreach($this->data['data'] as $val){
+		
+		//C.L. - Bug 44324 - Override the NAME entry to not display salutation so that the data returned from the popup can be searched on correctly
+		$searchNameOverride = !empty($this->seed) && $this->seed instanceof Person && (isset($this->data['data'][0]['FIRST_NAME']) && isset($this->data['data'][0]['LAST_NAME'])) ? true : false;
+		
+		global $locale;
+		foreach($this->data['data'] as $val)
+		{
 			$associated_row_data[$val['ID']] = $val;
+			if($searchNameOverride)
+			{
+			   $associated_row_data[$val['ID']]['NAME'] = $locale->getLocaleFormattedName($val['FIRST_NAME'], $val['LAST_NAME']);
+			}
 		}
 		$is_show_fullname = showFullName() ? 1 : 0;
 		$json = getJSONobj();
@@ -412,7 +422,11 @@ class PopupSmarty extends ListViewSmarty{
 	{
 		$where = '';
 		$where_clauses = $this->searchForm->generateSearchWhere(true, $this->seed->module_dir);
-		if (count($where_clauses) > 0 )$where= implode(' and ', $where_clauses);
+		// Bug 43452 - FG - Changed the way generated Where array is imploded into the string.
+		//                  Now it's imploding in the same way view.list.php do.
+		if (count($where_clauses) > 0 ) {
+		    $where = '( ' . implode(' and ', $where_clauses) . ' )';
+        }
         
         // Need to include the default whereStatement
 		if(!empty($this->_popupMeta['whereStatement'])){

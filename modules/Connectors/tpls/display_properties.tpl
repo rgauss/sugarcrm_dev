@@ -55,7 +55,7 @@
 <div id="{$source_id}:enabled_div" class="enabled_module_workarea">
 <ul id="{$source_id}:enabled_ul" class="module_draglist">
 {foreach from=$enabled_modules item=module}
-<li id="{$source_id}:{$module}" class="noBullet2">{$module}</li>
+<li id="{$source_id}:{$module}" class="noBullet2">{sugar_translate label=$module}</li>
 {/foreach}
 </ul>
 </div>
@@ -64,7 +64,7 @@
 <div id="{$source_id}:disabled_div" class="disabled_module_workarea">
 <ul id="{$source_id}:disabled_ul" class="module_draglist">
 {foreach from=$disabled_modules item=module}
-<li id="{$source_id}:{$module}" class="noBullet2">{$module}</li>
+<li id="{$source_id}:{$module}" class="noBullet2">{sugar_translate label=$module}</li>
 {/foreach}
 </ul>
 </div>

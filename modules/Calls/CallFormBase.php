@@ -429,7 +429,7 @@ function handleSave($prefix,$redirect=true,$useRequired=false) {
 	    	}
 
 	    	foreach($focus->contacts_arr as $contact_id) {
-	    		if(empty($contact_id) || isset($existing_contacts[$contact_id]) || isset($deleteContacts[$contact_id])) {
+	    		if(empty($contact_id) || isset($existing_contacts[$contact_id]) || (isset($deleteContacts[$contact_id]) && $contact_id !=  $_POST['parent_id'])) {
 	    			continue;
 	    		}
 
@@ -451,7 +451,7 @@ function handleSave($prefix,$redirect=true,$useRequired=false) {
 	    	}
 
 	    	foreach($focus->leads_arr as $lead_id) {
-	    		if(empty($lead_id) || isset($existing_leads[$lead_id]) || isset($deleteLeads[$lead_id])) {
+	    		if(empty($lead_id) || isset($existing_leads[$lead_id]) || (isset($deleteLeads[$lead_id]) && $lead_id !=  $_POST['parent_id'])) {
 	    			continue;
 	    		}
 

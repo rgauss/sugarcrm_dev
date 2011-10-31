@@ -36,16 +36,35 @@
 
 require_once("modules/ModuleBuilder/parsers/views/GridLayoutMetaDataParser.php");
 require_once("modules/ModuleBuilder/parsers/views/ListLayoutMetaDataParser.php");
+require_once 'modules/ModuleBuilder/parsers/views/AbstractMetaDataParser.php' ;
+require_once 'modules/ModuleBuilder/parsers/views/MetaDataParserInterface.php' ;
+
 class Bug39161Test extends Sugar_PHPUnit_Framework_TestCase
 {
+    /*
+    public function setUp()
+    {
+        $lv = new ListLayoutMetaDataParser('EditView', 'Calls');
+    }
+    */
 	public function testCallsContactStudioViews()
     {
         $seed = new Call();
 		$def = $seed->field_defs['contact_name'];
-        $this->assertTrue(ListLayoutMetaDataParser::isValidField($def['name'], $def));
+        $lv = new ListLayoutMetaDataParserMock2(MB_LISTVIEW, 'Calls');
+        $this->assertTrue($lv->isValidField($def['name'], $def));
 		$this->assertFalse(GridLayoutMetaDataParser::validField($def, 'editview'));
         $this->assertFalse(GridLayoutMetaDataParser::validField($def, 'detailview'));
         $this->assertFalse(GridLayoutMetaDataParser::validField($def, 'quickcreate'));
     }
     
+}
+
+class ListLayoutMetaDataParserMock2 extends ListLayoutMetaDataParser
+{
+    function __construct ($view , $moduleName , $packageName = '')
+    {
+        $this->view = $view;
+    }
+
 }

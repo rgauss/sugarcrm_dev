@@ -135,8 +135,8 @@ $out = <<<EOQ
 							    <input type="hidden" name="current_step" value="{$next_step}">
 							</td>
 						    <td>
-								<input class="acceptButton" type="button" name="goto" value="{$mod_strings['LBL_BACK']}"  onclick="document.getElementById('form').submit();" />
-								<input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="defaultFocus" />
+								<input class="acceptButton" type="button" name="goto" value="{$mod_strings['LBL_BACK']}" id="button_back_ready" onclick="document.getElementById('form').submit();" />
+								<input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next2" />
 					        </td>
 				        </tr>
 			        </table>

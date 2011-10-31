@@ -275,7 +275,20 @@ function log_campaign_activity($identifier, $activity, $update=true, $clicked_ur
     }
 
 
+ /**
+     * 
+     * This method is deprecated 
+     * @deprecated 62_Joneses - June 24, 2011
+     * @see campaign_log_lead_or_contact_entry()
+     */
 function campaign_log_lead_entry($campaign_id, $parent_bean,$child_bean,$activity_type){
+    	
+          campaign_log_lead_or_contact_entry($campaign_id, $parent_bean,$child_bean,$activity_type);                             
+ }
+    
+    
+    
+function campaign_log_lead_or_contact_entry($campaign_id, $parent_bean,$child_bean,$activity_type){
         global $timedate;        
                                   
 
@@ -294,6 +307,7 @@ function campaign_log_lead_entry($campaign_id, $parent_bean,$child_bean,$activit
                     //save the campaign log entry
                     $campaign_log->save();                                        
 }
+    
 
 function get_campaign_urls($campaign_id) {
     $return_array=array();

@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dataschema-json', function(Y) {
 
@@ -79,7 +79,10 @@ var LANG = Y.Lang,
             var i = 0,
                 len = path.length;
             for (;i<len;i++) {
-                if(!LANG.isUndefined(data[path[i]])) {
+                if(
+                    LANG.isObject(data) &&
+                    (path[i] in data)
+                ) {
                     data = data[path[i]];
                 }
                 else {
@@ -117,7 +120,7 @@ var LANG = Y.Lang,
             if(LANG.isObject(data_in) && schema) {
                 // Parse results data
                 if(!LANG.isUndefined(schema.resultListLocator)) {
-                    data_out = SchemaJSON._parseResults(schema, data_in, data_out);
+                    data_out = SchemaJSON._parseResults.call(this, schema, data_in, data_out);
                 }
 
                 // Parse meta data
@@ -157,8 +160,16 @@ var LANG = Y.Lang,
                         error = new Error("JSON results retrieval failure");
                     }
                     else {
-                        if(LANG.isArray(schema.resultFields) && LANG.isArray(results)) {
-                            data_out = SchemaJSON._getFieldValues(schema.resultFields, results, data_out);
+                        if(LANG.isArray(results)) {
+                            // if no result fields are passed in, then just take the results array whole-hog
+                            // Sometimes you're getting an array of strings, or want the whole object,
+                            // so resultFields don't make sense.
+                            if (LANG.isArray(schema.resultFields)) {
+                                data_out = SchemaJSON._getFieldValues.call(this, schema.resultFields, results, data_out);
+                            }
+                            else {
+                                data_out.results = results;
+                            }
                         }
                         else {
                             data_out.results = [];
@@ -193,7 +204,7 @@ var LANG = Y.Lang,
             var results = [],
                 len = fields.length,
                 i, j,
-                field, key, path, parser,
+                field, key, locator, path, parser,
                 simplePaths = [], complexPaths = [], fieldParsers = [],
                 result, record;
 
@@ -201,9 +212,10 @@ var LANG = Y.Lang,
             for (i=0; i<len; i++) {
                 field = fields[i]; // A field can be a simple string or a hash
                 key = field.key || field; // Find the key
+                locator = field.locator || key; // Find the locator
 
                 // Validate and store locators for later
-                path = SchemaJSON.getPath(key);
+                path = SchemaJSON.getPath(locator);
                 if (path) {
                     if (path.length === 1) {
                         simplePaths[simplePaths.length] = {key:key, path:path[0]};
@@ -230,21 +242,21 @@ var LANG = Y.Lang,
                     // Cycle through simpleLocators
                     for (j=simplePaths.length-1; j>=0; --j) {
                         // Bug 1777850: The result might be an array instead of object
-                        record[simplePaths[j].key] = Y.DataSchema.Base.parse(
+                        record[simplePaths[j].key] = Y.DataSchema.Base.parse.call(this,
                                 (LANG.isUndefined(result[simplePaths[j].path]) ?
                                 result[j] : result[simplePaths[j].path]), simplePaths[j]);
                     }
 
                     // Cycle through complexLocators
                     for (j=complexPaths.length - 1; j>=0; --j) {
-                        record[complexPaths[j].key] = Y.DataSchema.Base.parse(
+                        record[complexPaths[j].key] = Y.DataSchema.Base.parse.call(this,
                             (SchemaJSON.getLocationValue(complexPaths[j].path, result)), complexPaths[j] );
                     }
 
                     // Cycle through fieldParsers
                     for (j=fieldParsers.length-1; j>=0; --j) {
                         key = fieldParsers[j].key;
-                        record[key] = fieldParsers[j].parser(record[key]);
+                        record[key] = fieldParsers[j].parser.call(this, record[key]);
                         // Safety net
                         if (LANG.isUndefined(record[key])) {
                             record[key] = null;
@@ -291,4 +303,4 @@ Y.DataSchema.JSON = Y.mix(SchemaJSON, Y.DataSchema.Base);
 
 
 
-}, '3.0.0' ,{requires:['json', 'dataschema-base']});
+}, '3.3.0' ,{requires:['dataschema-base','json']});

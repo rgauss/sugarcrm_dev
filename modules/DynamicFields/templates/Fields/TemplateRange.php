@@ -230,6 +230,7 @@ class TemplateRange extends TemplateText
     	
     	$fields = array();
     	
+    	//Find any range search enabled fields
 		foreach($vardefs as $key=>$field)
 		{				
 			if(!empty($field['enable_range_search'])) {

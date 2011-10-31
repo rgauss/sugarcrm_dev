@@ -121,7 +121,7 @@ $out =<<<EOQ
    <script type="text/javascript" src="install/installCommon.js"></script>
    <script type="text/javascript" src="install/siteConfig.js"></script>
 </head>
-<body onload="javascript:toggleGUID();toggleSession();toggleLogDir();document.getElementById('defaultFocus').focus();">
+<body onload="javascript:toggleGUID();toggleSession();toggleLogDir();document.getElementById('button_next2').focus();">
 <form action="install.php" method="post" name="setConfig" id="form">
 <input type="hidden" name="current_step" value="{$next_step}">
 <table cellspacing="0" cellpadding="0" border="0" align="center" class="shell">
@@ -215,10 +215,10 @@ $out .= <<<EOQ
    <table cellspacing="0" cellpadding="0" border="0" class="stdTable">
    <tr>
     <td>
-        <input class="button" type="button" name="goto" value="{$mod_strings['LBL_BACK']}" onclick="document.getElementById('form').submit();" />
+        <input class="button" type="button" name="goto" value="{$mod_strings['LBL_BACK']}" id="button_back_siteConfig_b" onclick="document.getElementById('form').submit();" />
         <input type="hidden" name="goto" value="{$mod_strings['LBL_BACK']}" />
     </td>
-   <td><input class="button" type="submit" id="defaultFocus" name="goto" value="{$mod_strings['LBL_NEXT']}" /></td>
+   <td><input class="button" type="submit" id="button_next2" name="goto" value="{$mod_strings['LBL_NEXT']}" /></td>
    </tr>
    </table>
 </td>

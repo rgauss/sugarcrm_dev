@@ -366,9 +366,9 @@ if(!function_exists('imap_open')) {
                 if(elem.type.indexOf('select') >= 0 ){
                     var selInd = elem.selectedIndex;
                     if(selInd<0){selInd =0;}
-                    summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'>" + elem.options[selInd].text+ "&nbsp;</td></tr>";
+                    summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'>" + YAHOO.lang.escapeHTML(elem.options[selInd].text)+ "&nbsp;</td></tr>";
                 }else if(elem.type == 'checked'){
-                    summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'>" + elem.value + "&nbsp;</td></tr>";
+                    summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'>" + YAHOO.lang.escapeHTML(elem.value) + "&nbsp;</td></tr>";
                 }else if(elem.type == 'checkbox'){
                     if(elem.checked){
                         summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'><input type='checkbox' class='checkbox' disabled checked>&nbsp;</td></tr>";
@@ -376,7 +376,7 @@ if(!function_exists('imap_open')) {
                         summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'><input type='checkbox' class='checkbox' disabled >&nbsp;</td></tr>";
                     }
                 }else{
-                    summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'>" + elem.value + "&nbsp;</td></tr>";
+                    summhtml = summhtml+ "<tr  class='"+colorclass+"' ><td scope='row'  width='15%'><b>" +elem.title+ "</b></td><td class='tabDetailViewDF'  width='30%'>" + YAHOO.lang.escapeHTML(elem.value) + "&nbsp;</td></tr>";
                 }
             }
             if( colorclass== 'tabDetailViewDL2'){

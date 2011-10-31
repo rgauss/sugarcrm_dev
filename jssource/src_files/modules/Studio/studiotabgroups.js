@@ -60,7 +60,7 @@ StudioTabGroup.prototype.editTabGroupLabel = function (id, done){
 		YAHOO.util.DragDropMgr.lock();
 	}else{
 		this.lastEditTabGroupLabel = -1;
-		document.getElementById('tabname_'+id).innerHTML =document.getElementById('tablabel_'+id).value; 
+		document.getElementById('tabname_'+id).innerHTML = escape(document.getElementById('tablabel_'+id).value);
 		document.getElementById('tabname_'+id).style.display = '';
 		document.getElementById('tablabel_'+id).style.display = 'none';
 		document.getElementById('tabother_'+id).style.display = '';

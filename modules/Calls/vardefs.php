@@ -89,7 +89,8 @@ $dictionary['Call'] = array('table' => 'calls', 'comment' => 'A Call is an activ
   array (
     'name' => 'date_end',
     'vname' => 'LBL_DATE_END',
-    'type' => 'datetime',
+    'type' => 'datetimecombo',
+	'dbType' => 'datetime',
     'massupdate'=>false,
     'comment' => 'Date is which call is scheduled to (or did) end',
     'enable_range_search' => true,
@@ -132,6 +133,7 @@ $dictionary['Call'] = array('table' => 'calls', 'comment' => 'A Call is an activ
 	'required' => true,
 	'importable' => 'required',
     'default' => 'Planned',
+	'studio' => array('detailview'=>false)
   ),
   'direction' =>
   array (
@@ -387,6 +389,8 @@ $dictionary['Call'] = array('table' => 'calls', 'comment' => 'A Call is an activ
 			'rhs_table'			=> 'notes',
 			'rhs_key'			=> 'parent_id',
 			'relationship_type'	=> 'one-to-many',
+      'relationship_role_column'=>'parent_type',
+      'relationship_role_column_value'=>'Calls',
 		),
 	),
 //This enables optimistic locking for Saves From EditView

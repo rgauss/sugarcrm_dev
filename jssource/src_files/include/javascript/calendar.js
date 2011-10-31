@@ -132,15 +132,12 @@ Calendar.setup = function (params) {
                     var dialogEl = dialog.element;
                     if (el != dialogEl && !Dom.isAncestor(dialogEl, el) && el != Dom.get(showButton) && !Dom.isAncestor(Dom.get(showButton), el)) {
                         dialog.hide();
-                        calendar = null;
-                        dialog = null;
                     }
                 });                
             }
 
             // Lazy Calendar Creation - Wait to create the Calendar until the first time the button is clicked.
             if (!calendar) {
-            
                 var navConfig = {
                     strings : {
                         month: SUGAR.language.get('app_strings', 'LBL_CHOOSE_MONTH'),
@@ -256,6 +253,13 @@ Calendar.setup = function (params) {
                     } else {
                         input.value = "";
                     }
+					
+					//bug 44147 fix
+                    //does not trigger onchange event
+                    if(input.onchange)
+                    	input.onchange();
+                    //end bugfix
+                    
 
                     dialog.hide();
 					//Fire any on-change events for this input field

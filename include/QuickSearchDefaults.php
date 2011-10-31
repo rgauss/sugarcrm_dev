@@ -144,8 +144,8 @@ class QuickSearchDefaults {
                            'limit'=>'30',
                            'no_match_text'=> $app_strings['ERR_SQS_NO_MATCH']);
         return $qsContact;
-    }
-
+    }    
+    
     function getQSUser($p_name = 'assigned_user_name', $p_id ='assigned_user_id') {
         global $app_strings;
 
@@ -158,7 +158,7 @@ class QuickSearchDefaults {
                         'limit' => '30','no_match_text' => $app_strings['ERR_SQS_NO_MATCH']);
         return $qsUser;
     }
-    function getQSCampaigns() {
+    function getQSCampaigns($c_name = 'campaign_name', $c_id = 'campaign_id') {
         global $app_strings;
 
         $qsCampaign = array('form' => $this->form_name,
@@ -166,7 +166,7 @@ class QuickSearchDefaults {
                             'modules'=> array('Campaigns'),
                             'group' => 'or',
                             'field_list' => array('name', 'id'),
-                            'populate_list' => array('campaign_name', 'campaign_id'),
+                            'populate_list' => array($c_name, $c_id),
                             'conditions' => array(array('name'=>'name','op'=>'like_custom','end'=>'%','value'=>'')),
                             'required_list' => array('campaign_id'),
                             'order' => 'name',
@@ -175,12 +175,46 @@ class QuickSearchDefaults {
         return $qsCampaign;
     }
 
+    
+    /**
+     * Loads Quick Search Object for any object (if suitable method is defined)
+     *
+     * @param string $module the given module we want to load the vardefs for
+     * @param string $object the given object we wish to load the vardefs for
+     * @param string $relationName the name of the relation between entities
+     * @param type $nameField the name of the field to populate
+     * @param type $idField the id of the field to populate
+     */
+    function loadQSObject($module, $object, $relationName, $nameField, $idField)
+    {
+        $result = array();
+        VardefManager::loadVardef($module, $object);
+        if (isset($GLOBALS['dictionary'][$object]['relationships']) && array_key_exists($relationName, $GLOBALS['dictionary'][$object]['relationships']))
+        {
+            if (method_exists($this, 'getQS' . $module))
+            {
+                $result = $this->{'getQS' . $module};
+            } elseif (method_exists($this, 'getQS' . $object))
+            {
+                $result = $this->{'getQS' . $object};
+            }
+        } else
+        {
+            if (method_exists($this, 'getQS' . $module))
+            {
+                $result = $this->{'getQS' . $module}($nameField, $idField);
+            } elseif (method_exists($this, 'getQS' . $object))
+            {
+                $result = $this->{'getQS' . $object}($nameField, $idField);
+            }
+        }
+        return $result;
+    }
 
     // BEGIN QuickSearch functions for 4.5.x backwards compatibility support
     function getQSScripts() {
 		global $sugar_version, $sugar_config, $theme;
-		$qsScripts = '<script type="text/javascript" src="' . getJSPath('include/JSON.js') .'"></script>
-		<script type="text/javascript">sqsWaitGif = "' . SugarThemeRegistry::current()->getImageURL('sqsWait.gif') . '";</script>
+		$qsScripts = '<script type="text/javascript">sqsWaitGif = "' . SugarThemeRegistry::current()->getImageURL('sqsWait.gif') . '";</script>
 		<script type="text/javascript" src="'. getJSPath('include/javascript/quicksearch.js') . '"></script>';
 		return $qsScripts;
 	}

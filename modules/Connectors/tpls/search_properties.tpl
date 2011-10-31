@@ -40,7 +40,7 @@
 {foreach from=$display_data key=module item=data}
 <table border="0" cellspacing="1" cellpadding="1" name="{$module}" id="{$module}">
 <tr>
-<td colspan="2"><span><font size="3">{$module}</font></span></td>
+<td colspan="2"><span><font size="3">{sugar_translate label=$module}</font></span></td>
 </tr>
 <tr>
 <td><b>{$mod.LBL_DEFAULT}</b></td>

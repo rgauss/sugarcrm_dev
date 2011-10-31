@@ -162,6 +162,7 @@ $dictionary['Meeting'] = array('table' => 'meetings',
     'importable' => 'required',
     'required' => true,
     'enable_range_search' => true,
+    'options' => 'date_range_search_dom',
   ),
 
   'date_end' =>
@@ -172,6 +173,7 @@ $dictionary['Meeting'] = array('table' => 'meetings',
     'massupdate'=>false,
     'comment' => 'Date meeting ends',
     'enable_range_search' => true,
+    'options' => 'date_range_search_dom',
   ),
   'parent_type' =>
   array (
@@ -181,7 +183,8 @@ $dictionary['Meeting'] = array('table' => 'meetings',
     'dbType' => 'varchar',
     'group'=>'parent_name',
     'len' => 100,
-    'comment' => 'Module meeting is associated with'
+    'comment' => 'Module meeting is associated with',
+    'studio' => array('searchview'=>false),
   ),
   'status' =>
   array (
@@ -228,7 +231,8 @@ $dictionary['Meeting'] = array('table' => 'meetings',
     'type' => 'id',
     'group'=>'parent_name',
     'reportable'=>false,
-    'comment' => 'ID of item indicated by parent_type'
+    'comment' => 'ID of item indicated by parent_type',
+    'studio' => array('searchview'=>false),
   ),
   'reminder_checked'=>array(
     'name' => 'reminder_checked',

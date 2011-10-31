@@ -130,8 +130,8 @@ $mod_strings = return_module_language($current_language,"Reports");
 	$saved->retrieve($report_id, false);
 
 	//initiailize reports engine with the report definition.
-	require_once('modules/Reports/Report.php');
-	$report = new Report($saved->content);
+	require_once('modules/Reports/SubpanelFromReports.php');
+	$report = new SubpanelFromReports($saved);
 	$report->run_query();
 
 	$sql = $report->query_list[0];

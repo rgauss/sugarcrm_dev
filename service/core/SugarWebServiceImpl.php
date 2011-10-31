@@ -865,7 +865,7 @@ function get_document_revision($session, $id) {
  * @param string[] $modules			- array of modules to query
  * @param int $offset				- a specified offset in the query
  * @param int $max_results			- max number of records to return
- * @return Array return_search_result 	- Array('Accounts' => array(array('name' => 'first_name', 'value' => 'John', 'name' => 'last_name', 'value' => 'Do')))
+ * @return Array 'entry_list' -- Array('Accounts' => array(array('name' => 'first_name', 'value' => 'John', 'name' => 'last_name', 'value' => 'Do')))
  * @exception 'SoapFault' -- The SOAP error, if any
  */
 function search_by_module($session, $search_string, $modules, $offset, $max_results){

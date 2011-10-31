@@ -37,7 +37,6 @@
 *}
 <link rel="stylesheet" type="text/css" href="include/javascript/yui-old/assets/container.css" />
 <script type="text/javascript" src='{sugar_getjspath file="include/SugarFields/Fields/Collection/SugarFieldCollection.js"}'></script>
-<script type="text/javascript" src='{sugar_getjspath file="include/JSON.js"}'></script>
 <script type="text/javascript">
     var collection = (typeof collection == 'undefined') ? new Array() : collection;
     collection['{$displayParams.formName}_{$vardef.name}'] = new SUGAR.collection('{$displayParams.formName}', '{$vardef.name}', '{$module}', '{$displayParams.popupData}');

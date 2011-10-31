@@ -592,17 +592,12 @@ function deleteCache(){
 	//Clean modules from cache
 	if(is_dir($GLOBALS['sugar_config']['cache_dir'].'modules')){
 		$allModFiles = array();
-		$allModFiles = findAllFiles($GLOBALS['sugar_config']['cache_dir'].'modules',$allModFiles,true);
+		$allModFiles = findAllFiles($GLOBALS['sugar_config']['cache_dir'].'modules',$allModFiles);
 		foreach($allModFiles as $file)
 		{
 	       	if(file_exists($file))
 	       	{
-	       		if(is_dir($file))
-	       		{
-				  rmdir_recursive($file);
-	       		} else {
-	       		  unlink($file);
-	       		}
+	       	   unlink($file);
 	       	}
 		}
 	}
@@ -2871,18 +2866,20 @@ function unlinkTempFiles() {
  * @param bool include_dir True if we want to include directories in the
  * returned collection
  */
-function uwFindAllFiles($dir, $the_array, $include_dirs=false, $skip_dirs=array(), $echo=false) {
+function uwFindAllFiles($dir, $theArray, $includeDirs=false, $skipDirs=array(), $echo=false) {
 	// check skips
-	foreach($skip_dirs as $skipMe) {
-		if(strpos(clean_path($dir), $skipMe) !== false) {
-			return $the_array;
-		}
+    if (whetherNeedToSkipDir($dir, $skipDirs))
+	{
+	    return $theArray;
 	}
 
+    if (!is_dir($dir)) { return $theArray; }   // Bug # 46035, just checking for valid dir
 	$d = dir($dir);
+    if ($d === false)  { return $theArray; }   // Bug # 46035, more checking
 
 	while($f = $d->read()) {
-	    if($f == "." || $f == "..") { // skip *nix self/parent
+	                                // bug 40793 Skip Directories array in upgradeWizard does not function correctly
+	    if($f == "." || $f == ".." || whetherNeedToSkipDir("$dir/$f", $skipDirs)) { // skip *nix self/parent
 	        continue;
 	    }
 
@@ -2893,20 +2890,20 @@ function uwFindAllFiles($dir, $the_array, $include_dirs=false, $skip_dirs=array(
     	}
 
 	    if(is_dir("$dir/$f")) {
-			if($include_dirs) { // add the directory if flagged
-				$the_array[] = clean_path("$dir/$f");
+			if($includeDirs) { // add the directory if flagged
+				$theArray[] = clean_path("$dir/$f");
 			}
 
 			// recurse in
-	        $the_array = uwFindAllFiles("$dir/$f/", $the_array, $include_dirs, $skip_dirs, $echo);
+	        $theArray = uwFindAllFiles("$dir/$f/", $theArray, $includeDirs, $skipDirs, $echo);
 	    } else {
-	        $the_array[] = clean_path("$dir/$f");
+	        $theArray[] = clean_path("$dir/$f");
 	    }
 
 
 	}
-	rsort($the_array);
-	return $the_array;
+	rsort($theArray);
+	return $theArray;
 }
 
 
@@ -4194,7 +4191,7 @@ function upgradeModulesForTeam() {
     } //while
 
     //Update the team_set_id and default_team columns
-    $ce_to_pro_or_ent = (isset($_SESSION['upgrade_from_flavor']) && ($_SESSION['upgrade_from_flavor'] == 'SugarCE to SugarPro' || $_SESSION['upgrade_from_flavor'] == 'SugarCE to SugarEnt'));
+    $ce_to_pro_or_ent = (isset($_SESSION['upgrade_from_flavor']) && ($_SESSION['upgrade_from_flavor'] == 'SugarCE to SugarPro' || $_SESSION['upgrade_from_flavor'] == 'SugarCE to SugarEnt' || $_SESSION['upgrade_from_flavor'] == 'SugarCE to SugarCorp' || $_SESSION['upgrade_from_flavor'] == 'SugarCE to SugarUlt'));
 
     //Update team_set_id
 	if($ce_to_pro_or_ent) {
@@ -4589,7 +4586,7 @@ function upgradeModulesForTeam() {
 		foreach( $allHelpFiles as $the_file ){
 	        if( is_file( $the_file ) ){
 	            unlink( $the_file );
-	            logThis("Deleted file: $the_file", $path);
+	            logThis("Deleted file: $the_file");
 	        }
 	    }
 	}
@@ -4842,6 +4839,47 @@ function upgrade_connectors($path='') {
     logThis('End upgrade_connectors', $path);
 }
 
+/**
+ * Enable the InsideView connector for the four default modules.
+ */
+function upgradeEnableInsideViewConnector($path='')
+{
+    logThis('Begin upgradeEnableInsideViewConnector', $path);
+
+    // Load up the existing mapping and hand it to the InsideView connector to have it setup the correct logic hooks
+    $mapFile = 'modules/Connectors/connectors/sources/ext/rest/insideview/mapping.php';
+    if ( file_exists('custom/'.$mapFile) ) {
+        logThis('Found CUSTOM mappings', $path);
+        require('custom/'.$mapFile);
+    } else {
+        logThis('Used default mapping', $path);
+        require($mapFile);
+    }
+ 
+    require_once('include/connectors/sources/SourceFactory.php');
+    $source = SourceFactory::getSource('ext_rest_insideview');
+
+    // $mapping is brought in from the mapping.php file above
+    $source->saveMappingHook($mapping);
+
+    require_once('include/connectors/utils/ConnectorUtils.php');
+    ConnectorUtils::installSource('ext_rest_insideview');
+
+    // Now time to set the various modules to active, because this part ignores the default config
+    require(CONNECTOR_DISPLAY_CONFIG_FILE);
+    // $modules_sources come from that config file
+    foreach ( $source->allowedModuleList as $module ) {
+        $modules_sources[$module]['ext_rest_insideview'] = 'ext_rest_insideview';
+    }
+    if(!write_array_to_file('modules_sources', $modules_sources, CONNECTOR_DISPLAY_CONFIG_FILE)) {
+        //Log error and return empty array
+        logThis("Cannot write \$modules_sources to " . CONNECTOR_DISPLAY_CONFIG_FILE,$path);
+    }
+
+    logThis('End upgradeEnableInsideViewConnector', $path);
+
+}
+
 function repair_long_relationship_names($path='')
 {
     logThis("Begin repair_long_relationship_names", $path);
@@ -4991,6 +5029,9 @@ function upgradeSugarCache($file)
 	}
 
 	$allFiles = array();
+	if(file_exists(clean_path("{$cacheUploadUpgradesTemp}/{$manifest['copy_files']['from_dir']}/include/database"))) {
+		$allFiles = findAllFiles(clean_path("{$cacheUploadUpgradesTemp}/{$manifest['copy_files']['from_dir']}/include/database"), $allFiles);
+	}	
 	if(file_exists(clean_path("{$cacheUploadUpgradesTemp}/{$manifest['copy_files']['from_dir']}/include/SugarCache"))) {
 		$allFiles = findAllFiles(clean_path("{$cacheUploadUpgradesTemp}/{$manifest['copy_files']['from_dir']}/include/SugarCache"), $allFiles);
 	}
@@ -5087,7 +5128,7 @@ function unlinkUpgradeFiles($version)
 	
 	if($version < '620')
 	{
-		logThis('start upgrade for DocumentRevisions classic files (EditView.html, EditView.php, DetailView.html, DetailView.php)');
+		logThis('start upgrade for DocumentRevisions classic files (EditView.html, EditView.php, DetailView.html, DetailView.php, Save.php)');
 
 		//Use a md5 comparison check to see if we can just remove the file where an exact match is found
 		if($version < '610')
@@ -5097,6 +5138,7 @@ function unlinkUpgradeFiles($version)
 			 'modules/DocumentRevisions/DetailView.php' => 'd8606cdcd0281ae9443b2580a43eb5b3',
 	         'modules/DocumentRevisions/EditView.php' => 'c7a1c3ef2bb30e3f5a11d122b3c55ff1',
 	         'modules/DocumentRevisions/EditView.html' => '7d360ca703863c957f40b3719babe8c8',
+			 'modules/DocumentRevisions/Save.php' => 'd7e39293a5fb4d605ca2046e7d1fcf28',
 	        );		
 		} else {
 			$dr_files = array(
@@ -5104,6 +5146,7 @@ function unlinkUpgradeFiles($version)
 			 'modules/DocumentRevisions/DetailView.php' => '20edf45dd785469c484fbddff1a3f8f2',
 	         'modules/DocumentRevisions/EditView.php' => 'fb31958496f04031b2851dcb4ce87d50',
 	         'modules/DocumentRevisions/EditView.html' => 'b8cada4fa6fada2b4e4928226d8b81ee',
+			 'modules/DocumentRevisions/Save.php' => '7fb62e4ebff879bafc07a08da62902aa',
 	        );
 		}
 	
@@ -5130,6 +5173,85 @@ function unlinkUpgradeFiles($version)
 		
 		logThis('end upgrade for DocumentRevisions classic files');
 	}	
+
+    //First check if we even have the scripts_for_patch/files_to_remove directory
+    require_once('modules/UpgradeWizard/UpgradeRemoval.php');
+
+    /*
+    if(empty($_SESSION['unzip_dir']))
+    {
+        global $sugar_config;
+        $base_upgrade_dir		= $sugar_config['upload_dir'] . "/upgrades";
+        $base_tmp_upgrade_dir	= "$base_upgrade_dir/temp";
+        $_SESSION['unzip_dir'] = mk_temp_dir( $base_tmp_upgrade_dir );
+    }
+    */
+    
+    if(isset($_SESSION['unzip_dir']) && file_exists($_SESSION['unzip_dir'].'/scripts/files_to_remove'))
+    {
+       $files_to_remove = glob($_SESSION['unzip_dir'].'/scripts/files_to_remove/*.php');
+      
+       foreach($files_to_remove as $script)
+       {
+       		if(preg_match('/UpgradeRemoval(\d+)x\.php/', $script, $matches))
+       		{
+       	   	   $checkVersion = $matches[1] + 1; //Increment by one to check everything equal or below the target version
+       	   	   $upgradeClass = 'UpgradeRemoval' . $matches[1] . 'x';
+       	   	   require_once($_SESSION['unzip_dir'].'/scripts/files_to_remove/' . $upgradeClass . '.php');    	   	   
+
+       	   	   //Check to make sure we should load and run this UpgradeRemoval instance
+       	   	   if($checkVersion <= $version && class_exists($upgradeClass))
+       	   	   {
+       	   	   	  $upgradeInstance = new $upgradeClass();
+       	   	   	  if($upgradeInstance instanceof UpgradeRemoval)
+       	   	   	  {
+       	   	   	  	  logThis('Running UpgradeRemoval instance ' . $upgradeClass);
+       	   	   	  	  logThis('Files will be backed up to custom/backup');
+	       	   	   	  $files = $upgradeInstance->getFilesToRemove($version);
+	       	   	   	  foreach($files as $file)
+	       	   	   	  {
+	       	   	   	  	 logThis($file);
+	       	   	   	  }
+	       	   	   	  $upgradeInstance->processFilesToRemove($files);
+       	   	   	  }
+       	   	   }
+       	    }
+       }
+    }  	
+    
+    //Check if we have a custom directory
+    if(file_exists('custom/scripts/files_to_remove'))
+    {
+       //Now find
+       $files_to_remove = glob('custom/scripts/files_to_remove/*.php');
+       
+       foreach($files_to_remove as $script)
+       {
+       	   if(preg_match('/\/files_to_remove\/(.*?)\.php$/', $script, $matches))
+       	   {
+       	   	   require_once($script);
+       	   	   $upgradeClass  = $matches[1];
+       	   	          	   	   
+       	   	   if(!class_exists($upgradeClass))
+       	   	   {
+       	   	   	  continue;
+       	   	   }
+
+       	   	   $upgradeInstance = new $upgradeClass();
+       	   	   if($upgradeInstance instanceof UpgradeRemoval)
+       	   	   {
+       	   	   	  	  logThis('Running Custom UpgradeRemoval instance ' . $upgradeClass);
+	       	   	   	  $files = $upgradeInstance->getFilesToRemove($version);
+	       	   	   	  foreach($files as $file)
+	       	   	   	  {
+	       	   	   	  	 logThis($file);
+	       	   	   	  }
+	       	   	   	  $upgradeInstance->processFilesToRemove($files);
+       	   	   }     	   	
+       	   }
+       }
+    } 	
+	
 }
 
 if (!function_exists("getValidDBName"))
@@ -5150,13 +5272,31 @@ if (!function_exists("getValidDBName"))
         if ($ensureUnique)
         {
             $md5str = md5($name);
-            $tail = substr ( $name, -11) ;
+            $tail = substr ( $name, -8) ;
             $temp = substr($md5str , strlen($md5str)-4 );
-            $result = substr ( $name, 0, 10) . $temp . $tail ;
+            $result = substr ( $name, 0, 7) . $temp . $tail ;
         }else if ($len > ($maxLen - 5))
         {
-            $result = substr ( $name, 0, 11) . substr ( $name, 11 - $maxLen + 5);
+            $result = substr ( $name, 0, 8) . substr ( $name, 8 - $maxLen + 5);
         }
         return strtolower ( $result ) ;
     }
+    
+
+}
+
+/**
+ * Whether directory exists within list of directories to skip
+ * @param string $dir dir to be checked
+ * @param array $skipDirs list with skipped dirs
+ * @return boolean
+ */
+function whetherNeedToSkipDir($dir, $skipDirs) 
+{
+    foreach($skipDirs as $skipMe) {
+		if(strpos( clean_path($dir), $skipMe ) !== false) {
+			return true;
+		}
+	}
+    return false;
 }

@@ -1,8 +1,8 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
-YUI.add("event-resize",function(A){(function(){var C,B,E="window:resize",D=function(F){if(A.UA.gecko){A.fire(E,F);}else{if(B){B.cancel();}B=A.later(A.config.windowResizeDelay||40,A,function(){A.fire(E,F);});}};A.Env.evt.plugins.windowresize={on:function(H,G){if(!C){C=A.Event._attach(["resize",D]);}var F=A.Array(arguments,0,true);F[0]=E;return A.on.apply(A,F);}};})();},"3.0.0",{requires:["node-base"]});
+YUI.add("event-resize",function(a){(function(){var c,b,e="window:resize",d=function(f){if(a.UA.gecko){a.fire(e,f);}else{if(b){b.cancel();}b=a.later(a.config.windowResizeDelay||40,a,function(){a.fire(e,f);});}};a.Env.evt.plugins.windowresize={on:function(h,g){if(!c){c=a.Event._attach(["resize",d]);}var f=a.Array(arguments,0,true);f[0]=e;return a.on.apply(a,f);}};})();},"3.3.0",{requires:["node-base"]});

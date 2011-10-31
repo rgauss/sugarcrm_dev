@@ -72,7 +72,7 @@ $out =<<<EOQ
    <script type="text/javascript" src="install/license.js"></script>
 </head>
 
-<body onload="javascript:toggleNextButton();document.getElementById('defaultFocus').focus();">
+<body onload="javascript:toggleNextButton();document.getElementById('button_next2').focus();">
 <div id='licenseDiv'>
 <form action="install.php" method="post" name="setConfig" id="form">
 <form action="welcome.php" method="post" name="setLang" id="langForm">
@@ -96,11 +96,11 @@ $out =<<<EOQ
 
     <tr>
       <td align=left>
-        <input type="checkbox" class="checkbox" name="setup_license_accept" id="defaultFocus" onClick='toggleNextButton();' {$checked} />
+        <input type="checkbox" class="checkbox" name="setup_license_accept" id="button_next2" onClick='toggleNextButton();' {$checked} />
         <a href='javascript:void(0)' onClick='toggleLicenseAccept();toggleNextButton();'>{$mod_strings['LBL_LICENSE_I_ACCEPT']}</a>
       </td>
       <td align=right>
-        <input type="button" class="button" name="print_license" value="{$mod_strings['LBL_LICENSE_PRINTABLE']}"
+        <input type="button" class="button" name="print_license" id="button_print_license" value="{$mod_strings['LBL_LICENSE_PRINTABLE']}"
         	onClick='window.open("install.php?page=licensePrint&language={$current_language}");' />
       </td>
     </tr>
@@ -111,7 +111,7 @@ $out =<<<EOQ
         <table cellspacing="0" cellpadding="0" border="0" class="stdTable">
           <tr>
             <td>
-                <input class="acceptButton" type="button" name="goto" value="{$mod_strings['LBL_BACK']}"  onclick="document.getElementById('form').submit();" />
+                <input class="acceptButton" type="button" name="goto" value="{$mod_strings['LBL_BACK']}"  id="button_back_license" onclick="document.getElementById('form').submit();" />
                 <input class="acceptButton" type="button" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next" disabled="disabled" onclick="callSysCheck();"/>
                 <input type="hidden" name="goto" id='hidden_goto' value="{$mod_strings['LBL_BACK']}" />
             </td>

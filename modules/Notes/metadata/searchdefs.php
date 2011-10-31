@@ -46,7 +46,7 @@ array (
         'default' => true,
         'width' => '10%',
       ),
-      
+	  array ('name'=>'current_user_only', 'label'=>'LBL_CURRENT_USER_FILTER', 'type'=>'bool'),             
     ),
     'advanced_search' => 
     array (

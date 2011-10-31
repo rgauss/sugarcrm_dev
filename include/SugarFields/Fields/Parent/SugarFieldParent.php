@@ -90,6 +90,11 @@ class SugarFieldParent extends SugarFieldRelate {
     		$form_name = $displayParams['formName'];
     	}
     	
+    	if(preg_match('/(_basic|_advanced)$/', $vardef['name'], $match))
+    	{
+    	   $vardef['type_name'] = $vardef['type_name'] . $match[1];
+    	}
+    	
     	$this->ss->assign('form_name', $form_name);
 
     	$popup_request_data = array(
@@ -165,5 +170,36 @@ class SugarFieldParent extends SugarFieldRelate {
 
         return $quicksearch_js .= '</script>';
     }
+    
+    /**
+     * getSearchInput
+     * 
+     * This function allows the SugarFields to handle returning the search input value given arguments (typically from $_REQUEST/$_POST)
+     * and a search string.
+     * 
+     * @param $key String value of key to search for
+     * @param $args Mixed value containing haystack to search for value in
+     * @return $value Mixed value that the SugarField should return
+     */    
+    function getSearchInput($key='', $args=array()) 
+    {
+    	//Nothing specified return empty string
+    	if(empty($key) || empty($args))
+    	{
+    		return ''; 
+    	}
+    	
+    	//We are probably getting "parent_type" as the $key value, but this is likely not set since there are
+    	//advanced and basic tabs.  This next section attempts to resolve this issue.
+    	$isBasicSearch = isset($args['searchFormTab']) && $args['searchFormTab'] == 'basic_search' ? true : false;
+    	$searchKey = $isBasicSearch ? "{$key}_basic" : "{$key}_advanced";
+    	
+    	if(isset($args[$searchKey]))
+    	{
+    	   return $args[$searchKey];  
+    	}
+    	
+    	return isset($args[$key]) ? $args[$key] : '';
+    }    
 }
 ?>

@@ -1,17 +1,16 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('base-base', function(Y) {
 
     /**
      * The base module provides the Base class, which objects requiring attribute and custom event support can extend. 
-     * The module also provides two ways to reuse code - An augmentable Plugin.Host interface which provides plugin support 
-     * (which is augmented to the Base class) and Base.build which provides a way to 
-     * build custom classes using extensions.
+     * The module also provides two ways to reuse code - It augments Base with the Plugin.Host interface which provides 
+     * plugin support and also provides the Base.build method which provides a way to build custom classes using extensions.
      *
      * @module base
      */
@@ -31,6 +30,8 @@ YUI.add('base-base', function(Y) {
         INITIALIZED = "initialized",
         DESTROYED = "destroyed",
         INITIALIZER = "initializer",
+        BUBBLETARGETS = "bubbleTargets",
+        _BUBBLETARGETS = "_bubbleTargets",
         OBJECT_CONSTRUCTOR = Object.prototype.constructor,
         DEEP = "deep",
         SHALLOW = "shallow",
@@ -52,14 +53,35 @@ YUI.add('base-base', function(Y) {
      * from Base will be used as the identifier for the class, and is used by Base to prefix 
      * all events fired by instances of that class.
      * </p>
+     *
      * @class Base
      * @constructor
      * @uses Attribute
      * @uses Plugin.Host
      *
-     * @param {Object} config Object with configuration property name/value pairs
+     * @param {Object} config Object with configuration property name/value pairs. The object can be 
+     * used to provide default values for the objects published attributes.
+     *
+     * <p>
+     * The config object can also contain the following non-attribute properties, providing a convenient 
+     * way to configure events listeners and plugins for the instance, as part of the constructor call:
+     * </p>
+     *
+     * <dl>
+     *     <dt>on</dt>
+     *     <dd>An event name to listener function map, to register event listeners for the "on" moment of the event. A constructor convenience property for the <a href="Base.html#method_on">on</a> method.</dd>
+     *     <dt>after</dt>
+     *     <dd>An event name to listener function map, to register event listeners for the "after" moment of the event. A constructor convenience property for the <a href="Base.html#method_after">after</a> method.</dd>
+     *     <dt>bubbleTargets</dt>
+     *     <dd>An object, or array of objects, to register as bubble targets for bubbled events fired by this instance. A constructor convenience property for the <a href="EventTarget.html#method_addTarget">addTarget</a> method.</dd>
+     *     <dt>plugins</dt>
+     *     <dd>A plugin, or array of plugins to be plugged into the instance (see PluginHost's plug method for signature details). A constructor convenience property for the <a href="Plugin.Host.html#method_plug">plug</a> method.</dd>
+     * </dl>
      */
     function Base() {
+
+        // So the object can be used as a hash key (as DD does)
+        Y.stamp(this);
 
         Attribute.call(this);
 
@@ -71,6 +93,16 @@ YUI.add('base-base', function(Y) {
         }
 
         if (this._lazyAddAttrs !== false) { this._lazyAddAttrs = true; }
+
+        /**
+         * The string used to identify the class of this object.
+         *
+         * @deprecated Use this.constructor.NAME
+         * @property name
+         * @type String
+         */
+        this.name = this.constructor.NAME;
+        this._eventPrefix = this.constructor.EVENT_PREFIX || this.constructor.NAME;
 
         this.init.apply(this, arguments);
     }
@@ -161,14 +193,7 @@ YUI.add('base-base', function(Y) {
          */
         init: function(config) {
 
-            /**
-             * The string used to identify the class of this object.
-             *
-             * @deprecated Use this.constructor.NAME
-             * @property name
-             * @type String
-             */
-            this._yuievt.config.prefix = this.name = this.constructor.NAME;
+            this._yuievt.config.prefix = this._eventPrefix;
 
             /**
              * <p>
@@ -189,9 +214,28 @@ YUI.add('base-base', function(Y) {
              */
             this.publish(INIT, {
                 queuable:false,
+                fireOnce:true,
+                defaultTargetOnly:true,
                 defaultFn:this._defInitFn
             });
 
+            this._preInitEventCfg(config);
+
+            this.fire(INIT, {cfg: config});
+
+            return this;
+        },
+
+        /**
+         * Handles the special on, after and target properties which allow the user to
+         * easily configure on and after listeners as well as bubble targets during 
+         * construction, prior to init.
+         *
+         * @private
+         * @method _preInitEventCfg
+         * @param {Object} config The user configuration object
+         */
+        _preInitEventCfg : function(config) {
             if (config) {
                 if (config.on) {
                     this.on(config.on);
@@ -201,9 +245,19 @@ YUI.add('base-base', function(Y) {
                 }
             }
 
-            this.fire(INIT, {cfg: config});
+            var i, l, target,
+                userTargets = (config && BUBBLETARGETS in config);
 
-            return this;
+            if (userTargets || _BUBBLETARGETS in this) {
+                target = userTargets ? (config && config.bubbleTargets) : this._bubbleTargets;
+                if (L.isArray(target)) {
+                    for (i = 0, l = target.length; i < l; i++) { 
+                        this.addTarget(target[i]);
+                    }
+                } else if (target) {
+                    this.addTarget(target);
+                }
+            }
         },
 
         /**
@@ -242,9 +296,13 @@ YUI.add('base-base', function(Y) {
              */
             this.publish(DESTROY, {
                 queuable:false,
+                fireOnce:true,
+                defaultTargetOnly:true,
                 defaultFn: this._defDestroyFn
             });
             this.fire(DESTROY);
+
+            this.detachAll();
             return this;
         },
 
@@ -468,7 +526,7 @@ YUI.add('base-base', function(Y) {
                 constr = classes[ci];
                 constrProto = constr.prototype;
 
-                if (constr._yuibuild && constr._yuibuild.exts && !constr._yuibuild.dynamic) {
+                if (constr._yuibuild && constr._yuibuild.exts) {
                     for (ei = 0, el = constr._yuibuild.exts.length; ei < el; ei++) {
                         constr._yuibuild.exts[ei].apply(this, arguments);
                     }
@@ -476,6 +534,8 @@ YUI.add('base-base', function(Y) {
 
                 this.addAttrs(this._filterAttrCfgs(constr, attrCfgs), userVals, lazy);
 
+                // Using INITIALIZER in hasOwnProperty check, for performance reasons (helps IE6 avoid GC thresholds when
+                // referencing string literals). Not using it in apply, again, for performance "." is faster. 
                 if (constrProto.hasOwnProperty(INITIALIZER)) {
                     constrProto.initializer.apply(this, arguments);
                 }
@@ -506,14 +566,15 @@ YUI.add('base-base', function(Y) {
 
         /**
          * Default toString implementation. Provides the constructor NAME
-         * and the instance ID.
+         * and the instance guid, if set.
          *
          * @method toString
          * @return {String} String representation for this object
          */
         toString: function() {
-            return this.constructor.NAME + "[" + Y.stamp(this) + "]";
+            return this.name + "[" + Y.stamp(this, true) + "]";
         }
+
     };
 
     // Straightup augment, no wrapper functions
@@ -524,8 +585,5 @@ YUI.add('base-base', function(Y) {
 
     Y.Base = Base;
 
-    // Fix constructor
-    Base.prototype.constructor = Base;
 
-
-}, '3.0.0' ,{requires:['attribute-base']});
+}, '3.3.0' ,{requires:['attribute-base']});

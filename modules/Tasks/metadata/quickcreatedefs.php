@@ -99,7 +99,7 @@ array (
         array (
            
           array (
-            'name' => 'date_due',
+            'name' => 'date_start',
             'type' => 'datetimecombo',
             'displayParams' => 
             array (
@@ -117,7 +117,7 @@ array (
         array (
            
           array (
-            'name' => 'date_start',
+            'name' => 'date_due',
             'type' => 'datetimecombo',
             'displayParams' => 
             array (

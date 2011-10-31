@@ -1,10 +1,9 @@
 /*
- Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+ Copyright (c) 2010, Yahoo! Inc. All rights reserved.
  Code licensed under the BSD License:
- http://developer.yahoo.net/yui/license.txt
- version: 3.0.0
- build: 1549
+ http://developer.yahoo.com/yui/license.html
+ version: 3.3.0
+ build: 3167
  */
-YUI.add('yui-later',function(Y){(function(){var L=Y.Lang,later=function(when,o,fn,data,periodic){when=when||0;o=o||{};var m=fn,d=Y.Array(data),f,r;if(L.isString(fn)){m=o[fn];}
-if(!m){}
-f=function(){m.apply(o,d);};r=(periodic)?setInterval(f,when):setTimeout(f,when);return{id:r,interval:periodic,cancel:function(){if(this.interval){clearInterval(r);}else{clearTimeout(r);}}};};Y.later=later;L.later=later;})();},'3.0.0',{requires:['yui-base']});
+YUI.add('yui-later',function(Y){Y.later=function(when,o,fn,data,periodic){when=when||0;var m=fn,f,id;if(o&&Y.Lang.isString(fn)){m=o[fn];}
+f=!Y.Lang.isUndefined(data)?function(){m.apply(o,Y.Array(data));}:function(){m.call(o);};id=(periodic)?setInterval(f,when):setTimeout(f,when);return{id:id,interval:periodic,cancel:function(){if(this.interval){clearInterval(id);}else{clearTimeout(id);}}};};Y.Lang.later=Y.later;},'3.3.0',{requires:['yui-base']});

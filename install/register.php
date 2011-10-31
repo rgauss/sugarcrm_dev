@@ -98,7 +98,7 @@ $out =<<<EOQ
    <link rel="stylesheet" href="$css" type="text/css" />
    <script type="text/javascript" src="$common"></script>
 </head>
-<body onload="javascript:document.getElementById('defaultFocus').focus();">
+<body onload="javascript:document.getElementById('button_next2').focus();">
 <table cellspacing="0" cellpadding="0" border="0" align="center" class="shell">
       <tr><td colspan="2" id="help">&nbsp;</td></tr>
     <tr>
@@ -121,7 +121,7 @@ $out =<<<EOQ
 		    <td>
                 <form action="index.php" method="post" name="appform" id="appform">
                     <input type="hidden" name="default_user_name" value="admin">
-                    <input class="button" type="submit" name="next" value="{$mod_strings['LBL_NEXT']}" id="defaultFocus"/>
+                    <input class="button" type="submit" name="next" value="{$mod_strings['LBL_NEXT']}" id="button_next2"/>
 		    	</form>
 			</td>
 		</tr>

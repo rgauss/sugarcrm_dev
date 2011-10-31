@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('classnamemanager', function(Y) {
 
@@ -40,7 +40,7 @@ var CLASS_NAME_PREFIX = 'classNamePrefix',
  * @default "yui"
  * @static
  */
-CONFIG[CLASS_NAME_PREFIX] = CONFIG[CLASS_NAME_PREFIX] || 'yui';
+CONFIG[CLASS_NAME_PREFIX] = CONFIG[CLASS_NAME_PREFIX] || 'yui3';
 
 /**
  * Configuration property indicating the delimiter used to compose all CSS class names in
@@ -65,18 +65,22 @@ Y.ClassNameManager = function () {
 		 * <code>Y.config.classNamePrefix</code> attribute + the provided strings.
 		 * Uses the <code>Y.config.classNameDelimiter</code> attribute to delimit the 
 		 * provided strings. E.g. Y.ClassNameManager.getClassName('foo','bar'); // yui-foo-bar
-		 * 
+		 *
 		 * @method getClassName
-		 * @param {String}+ one or more classname bits to be joined and prefixed
+		 * @param {String}+ classnameSection one or more classname sections to be joined
+		 * @param {Boolean} skipPrefix If set to true, the classname will not be prefixed with the default Y.config.classNameDelimiter value.  
 		 */
-		getClassName: Y.cached(function (c, x) {
+		getClassName: Y.cached(function () {
 
-			var sClass = sPrefix + sDelimiter + 
-                   // ((x) ? Y.Array(arguments, 0, true).join(sDelimiter) : c);
-                   ((x) ? Array.prototype.join.call(arguments, sDelimiter) : c);
+            var args = Y.Array(arguments);
 
-			return sClass.replace(/\s/g, '');
+            if (args[args.length-1] !== true) {
+                args.unshift(sPrefix);
+            } else {
+                args.pop();
+            }
 
+			return args.join(sDelimiter);
 		})
 
 	};
@@ -84,4 +88,4 @@ Y.ClassNameManager = function () {
 }();
 
 
-}, '3.0.0' );
+}, '3.3.0' );

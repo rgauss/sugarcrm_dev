@@ -43,10 +43,7 @@
 	#subjectfield { height: 1.6em; }
 </style>
 {JAVASCRIPT}
-<script type="text/javascript" src="include/JSON.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
 <script type="text/javascript" src="include/javascript/sugar_grp1.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
-<script type="text/javascript" src="include/javascript/yui/YAHOO.js"></script>
-<script type="text/javascript" src="include/javascript/yui/connection.js"></script>
 {JSLANG}
 <script type="text/javascript" language="Javascript" src="modules/Emails/javascript/Email.js"></script>
 <script type="text/javascript" language="Javascript" src="modules/EmailTemplates/EmailTemplate.js"></script>
@@ -228,8 +225,10 @@
 <script type="text/javascript" language="javascript">
 <!-- BEGIN: NoInbound4 -->
 toggle_textarea_elem_values = ['{MOD.LBL_EDIT_ALT_TEXT}', '{MOD.LBL_HIDE_ALT_TEXT}'];
+<!-- BEGIN: NoInbound3 -->
 var multi_selector = new multiFiles(document.getElementById('upload_div'));
 multi_selector.addElement( document.getElementById('my_file'));
+<!-- END: NoInbound3 -->
 <!-- END: NoInbound4 -->
 //call the function on load, this will hide the tinyMCE editor if needed
 toggle_text_only(true);

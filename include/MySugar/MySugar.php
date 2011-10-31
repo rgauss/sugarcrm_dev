@@ -87,17 +87,12 @@ class MySugar{
 		    $guid = create_guid();
 			$options = array();
 		    if (isset($_REQUEST['type']) && $_REQUEST['type'] == 'web') {
-		        $dashlet_module = 'Home';
-		        $options['url'] = $_REQUEST['type_module'];
-		        $fp = @fopen($options['url'],'r');
-		        if ( $fp ) {
-		            $page = fread($fp,8192);
-		            $matches = array();
-                    preg_match("/<title>(.*)<\/title>/i",$page,$matches);
-                    if ( isset($matches[1]) )
-                        $options['title'] = str_replace('<![CDATA[','',str_replace(']]>','',$matches[1]));
-                    fclose($fp);
-		        }
+				$dashlet_module = 'Home';
+				require_once('include/Dashlets/DashletRssFeedTitle.php');
+				$options['url'] = $_REQUEST['type_module'];
+				$webDashlet = new DashletRssFeedTitle($options['url']);
+				$options['title'] = $webDashlet->generateTitle();
+				unset($webDashlet);
 		    }
 			elseif (!empty($_REQUEST['type_module'])) {
 				$dashlet_module = $_REQUEST['type_module'];

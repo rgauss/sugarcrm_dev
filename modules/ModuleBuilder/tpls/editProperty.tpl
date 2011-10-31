@@ -60,7 +60,7 @@
 				{
 					var property = field.name.substring('editProperty_'.length);
 					var id = field.id.substring('editProperty_'.length);
-					document.getElementById(id).innerHTML = field.value;
+					document.getElementById(id).innerHTML = escape(field.value);
 				}
 			}
 		}

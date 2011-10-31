@@ -484,6 +484,7 @@ $project->status = $sugar_demodata['project_seed_data']['audit']['status'];
 $project->priority = $sugar_demodata['project_seed_data']['audit']['priority'];
 $audit_plan_id = $project->save();
 
+$project_task_id_counter = 1;  // all the project task IDs cannot be 1, so using couter
 foreach($sugar_demodata['project_seed_data']['audit']['project_tasks'] as $v){
 	$project_task = new ProjectTask();
 	$project_task->assigned_user_id = 1;
@@ -491,12 +492,14 @@ foreach($sugar_demodata['project_seed_data']['audit']['project_tasks'] as $v){
 	$project_task->date_start = $v['date_start'];
 	$project_task->date_finish = $v['date_finish'];
 	$project_task->project_id = $audit_plan_id;
-	$project_task->project_task_id = '1';
+	$project_task->project_task_id = $project_task_id_counter;
 	$project_task->description = $v['description'];
 	$project_task->duration = $v['duration'];
 	$project_task->duration_unit = $v['duration_unit'];
 	$project_task->percent_complete = $v['percent_complete'];
 	$communicate_stakeholders_id = $project_task->save();
+
+    $project_task_id_counter++;
 }
 
 

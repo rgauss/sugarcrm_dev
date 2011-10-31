@@ -45,6 +45,9 @@ class Bug40527Test extends Sugar_PHPUnit_Framework_TestCase
     
 	public function setUp()
     {
+        global $app_strings, $app_list_strings;
+        $app_strings = return_application_language($GLOBALS['current_language']);
+        $app_list_strings = return_app_list_strings_language($GLOBALS['current_language']);
         $GLOBALS['current_user'] = SugarTestUserUtilities::createAnonymousUser();
         $this->contact = SugarTestContactUtilities::createContact();
         $this->account = SugarTestAccountUtilities::createAccount();

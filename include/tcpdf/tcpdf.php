@@ -4,6 +4,8 @@
 
 Modification information for LGPL compliance
 
+Mon May 30 16:16:13 2011 +0300 - alex-vlasov - Bug 41216 - currency is displayed on 2 lines instead of one when printing a quote to PDF
+
 r57813 - 2010-08-19 10:34:44 -0700 (Thu, 19 Aug 2010) - kjing - Author: John Mertic <jmertic@sugarcrm.com>
     Bug 39085 - When loading the opposite search panel via ajax on the ListViews, call the index action instead of the ListView action to avoid touching pre-MVC code by accident.
 
@@ -110,7 +112,7 @@ r46451 - 2009-04-23 16:57:40 -0700 (Thu, 23 Apr 2009) - jenny - tcpdf initial ch
 // dullus for text Justification.
 // Bob Vincent (pillarsdotnet@users.sourceforge.net) for <li> value attribute.
 // Patrick Benny for text stretch suggestion on Cell().
-// Johannes Güntert for JavaScript support.
+// Johannes Gï¿½ntert for JavaScript support.
 // Denis Van Nuffelen for Dynamic Form.
 // Jacek Czekaj for multibyte justification
 // Anthony Ferrara for the reintroduction of legacy image methods.
@@ -121,7 +123,7 @@ r46451 - 2009-04-23 16:57:40 -0700 (Thu, 23 Apr 2009) - jenny - tcpdf initial ch
 // Mohamad Ali Golkar, Saleh AlMatrafe, Charles Abbott for Arabic and Persian support.
 // Moritz Wagner and Andreas Wurmser for graphic functions.
 // Andrew Whitehead for core fonts support.
-// Esteban Joël Marín for OpenType font conversion.
+// Esteban Joï¿½l Marï¿½n for OpenType font conversion.
 // Teus Hagen for several suggestions and fixes.
 // Yukihiro Nakadaira for CID-0 CJK fonts fixes.
 // Kosmas Papachristos for some CSS improvements.
@@ -3681,7 +3683,7 @@ if (!class_exists('TCPDF', false)) {
 		* @since 1.3
 		* @see SetFont(), SetDrawColor(), SetFillColor(), SetTextColor(), SetLineWidth(), Cell(), Write(), SetAutoPageBreak()
 		*/
-		public function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=0, $ln=1, $x='', $y='', $reseth=true, $stretch=0, $ishtml=false, $autopadding=true, $maxh=0) {	
+		public function MultiCell($w, $h, $txt, $border=0, $align='J', $fill=0, $ln=1, $x='', $y='', $reseth=true, $stretch=0, $ishtml=false, $autopadding=true, $maxh=0, $addpage=true) {
 			if ($this->empty_string($this->lasth) OR $reseth) {
 				//set row height
 				$this->lasth = $this->FontSize * $this->cell_height_ratio;
@@ -3691,8 +3693,11 @@ if (!class_exists('TCPDF', false)) {
 			} else {
 				$y = $this->GetY();
 			}
-			// check for page break
-			$this->checkPageBreak($h);
+			// should not add page for each cell
+            if ($addpage) {
+			    // check for page break
+                $this->checkPageBreak($h);
+            }
 			$y = $this->GetY();
 			// get current page number
 			$startpage = $this->page;
@@ -3967,6 +3972,7 @@ if (!class_exists('TCPDF', false)) {
 			}
 			// remove carriage returns
 			$s = str_replace("\r", '', $txt);
+			
 			// check if string contains arabic text
 			if (preg_match(K_RE_PATTERN_ARABIC, $s)) {
 				$arabic = true;
@@ -4096,7 +4102,7 @@ if (!class_exists('TCPDF', false)) {
 					} else {
 						$l += $this->GetCharWidth($c);
 					}
-					if (($l > $wmax) OR ($shy AND (($l + $shy_replacement_width) > $wmax)) ) {
+					if (!$stretch && (($l > $wmax) OR ($shy AND (($l + $shy_replacement_width) > $wmax))) ) {
 						// we have reached the end of column
 						if ($sep == -1) {
 							// check if the line was already started
@@ -4213,33 +4219,36 @@ if (!class_exists('TCPDF', false)) {
 			} // end while i < nb
 			// print last substring (if any)
 			if ($l > 0) {
-				switch ($align) {
-					case 'J':
-					case 'C': {
-						$w = $w;
-						break;
-					}
-					case 'L': {
-						if ($this->rtl) {
-							$w = $w;
-						} else {
-							$w = $l;
-						}
-						break;
-					}
-					case 'R': {
-						if ($this->rtl) {
-							$w = $l;
-						} else {
-							$w = $w;
-						}
-						break;
-					}
-					default: {
-						$w = $l;
-						break;
-					}
-				}
+			    if (!$stretch)
+			    {
+    				switch ($align) {
+    					case 'J':
+    					case 'C': {
+    						$w = $w;
+    						break;
+    					}
+    					case 'L': {
+    						if ($this->rtl) {
+    							$w = $w;
+    						} else {
+    							$w = $l;
+    						}
+    						break;
+    					}
+    					case 'R': {
+    						if ($this->rtl) {
+    							$w = $l;
+    						} else {
+    							$w = $w;
+    						}
+    						break;
+    					}
+    					default: {
+    						$w = $l;
+    						break;
+    					}
+    				}
+			    }
 				$tmpstr = $this->UniArrSubString($uchars, $j, $nb);
 				if ($firstline) {
 					$startx = $this->x;
@@ -4254,7 +4263,8 @@ if (!class_exists('TCPDF', false)) {
 					} else {
 						$this->endlinex = $startx + $linew;
 					}
-					$w = $linew;
+					if (!$stretch)
+					    $w = $linew;
 					$tmpcmargin = $this->cMargin;
 					if ($maxh == 0) {
 						$this->cMargin = 0;
@@ -4400,6 +4410,9 @@ if (!class_exists('TCPDF', false)) {
 		* @return image information
 		* @access public
 		* @since 1.1
+        *
+        * peter d: Upgrading tcpdf to the latest version causes the whole thing to blow up since we have modifications to the original source as well as sugarpdf which
+        * also extend from this. The only option is to add a workaround for some of the bugs in this function.
 		*/
 		public function Image($file, $x='', $y='', $w=0, $h=0, $type='', $link='', $align='', $resize=false, $dpi=300, $palign='', $ismask=false, $imgmask=false, $border=0, $fitbox=false) {
 			if ($x === '') {
@@ -4431,19 +4444,48 @@ if (!class_exists('TCPDF', false)) {
 				$h = $w * $pixh / $pixw;
 			} elseif ($fitbox AND ($w > 0) AND ($h > 0)) {
 				// scale image dimensions proportionally to fit within the ($w, $h) box
+                // NOTE: This section doesn't actually work very well, use the resize = true case I added.
 				if ((($w * $pixh) / ($h * $pixw)) < 1) {
 					$h = $w * $pixh / $pixw;
 				} else {
 					$w = $h * $pixw / $pixh;
 				}
-			}
+			} else if ($resize) { // Added resize case
+                // Note: The issue here is that $w and $h represent abstract sizes, we pass it in as pixels,
+                // but tcpdf treats it as document units.
+                $wratio = $pixw / $w;
+                $hratio = $pixh / $h;
+
+                // Check if our image exceeds the boundaries of $w and $h
+                if ($wratio > 1 AND $hratio > 1) {
+                    $favoredRatio = ($wratio > $hratio) ? $wratio : $hratio;
+                } else if ($wratio > 1) {
+                    $favoredRatio = $wratio;
+                } else if ($hratio > 1) {
+                    $favoredRatio = $hratio;
+                } else {
+                    $favoredRatio = 1;
+                    $resize = false;
+                }
+
+                // Calculate the new boundaries that also happen to fit the box..
+                // Dividing by the unit conversion $this->k seems to make the size not blow up
+                // later down in the code.
+                $w = $pixw / $favoredRatio / $this->k;
+                $h = $pixh / $favoredRatio / $this->k;
+            }
 			// calculate new minimum dimensions in pixels
 			$neww = round($w * $this->k * $dpi / $this->dpi);
 			$newh = round($h * $this->k * $dpi / $this->dpi);
+
 			// check if resize is necessary (resize is used only to reduce the image)
-			if (($neww * $newh) >= ($pixw * $pixh)) {
-				$resize = false;
-			}
+
+            // - commmented out by pete d.
+            // this is not a good way of checking for resize. and it might overwrite resize if the flag is enabled.
+			// if (($neww * $newh) >= ($pixw * $pixh)) {
+			//	$resize = false;
+			// }
+
 			// check if image has been already added on document
 			if (!in_array($file, $this->imagekeys)) {
 				//First use of image, get info
@@ -9040,7 +9082,7 @@ if (!class_exists('TCPDF', false)) {
 		/*
 		* Adds a javascript
 		* @access public
-		* @author Johannes Güntert, Nicola Asuni
+		* @author Johannes Gï¿½ntert, Nicola Asuni
 		* @since 2.1.002 (2008-02-12)
 		*/
 		public function IncludeJS($script) {
@@ -9050,7 +9092,7 @@ if (!class_exists('TCPDF', false)) {
 		/*
 		* Create a javascript PDF string.
 		* @access protected
-		* @author Johannes Güntert, Nicola Asuni
+		* @author Johannes Gï¿½ntert, Nicola Asuni
 		* @since 2.1.002 (2008-02-12)
 		*/
 		protected function _putjavascript() {
@@ -9760,7 +9802,7 @@ if (!class_exists('TCPDF', false)) {
 		* @param array $col1 first color (RGB components).
 		* @param array $col2 second color (RGB components).
 		* @param array $coords array of the form (x1, y1, x2, y2) which defines the gradient vector (see linear_gradient_coords.jpg). The default value is from left to right (x1=0, y1=0, x2=1, y2=0).
-		* @author Andreas Würmser, Nicola Asuni
+		* @author Andreas Wï¿½rmser, Nicola Asuni
 		* @since 3.1.000 (2008-06-09)
 		* @access public
 		*/
@@ -9778,7 +9820,7 @@ if (!class_exists('TCPDF', false)) {
 		* @param array $col1 first color (RGB components).
 		* @param array $col2 second color (RGB components).
 		* @param array $coords array of the form (fx, fy, cx, cy, r) where (fx, fy) is the starting point of the gradient with color1, (cx, cy) is the center of the circle with color2, and r is the radius of the circle (see radial_gradient_coords.jpg). (fx, fy) should be inside the circle, otherwise some areas will not be defined.
-		* @author Andreas Würmser, Nicola Asuni
+		* @author Andreas Wï¿½rmser, Nicola Asuni
 		* @since 3.1.000 (2008-06-09)
 		* @access public
 		*/
@@ -9800,7 +9842,7 @@ if (!class_exists('TCPDF', false)) {
 		* @param array $coords <ul><li>for one patch mesh: array(float x1, float y1, .... float x12, float y12): 12 pairs of coordinates (normally from 0 to 1) which specify the Bezier control points that define the patch. First pair is the lower left edge point, next is its right control point (control point 2). Then the other points are defined in the order: control point 1, edge point, control point 2 going counter-clockwise around the patch. Last (x12, y12) is the first edge point's left control point (control point 1).</li><li>for two or more patch meshes: array[number of patches]: arrays with the following keys for each patch: f: where to put that patch (0 = first patch, 1, 2, 3 = right, top and left of precedent patch - I didn't figure this out completely - just try and error ;-) points: 12 pairs of coordinates of the Bezier control points as above for the first patch, 8 pairs of coordinates for the following patches, ignoring the coordinates already defined by the precedent patch (I also didn't figure out the order of these - also: try and see what's happening) colors: must be 4 colors for the first patch, 2 colors for the following patches</li></ul>
 		* @param array $coords_min minimum value used by the coordinates. If a coordinate's value is smaller than this it will be cut to coords_min. default: 0
 		* @param array $coords_max maximum value used by the coordinates. If a coordinate's value is greater than this it will be cut to coords_max. default: 1
-		* @author Andreas Würmser, Nicola Asuni
+		* @author Andreas Wï¿½rmser, Nicola Asuni
 		* @since 3.1.000 (2008-06-09)
 		* @access public
 		*/
@@ -9880,7 +9922,7 @@ if (!class_exists('TCPDF', false)) {
 		* @param float $y ordinate of the top left corner of the rectangle.
 		* @param float $w width of the rectangle.
 		* @param float $h height of the rectangle.
-		* @author Andreas Würmser, Nicola Asuni
+		* @author Andreas Wï¿½rmser, Nicola Asuni
 		* @since 3.1.000 (2008-06-09)
 		* @access protected
 		*/
@@ -9903,7 +9945,7 @@ if (!class_exists('TCPDF', false)) {
 		* @param array $col1 first color (RGB components).
 		* @param array $col2 second color (RGB components).
 		* @param array $coords array of coordinates.
-		* @author Andreas Würmser, Nicola Asuni
+		* @author Andreas Wï¿½rmser, Nicola Asuni
 		* @since 3.1.000 (2008-06-09)
 		* @access protected
 		*/
@@ -9927,7 +9969,7 @@ if (!class_exists('TCPDF', false)) {
 		
 		/**
 		* Output shaders.
-		* @author Andreas Würmser, Nicola Asuni
+		* @author Andreas Wï¿½rmser, Nicola Asuni
 		* @since 3.1.000 (2008-06-09)
 		* @access protected
 		*/

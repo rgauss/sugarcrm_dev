@@ -44,7 +44,7 @@
 <!-- END: error -->
 
 
-			<form enctype="multipart/form-data" name="MailMerge" method="POST" action="index.php">
+			<form enctype="multipart/form-data" name="MailMerge" method="POST" action="index.php" onsubmit='return false'>
 			<input type="hidden" name="module" value="MailMerge">
 			<input type="hidden" name="step" id="step" value="{STEP}">
 			<input type="hidden" name="action" value="index">
@@ -62,8 +62,8 @@
 	</tr>
 	<tr><td><slot>&nbsp;</slot></td></tr>
 	<tr>
-	<td><input type='text' id="searchText" name="searchText"></td>
-	<td><input type="button" id="searchSubmit" value="Search" onClick="search();" class='button'></td>
+	<td><input type='text' id="searchText" name="searchText" ONKEYDOWN="javascript:return displayKeyCode(event)"></td>
+	<td><input type="submit" id="searchSubmit" value="Search" accessKey="" onClick="search();" class='button'></td>
 	</tr>
 	<tr><td>{MAIL_MERGE_CAMPAIGN_PROSPECT_SELECTOR}</td></tr>
 	</table>
@@ -117,14 +117,12 @@
 </table>
 </p>
 <p><table width="100%" cellpadding="2" cellspacing="0" border="0"><tr> 
-	<td align="left"><input id="prevButton" title="{MOD.LBL_BACK}" accessKey="" class="button" type="submit" name="button" value="  {MOD.LBL_BACK}  "  onclick="this.form.step.value='1'; return true;"></td>
+	<td align="left"><input id="prevButton" title="{MOD.LBL_BACK}" accessKey="" class="button" type="submit" name="button" value="  {MOD.LBL_BACK}  "  onclick="this.form.step.value='1'; return submit_form();"></td>
 	<td align="right"><input id="nextButton" title="{MOD.LBL_NEXT}" accessKey="" class="button" type="submit" name="button" value="  {MOD.LBL_NEXT}  "  onclick="set_selected_items();return validateForm();"></td>
 </tr>
 </table>  </p>
 	</form>
 {JAVASCRIPT}
-<script type="text/javascript" src="include/JSON.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
-<script type="text/javascript" src="include/jsolait/init.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
 <script type="text/javascript">{JSON_CONFIG_JAVASCRIPT}</script>
 <script type="text/javascript" src="include/javascript/jsclass_base.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
 <script type="text/javascript" src="include/javascript/jsclass_async.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
@@ -135,14 +133,24 @@ var mOffset = 0;
 var max = 20;
 var mWhere = "{MAILMERGE_WHERE}";
 var orderBy = '';
+var relModule = '';
+var mTerm = '';
+YAHOO.namespace("mailmerge");
+YAHOO.mailmerge.cObj = null;
+
+function submit_form()
+{
+	document.MailMerge.submit();
+}
 
 function ResponseObj()
 {
 }
 
-ResponseObj.prototype.response = function (result) 
+function ajaxSuccess(data)
 {	 
-
+    var result = YAHOO.lang.JSON.parse(data.responseText);
+    result = result.result;
 	var prevButton = document.getElementById("prevButton");
 	var nextButton = document.getElementById("nextButton");
 	
@@ -153,29 +161,33 @@ ResponseObj.prototype.response = function (result)
 	if(result.result_count < max)
 	{
 		dispCount = result.result_count;
-		nextItems.disabled = true;
+		nextItems_disabled = true;
 	}
-	if(result.result_count - max == mOffset)
+	if(result.result_count <= (mOffset + max))
 	{
-		nextItems.disabled = true;
+		nextItems_disabled = true;
 	}
 	else
 	{
-		nextItems.disabled = false;
+		nextItems_disabled = false;
 	}
 	if(mOffset == 0)
 	{
-		prevItems.disabled = true;
+		prevItems_disabled = true;
 	}
 	else
 	{
-		prevItems.disabled = false;
+		prevItems_disabled = false;
 	}
 	if(result.result_count > 0)
 	{
 		dispMin = mOffset + 1;
 	}
-	var spanText = "("+(dispMin) + " - " +(mOffset+dispCount) + " of " + result.result_count+")";
+    var spanMax = 0 + parseInt(mOffset,10) + parseInt(dispCount,10);
+    if ( spanMax > parseInt(result.result_count,10) ) {
+        spanMax = parseInt(result.result_count);
+    }
+	var spanText = "("+(dispMin) + " - " + spanMax + " of " + result.result_count+")";
 	document.getElementById("result_count").innerHTML = spanText;
 	var displayObjs = document.getElementById("display_objs");
 	displayObjs.options.length = 0;
@@ -210,12 +222,32 @@ ResponseObj.prototype.response = function (result)
 }
 function increaseOffset()
 {
-	mOffset += 20;
+    if(isCallInProgress())
+        return;
+
+    if(!nextItems_disabled) {
+        mOffset += 20;
+        getObjects();
+    }
 }
 
 function decreaseOffset()
 {
-	mOffset -= 20;
+    if(isCallInProgress())
+        return;
+
+    if(!prevItems_disabled) {
+	    mOffset -= 20;
+        getObjects();
+    }
+}
+
+function isCallInProgress()
+{
+    if(YAHOO.mailmerge.cObj)
+        return YAHOO.util.Connect.isCallInProgress(YAHOO.mailmerge.cObj);
+    else
+        return false;
 }
 
 function getObjects()
@@ -228,15 +260,8 @@ function getObjects()
 	getOrderBy();
 	
 	//rrs
-	//mWhere = "campaigns.id = '9be5dd91-d20b-c5fd-1769-4554d8eede05'";
-
-	query = {"module":module, "offset":mOffset, "where":mWhere, "max":max, "order_by":orderBy};
-
-	req_id = global_rpcClient.call_method('get_objects_from_module',query);
-	
-	var res = new ResponseObj();
-    global_request_registry[req_id] = [ res,'response']; 
-
+    var qs = 'index.php?module=MailMerge&action=search&qModule='+module+'&rel_module='+relModule+'&term='+mTerm+'&max='+max+'&order_by='+orderBy+'&offset='+mOffset;
+	YAHOO.mailmerge.cObj = YAHOO.util.Connect.asyncRequest('GET', qs,{success: ajaxSuccess, failure: ajaxSuccess}, null);
 }
 
 function moveRight()
@@ -319,6 +344,15 @@ for(i=0; i < selObjs.options.length ;i++)
 
 }
 
+function displayKeyCode(evt)
+ {
+	 var charCode = (evt.which) ? evt.which : event.keyCode;
+	 if(charCode=='13')
+	 {
+		 search();
+	 }
+ }
+
 function search(searchText)
 {
 	var searchInput = document.getElementById("searchText");
@@ -326,25 +360,14 @@ function search(searchText)
 	var where = '';
 	if(searchText != '')
 	{
-		if(module == 'Contacts' || module == 'Leads')
-		{
-			where = module+".first_name like '%"+searchText+"%' OR "+module+".last_name like '%"+searchText+"%'";
-		}
-		else if(module == 'CampaignProspects'){
+        mTerm = searchText;
+		if(module == 'CampaignProspects'){
 			var prospectType = document.getElementById("campaign_prospect_type");
 			var lmodule = prospectType.value.toLowerCase();
-			var campign_where = "{MAILMERGE_WHERE}";
-			where = lmodule+".first_name like '%"+searchText+"%' OR "+lmodule+".last_name like '%"+searchText+"%'";
-			if(campign_where)
-				where += " AND "+campign_where ;
-			where += "  AND related_type = #"+lmodule+"#"
-		}
-		else
-		{
-			where = module+".name like '"+searchText+"%'";
+            relModule = lmodule;
 		}
 	}
-	mWhere = where.toLowerCase();
+    mOffset = 0;
 	getObjects();
 }
 
@@ -368,6 +391,7 @@ function validateForm()
 	
 	if(selObjs.options.length > 0)
 	{
+		document.MailMerge.submit();
 		return true;
 	}
 	else

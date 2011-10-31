@@ -91,4 +91,49 @@ class FunctionSugarTranslateTest extends Sugar_PHPUnit_Framework_TestCase
             $smarty)
         );
     }
+
+    public function providerStripColonSting()
+    {
+        return array(
+            array(
+                "Friend:",
+                "Friend:",
+                ),
+            array(
+                "Friend : ",
+                "Friend : ",
+                ),
+            array(
+                ": Friend",
+                ": Friend",
+                ),
+            array(
+                "Fr:iend",
+                "Fr:iend",
+                ),
+        );
+    }
+
+    /**
+     * @dataProvider providerStripColonSting
+     * @ticket 41983
+     */
+    public function testStripColonString($string, $returnedString) 
+    {
+        $langpack = new SugarTestLangPackCreator();
+        $langpack->setModString('LBL_TEST_JS_ESCAPED_STRING', $string, 'Contacts');
+        $langpack->save();
+
+        $smarty = new Sugar_Smarty;
+        
+        $this->assertEquals($returnedString, smarty_function_sugar_translate(
+            array(
+                'label'  => 'LBL_TEST_JS_ESCAPED_STRING',
+                'module' => 'Contacts',
+                'trimColon'  =>  false,
+            ),
+            $smarty)
+        );
+    }
+    
 }

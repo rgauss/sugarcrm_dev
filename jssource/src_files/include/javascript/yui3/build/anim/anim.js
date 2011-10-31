@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('anim-base', function(Y) {
 
@@ -62,15 +62,16 @@ YUI.add('anim-base', function(Y) {
         NUM = Number;
 
     var _running = {},
-        _instances = {},
         _timer;
 
     Y.Anim = function() {
         Y.Anim.superclass.constructor.apply(this, arguments);
-        _instances[Y.stamp(this)] = this;
+        Y.Anim._instances[Y.stamp(this)] = this;
     };
 
     Y.Anim.NAME = 'anim';
+
+    Y.Anim._instances = {};
 
     /**
      * Regex of properties that should use the default unit.
@@ -91,6 +92,15 @@ YUI.add('anim-base', function(Y) {
     Y.Anim.DEFAULT_EASING = function (t, b, c, d) {
         return c * t / d + b; // linear easing
     };
+
+    /**
+     * Time in milliseconds passed to setInterval for frame processing 
+     *
+     * @property intervalTime
+     * @default 20
+     * @static
+     */
+    Y.Anim._intervalTime = 20;
 
     /**
      * Bucket for custom getters and setters
@@ -115,8 +125,17 @@ YUI.add('anim-base', function(Y) {
      * @static
      */
     Y.Anim.DEFAULT_SETTER = function(anim, att, from, to, elapsed, duration, fn, unit) {
-        unit = unit || '';
-        anim._node.setStyle(att, fn(elapsed, NUM(from), NUM(to) - NUM(from), duration) + unit);
+        var node = anim._node,
+            val = fn(elapsed, NUM(from), NUM(to) - NUM(from), duration);
+
+        if (att in node._node.style || att in Y.DOM.CUSTOM_STYLES) {
+            unit = unit || '';
+            node.setStyle(att, val + unit);
+        } else if (node._node.attributes[att]) {
+            node.setAttribute(att, val);
+        } else {
+            node.set(att, val);
+        }
     };
 
     /**
@@ -125,8 +144,19 @@ YUI.add('anim-base', function(Y) {
      * @property DEFAULT_GETTER
      * @static
      */
-    Y.Anim.DEFAULT_GETTER = function(anim, prop) {
-        return anim._node.getComputedStyle(prop);
+    Y.Anim.DEFAULT_GETTER = function(anim, att) {
+        var node = anim._node,
+            val = '';
+
+        if (att in node._node.style || att in Y.DOM.CUSTOM_STYLES) {
+            val = node.getComputedStyle(att);
+        } else if (node._node.attributes[att]) {
+            val = node.getAttribute(att);
+        } else {
+            val = node.get(att);
+        }
+
+        return val;
     };
 
     Y.Anim.ATTRS = {
@@ -137,7 +167,7 @@ YUI.add('anim-base', function(Y) {
          */
         node: {
             setter: function(node) {
-                node = Y.get(node);
+                node = Y.one(node);
                 this._node = node;
                 if (!node) {
                 }
@@ -177,6 +207,11 @@ YUI.add('anim-base', function(Y) {
          * If no from value is specified, the DEFAULT_GETTER will be used. 
          * @attribute from
          * @type Object
+         * supports any unit, provided it matches the "to" (or default)
+         * unit (e.g. "{width: 10em', color: 'rgb(0, 0 0)', borderColor: '#ccc'}".
+         * If using the default ('px' for length-based units), the unit may be omitted  (
+         * (e.g. "{width: 100}, borderColor: 'ccc'}", which defaults to pixels 
+         * and hex, respectively).
          */
         from: {},
 
@@ -185,6 +220,11 @@ YUI.add('anim-base', function(Y) {
          * Fields may be strings, numbers, or functions.
          * @attribute to
          * @type Object
+         * supports any unit, provided it matches the "from" (or default)
+         * unit (e.g. "{width: '50%', color: 'red', borderColor: '#ccc'}".
+         * If using the default ('px' for length-based units), the unit may be omitted (
+         * (e.g. "{width: 100}, borderColor: 'ccc'}", which defaults to pixels 
+         * and hex, respectively).
          */
         to: {},
 
@@ -294,9 +334,10 @@ YUI.add('anim-base', function(Y) {
      * @static
      */    
     Y.Anim.run = function() {
-        for (var i in _instances) {
-            if (_instances[i].run) {
-                _instances[i].run();
+        var instances = Y.Anim._instances;
+        for (var i in instances) {
+            if (instances[i].run) {
+                instances[i].run();
             }
         }
     };
@@ -312,6 +353,7 @@ YUI.add('anim-base', function(Y) {
                 _running[i].pause();
             }
         }
+
         Y.Anim._stopTimer();
     };
 
@@ -331,7 +373,7 @@ YUI.add('anim-base', function(Y) {
     
     Y.Anim._startTimer = function() {
         if (!_timer) {
-            _timer = setInterval(Y.Anim._runFrame, 1);
+            _timer = setInterval(Y.Anim._runFrame, Y.Anim._intervalTime);
         }
     };
 
@@ -365,15 +407,14 @@ YUI.add('anim-base', function(Y) {
     var proto = {
         /**
          * Starts or resumes an animation.
-         * percent start time marker.
          * @method run
          * @chainable
          */    
         run: function() {
-            if (!this.get(RUNNING)) {
-                this._start();
-            } else if (this.get(PAUSED)) {
+            if (this.get(PAUSED)) {
                 this._resume();
+            } else if (!this.get(RUNNING)) {
+                this._start();
             }
             return this;
         },
@@ -395,6 +436,7 @@ YUI.add('anim-base', function(Y) {
         /**
          * Stops the animation and resets its time.
          * @method stop
+         * @param {Boolean} finish If true, the animation will move to the last frame
          * @chainable
          */    
         stop: function(finish) {
@@ -435,6 +477,8 @@ YUI.add('anim-base', function(Y) {
         _resume: function() {
             this._set(PAUSED, false);
             _running[Y.stamp(this)] = this;
+            this._set(START_TIME, new Date() - this.get(ELAPSED_TIME));
+            Y.Anim._startTimer();
 
             /**
             * @event resume
@@ -446,6 +490,11 @@ YUI.add('anim-base', function(Y) {
         },
 
         _end: function(finish) {
+            var duration = this.get('duration') * 1000;
+            if (finish) { // jump to last frame
+                this._runAttrs(duration, duration, this.get(REVERSE));
+            }
+
             this._set(START_TIME, null);
             this._set(ELAPSED_TIME, 0);
             this._set(PAUSED, false);
@@ -455,38 +504,14 @@ YUI.add('anim-base', function(Y) {
         },
 
         _runFrame: function() {
-            var attr = this._runtimeAttr,
-                customAttr = Y.Anim.behaviors,
-                easing = attr.easing,
-                d = attr.duration,
+            var d = this._runtimeAttr.duration,
                 t = new Date() - this.get(START_TIME),
-                reversed = this.get(REVERSE),
+                reverse = this.get(REVERSE),
                 done = (t >= d),
-                lastFrame = d,
                 attribute,
                 setter;
                 
-            if (reversed) {
-                t = d - t;
-                done = (t <= 0);
-                lastFrame = 0;
-            }
-
-            for (var i in attr) {
-                if (attr[i].to) {
-                    attribute = attr[i];
-                    setter = (i in customAttr && 'set' in customAttr[i]) ?
-                            customAttr[i].set : Y.Anim.DEFAULT_SETTER;
-
-                    if (!done) {
-                        setter(this, i, attribute.from, attribute.to, t, d, easing, attribute.unit); 
-                    } else { // ensure final frame value is set
-                       // TODO: handle keyframes 
-                        setter(this, i, attribute.from, attribute.to, lastFrame, d, easing, attribute.unit); 
-                    }
-                }
-            }
-
+            this._runAttrs(t, d, reverse);
             this._actualFrames += 1;
             this._set(ELAPSED_TIME, t);
 
@@ -494,6 +519,42 @@ YUI.add('anim-base', function(Y) {
             if (done) {
                 this._lastFrame();
             }
+        },
+
+        _runAttrs: function(t, d, reverse) {
+            var attr = this._runtimeAttr,
+                customAttr = Y.Anim.behaviors,
+                easing = attr.easing,
+                lastFrame = d,
+                done = false,
+                attribute,
+                setter,
+                i;
+
+            if (t >= d) {
+                done = true;
+            }
+
+            if (reverse) {
+                t = d - t;
+                lastFrame = 0;
+            }
+
+            for (i in attr) {
+                if (attr[i].to) {
+                    attribute = attr[i];
+                    setter = (i in customAttr && 'set' in customAttr[i]) ?
+                            customAttr[i].set : Y.Anim.DEFAULT_SETTER;
+
+                    if (!done) {
+                        setter(this, i, attribute.from, attribute.to, t, d, easing, attribute.unit); 
+                    } else {
+                        setter(this, i, attribute.from, attribute.to, lastFrame, d, easing, attribute.unit); 
+                    }
+                }
+            }
+
+
         },
 
         _lastFrame: function() {
@@ -524,11 +585,12 @@ YUI.add('anim-base', function(Y) {
         _initAnimAttr: function() {
             var from = this.get('from') || {},
                 to = this.get('to') || {},
-                dur = this.get('duration') * 1000,
-                node = this.get(NODE),
-                easing = this.get('easing') || {},
-                attr = {},
+                attr = {
+                    duration: this.get('duration') * 1000,
+                    easing: this.get('easing')
+                },
                 customAttr = Y.Anim.behaviors,
+                node = this.get(NODE), // implicit attr init
                 unit, begin, end;
 
             Y.each(to, function(val, name) {
@@ -566,9 +628,6 @@ YUI.add('anim-base', function(Y) {
                     unit: unit
                 };
 
-                attr.duration = dur;
-                attr.easing = easing;
-
             }, this);
 
             this._runtimeAttr = attr;
@@ -593,13 +652,17 @@ YUI.add('anim-base', function(Y) {
             }
 
             return val;
+        },
+
+        destructor: function() {
+            delete Y.Anim._instances[Y.stamp(this)];
         }
     };
 
     Y.extend(Y.Anim, Y.Base, proto);
 
 
-}, '3.0.0' ,{requires:['base-base', 'node-style']});
+}, '3.3.0' ,{requires:['base-base', 'node-style']});
 YUI.add('anim-color', function(Y) {
 
 /**
@@ -647,7 +710,7 @@ Y.each(['backgroundColor',
 );
 
 
-}, '3.0.0' ,{requires:['anim-base']});
+}, '3.3.0' ,{requires:['anim-base']});
 YUI.add('anim-curve', function(Y) {
 
 /**
@@ -704,7 +767,7 @@ Y.Anim.getBezier = function(points, t) {
 };
 
 
-}, '3.0.0' ,{requires:['anim-xy']});
+}, '3.3.0' ,{requires:['anim-xy']});
 YUI.add('anim-easing', function(Y) {
 
 /*
@@ -729,7 +792,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
  * @submodule anim-easing
  */
 
-Y.Easing = {
+var Easing = {
 
     /**
      * Uniform speed between points.
@@ -1051,8 +1114,10 @@ Y.Easing = {
     }
 };
 
+Y.Easing = Easing;
 
-}, '3.0.0' ,{requires:['anim-base']});
+
+}, '3.3.0' ,{requires:['anim-base']});
 YUI.add('anim-node-plugin', function(Y) {
 
 /**
@@ -1078,7 +1143,7 @@ Y.namespace('Plugin');
 Y.Plugin.NodeFX = NodeFX;
 
 
-}, '3.0.0' ,{requires:['node-pluginhost', 'anim-base']});
+}, '3.3.0' ,{requires:['node-pluginhost', 'anim-base']});
 YUI.add('anim-scroll', function(Y) {
 
 /**
@@ -1116,7 +1181,7 @@ Y.Anim.behaviors.scroll = {
 
 
 
-}, '3.0.0' ,{requires:['anim-base']});
+}, '3.3.0' ,{requires:['anim-base']});
 YUI.add('anim-xy', function(Y) {
 
 /**
@@ -1142,8 +1207,8 @@ Y.Anim.behaviors.xy = {
 
 
 
-}, '3.0.0' ,{requires:['anim-base', 'node-screen']});
+}, '3.3.0' ,{requires:['anim-base', 'node-screen']});
 
 
-YUI.add('anim', function(Y){}, '3.0.0' ,{use:['anim-base', 'anim-color', 'anim-curve', 'anim-easing', 'anim-node-plugin', 'anim-scroll', 'anim-xy'], skinnable:false});
+YUI.add('anim', function(Y){}, '3.3.0' ,{use:['anim-base', 'anim-color', 'anim-curve', 'anim-easing', 'anim-node-plugin', 'anim-scroll', 'anim-xy'], skinnable:false});
 

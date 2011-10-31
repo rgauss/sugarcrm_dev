@@ -217,7 +217,7 @@ $mod_strings = array (
     'PDF_HEADER_LOGO_INFO' => 'This image appears in the default Header in Quotes PDF Documents.',
 
     'PDF_NEW_HEADER_LOGO' => 'Select New Image for Quotes',
-    'PDF_NEW_HEADER_LOGO_INFO' => 'The file format can be either .jpg or .png. (Only .jpg for EZPDF)<BR>The recommended size is 867x74 px.',
+    'PDF_NEW_HEADER_LOGO_INFO' => 'The file format can be either .jpg or .png. (Only .jpg for EZPDF)<BR>The recommended size is 867x60 px.',
 
     'PDF_HEADER_LOGO_WIDTH' => 'Quotes Image Width',
     'PDF_HEADER_LOGO_WIDTH_INFO' => 'Change the scale of the uploaded image that appears in Quotes PDF Documents. (TCPDF only)',

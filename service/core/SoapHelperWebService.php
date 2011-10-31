@@ -196,7 +196,9 @@ function validate_user($user_name, $password){
 		$GLOBALS['log']->info('Begin: SoapHelperWebServices->validate_authenticated');
 		if(!empty($session_id)){
 			session_id($session_id);
-			session_start();
+			if(empty($_SESSION)) {
+                           session_start();
+                        }
 			if(!empty($_SESSION['is_valid_session']) && $this->is_valid_ip_address('ip_address') && $_SESSION['type'] == 'user'){
 
 				global $current_user;
@@ -353,7 +355,10 @@ function validate_user($user_name, $password){
 				} // if
 				$GLOBALS['log']->info('End: SoapHelperWebServices->check_modules_access');
 				return false;
-			}
+			}elseif($action == 'write' && strcmp(strtolower($module_name), 'users') == 0 && !$user->isAdminForModule($module_name)){
+                 //rrs bug: 46000 - If the client is trying to write to the Users module and is not an admin then we need to stop them
+                return false;
+            }
 			$GLOBALS['log']->info('End: SoapHelperWebServices->check_modules_access');
 			return true;
 		}
@@ -958,22 +963,29 @@ function validate_user($user_name, $password){
 			$class = get_class($seed);
 			$temp = new $class();
 			$temp->retrieve($seed->id);
-			if ((!isset($account_name) || $account_name == '')) {
+			if ( empty($account_name) && empty($account_id)) {
 				return;
 			} // if
 			if (!isset($seed->accounts)){
 			    $seed->load_relationship('accounts');
 			} // if
 
-			if($seed->account_name = '' && isset($temp->account_id)){
+			if($seed->account_name == '' && isset($temp->account_id)){
 				$seed->accounts->delete($seed->id, $temp->account_id);
 				$GLOBALS['log']->info('End: SoapHelperWebServices->add_create_account');
 				return;
 			}
 		    $arr = array();
 
-		    $query = "select id, deleted from {$focus->table_name} WHERE name='".$seed->db->quote($account_name)."'";
-		    $result = $seed->db->query($query) or sugar_die("Error selecting sugarbean: ".mysql_error());
+            if(!empty($account_id))  // bug # 44280
+            {
+               $query = "select id, deleted from {$focus->table_name} WHERE id='".$seed->db->quote($account_id)."'";
+            }
+            else
+            {
+               $query = "select id, deleted from {$focus->table_name} WHERE name='".$seed->db->quote($account_name)."'";
+            }
+            $result = $seed->db->query($query) or sugar_die("Error selecting sugarbean: ".mysql_error());
 
 		    $row = $seed->db->fetchByAssoc($result, -1, false);
 
@@ -1032,32 +1044,25 @@ function validate_user($user_name, $password){
 		$query = '';
 
 		$trimmed_email = trim($seed->email1);
-		$trimmed_last = trim($seed->last_name);
-		$trimmed_first = trim($seed->first_name);
-		if(!empty($trimmed_email)){
+        $trimmed_email2 = trim($seed->email2);
+	    $trimmed_last = trim($seed->last_name);
+	    $trimmed_first = trim($seed->first_name);
+		if(!empty($trimmed_email) || !empty($trimmed_email2)){
 
 			//obtain a list of contacts which contain the same email address
 			$contacts = $seed->emailAddress->getBeansByEmailAddress($trimmed_email);
+            $contacts2 = $seed->emailAddress->getBeansByEmailAddress($trimmed_email2);
+            $contacts = array_merge($contacts, $contacts2);
 			if(count($contacts) == 0){
 				$GLOBALS['log']->info('End: SoapHelperWebServices->check_for_duplicate_contacts - no duplicte found');
 				return null;
 			}else{
 				foreach($contacts as $contact){
 					if(!empty($trimmed_last) && strcmp($trimmed_last, $contact->last_name) == 0){
-						if(!empty($trimmed_email) && strcmp($trimmed_email, $contact->email1) == 0){
-							if(!empty($trimmed_email)){
-								if(strcmp($trimmed_email, $contact->email1) == 0){
-								 	//bug: 39234 - check if the account names are the same
-								 	//if the incoming contact's account_name is empty OR it is not empty and is the same
-								 	//as an existing contact's account name, then find the match.
-									$contact->load_relationship('accounts');
-									if(empty($seed->account_name) || strcmp($seed->account_name, $contact->account_name) == 0){
-										$GLOBALS['log']->info('End: SoapHelperWebServices->check_for_duplicate_contacts - duplicte found ' . $contact->id);
-										return $contact->id;
-									}
-								}
-							}else{
-								$GLOBALS['log']->info('End: SoapHelperWebServices->check_for_duplicate_contacts - duplicte found' . $contact->id);
+						if((!empty($trimmed_email) || !empty($trimmed_email2)) && (strcmp($trimmed_email, $contact->email1) == 0 || strcmp($trimmed_email, $contact->email2) == 0 || strcmp($trimmed_email2, $contact->email) == 0 || strcmp($trimmed_email2, $contact->email2) == 0)){
+							$contact->load_relationship('accounts');
+							if(empty($seed->account_name) || strcmp($seed->account_name, $contact->account_name) == 0){
+                                $GLOBALS['log']->info('End: SoapHelperWebServices->check_for_duplicate_contacts - duplicte found ' . $contact->id);
 								return $contact->id;
 							}
 						}

@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('selector-native', function(Y) {
 
@@ -25,16 +25,14 @@ YUI.add('selector-native', function(Y) {
 Y.namespace('Selector'); // allow native module to standalone
 
 var COMPARE_DOCUMENT_POSITION = 'compareDocumentPosition',
-    OWNER_DOCUMENT = 'ownerDocument',
-    TMP_PREFIX = 'yui-tmp-',
-    g_counter = 0;
+    OWNER_DOCUMENT = 'ownerDocument';
 
 var Selector = {
     _foundCache: [],
 
     useNative: true,
 
-    _compare: ('sourceIndex' in document.documentElement) ?
+    _compare: ('sourceIndex' in Y.config.doc.documentElement) ?
         function(nodeA, nodeB) {
             var a = nodeA.sourceIndex,
                 b = nodeB.sourceIndex;
@@ -47,7 +45,7 @@ var Selector = {
 
             return -1;
 
-        } : (document.documentElement[COMPARE_DOCUMENT_POSITION] ?
+        } : (Y.config.doc.documentElement[COMPARE_DOCUMENT_POSITION] ?
         function(nodeA, nodeB) {
             if (nodeA[COMPARE_DOCUMENT_POSITION](nodeB) & 4) {
                 return -1;
@@ -112,7 +110,7 @@ var Selector = {
     query: function(selector, root, firstOnly, skipNative) {
         root = root || Y.config.doc;
         var ret = [],
-            useNative = (Y.Selector.useNative && document.querySelector && !skipNative),
+            useNative = (Y.Selector.useNative && Y.config.doc.querySelector && !skipNative),
             queries = [[selector, root]],
             query,
             result,
@@ -157,7 +155,7 @@ var Selector = {
             // enforce for element scoping
             if (node.tagName) {
                 node.id = node.id || Y.guid();
-                prefix = '#' + node.id + ' ';
+                prefix = '[id="' + node.id + '"] ';
             }
 
             for (i = 0, len = groups.length; i < len; ++i) {
@@ -170,6 +168,10 @@ var Selector = {
     },
 
     _nativeQuery: function(selector, root, one) {
+        if (Y.UA.webkit && selector.indexOf(':checked') > -1 &&
+                (Y.Selector.pseudos && Y.Selector.pseudos.checked)) { // webkit (chrome, safari) fails to find "selected"
+            return Y.Selector.query(selector, root, one, true); // redo with skipNative true to try brute query
+        }
         try {
             return root['querySelector' + (one ? '' : 'All')](selector);
         } catch(e) { // fallback to brute if available
@@ -196,26 +198,68 @@ var Selector = {
     test: function(node, selector, root) {
         var ret = false,
             groups = selector.split(','),
+            useFrag = false,
+            parent,
             item,
-            i, group;
+            items,
+            frag,
+            i, j, group;
 
         if (node && node.tagName) { // only test HTMLElements
-            root = root || node.ownerDocument;
+
+            // we need a root if off-doc
+            if (!root && !Y.DOM.inDoc(node)) {
+                parent = node.parentNode;
+                if (parent) { 
+                    root = parent;
+                } else { // only use frag when no parent to query
+                    frag = node[OWNER_DOCUMENT].createDocumentFragment();
+                    frag.appendChild(node);
+                    root = frag;
+                    useFrag = true;
+                }
+            }
+            root = root || node[OWNER_DOCUMENT];
 
             if (!node.id) {
-                node.id = TMP_PREFIX + g_counter++;
+                node.id = Y.guid();
             }
             for (i = 0; (group = groups[i++]);) { // TODO: off-dom test
-                group += '#' + node.id; // add ID for uniqueness
-                item = Y.Selector.query(group, root, true);
-                ret = (item === node);
+                group += '[id="' + node.id + '"]';
+                items = Y.Selector.query(group, root);
+
+                for (j = 0; item = items[j++];) {
+                    if (item === node) {
+                        ret = true;
+                        break;
+                    }
+                }
                 if (ret) {
                     break;
                 }
             }
+
+            if (useFrag) { // cleanup
+                frag.removeChild(node);
+            }
         }
 
         return ret;
+    },
+
+    /**
+     * A convenience function to emulate Y.Node's aNode.ancestor(selector).
+     * @param {HTMLElement} element An HTMLElement to start the query from.
+     * @param {String} selector The CSS selector to test the node against.
+     * @return {HTMLElement} The ancestor node matching the selector, or null.
+     * @param {Boolean} testSelf optional Whether or not to include the element in the scan 
+     * @static
+     * @method ancestor
+     */
+    ancestor: function (element, selector, testSelf) {
+        return Y.DOM.ancestor(element, function(n) {
+            return Y.Selector.test(n, selector);
+        }, testSelf);
     }
 };
 
@@ -224,7 +268,7 @@ Y.mix(Y.Selector, Selector, true);
 })(Y);
 
 
-}, '3.0.0' ,{requires:['dom-base']});
+}, '3.3.0' ,{requires:['dom-base']});
 YUI.add('selector-css2', function(Y) {
 
 /**
@@ -247,6 +291,7 @@ var PARENT_NODE = 'parentNode',
     Selector = Y.Selector,
 
     SelectorCSS2 = {
+        _reRegExpTokens: /([\^\$\?\[\]\*\+\-\.\(\)\|\\])/, // TODO: move?
         SORT_RESULTS: true,
         _children: function(node, tag) {
             var ret = node.children,
@@ -272,10 +317,9 @@ var PARENT_NODE = 'parentNode',
             return ret || [];
         },
 
-        _regexCache: {},
-
         _re: {
-            attr: /(\[.*\])/g,
+            //attr: /(\[.*\])/g,
+            attr: /(\[[^\]]*\])/g,
             pseudos: /:([\-\w]+(?:\(?:['"]?(.+)['"]?\)))*/i
         },
 
@@ -315,17 +359,20 @@ var PARENT_NODE = 'parentNode',
                 tokens = Selector._tokenize(selector),
                 token = tokens[tokens.length - 1],
                 rootDoc = Y.DOM._getDoc(root),
+                child,
                 id,
                 className,
                 tagName;
 
 
             // if we have an initial ID, set to root when in document
+            /*
             if (tokens[0] && rootDoc === root &&  
                     (id = tokens[0].id) &&
                     rootDoc.getElementById(id)) {
                 root = rootDoc.getElementById(id);
             }
+            */
 
             if (token) {
                 // prefilter nodes
@@ -333,18 +380,28 @@ var PARENT_NODE = 'parentNode',
                 className = token.className;
                 tagName = token.tagName || '*';
 
-                // try ID first
-                if (id) {
-                    if (rootDoc.getElementById(id)) { // if in document
-                    nodes = [rootDoc.getElementById(id)]; // TODO: DOM.byId?
-                }
-                // try className if supported
-                } else if (className) {
-                    nodes = root.getElementsByClassName(className);
-                } else if (tagName) { // default to tagName
-                    nodes = root.getElementsByTagName(tagName || '*');
-                }
+                if (root.getElementsByTagName) { // non-IE lacks DOM api on doc frags
+                    // try ID first, unless no root.all && root not in document
+                    // (root.all works off document, but not getElementById)
+                    // TODO: move to allById?
+                    if (id && (root.all || (root.nodeType === 9 || Y.DOM.inDoc(root)))) {
+                        nodes = Y.DOM.allById(id, root);
+                    // try className
+                    } else if (className) {
+                        nodes = root.getElementsByClassName(className);
+                    } else { // default to tagName
+                        nodes = root.getElementsByTagName(tagName);
+                    }
 
+                } else { // brute getElementsByTagName('*')
+                    child = root.firstChild;
+                    while (child) {
+                        if (child.tagName) { // only collect HTMLElements
+                            nodes.push(child);
+                        }
+                        child = child.nextSilbing || child.firstChild;
+                    }
+                }
                 if (nodes.length) {
                     ret = Selector._filterNodes(nodes, tokens, firstOnly);
                 }
@@ -396,8 +453,10 @@ var PARENT_NODE = 'parentNode',
                             }
 
                             if ((operator === '=' && value !== test[2]) ||  // fast path for equality
-                                (operator.test && !operator.test(value)) ||  // regex test
-                                (operator.call && !operator(tmpNode, test[0]))) { // function test
+                                (typeof operator !== 'string' && // protect against String.test monkey-patch (Moo)
+                                operator.test && !operator.test(value)) ||  // regex test
+                                (!operator.test && // protect against RegExp as function (webkit)
+                                        typeof operator === 'function' && !operator(tmpNode, test[0]))) { // function test
 
                                 // skip non element nodes or non-matching tags
                                 if ((tmpNode = tmpNode[path])) {
@@ -441,15 +500,6 @@ var PARENT_NODE = 'parentNode',
             return result;
         },
 
-        _getRegExp: function(str, flags) {
-            var regexCache = Selector._regexCache;
-            flags = flags || '';
-            if (!regexCache[str + flags]) {
-                regexCache[str + flags] = new RegExp(str, flags);
-            }
-            return regexCache[str + flags];
-        },
-
         combinators: {
             ' ': {
                 axis: 'parentNode'
@@ -470,7 +520,7 @@ var PARENT_NODE = 'parentNode',
         _parsers: [
             {
                 name: ATTRIBUTES,
-                re: /^\[([a-z]+\w*)+([~\|\^\$\*!=]=?)?['"]?([^\]]*?)['"]?\]/i,
+                re: /^\[(-?[a-z]+[\w\-]*)+([~\|\^\$\*!=]=?)?['"]?([^\]]*?)['"]?\]/i,
                 fn: function(match, token) {
                     var operator = match[2] || '',
                         operators = Y.Selector.operators,
@@ -479,7 +529,7 @@ var PARENT_NODE = 'parentNode',
                     // add prefiltering for ID and CLASS
                     if ((match[1] === 'id' && operator === '=') ||
                             (match[1] === 'className' &&
-                            document.getElementsByClassName &&
+                            Y.config.doc.documentElement.getElementsByClassName &&
                             (operator === '~=' || operator === '='))) {
                         token.prefilter = match[1];
                         token[match[1]] = match[3];
@@ -489,7 +539,8 @@ var PARENT_NODE = 'parentNode',
                     if (operator in operators) {
                         test = operators[operator];
                         if (typeof test === 'string') {
-                            test = Y.Selector._getRegExp(test.replace('{val}', match[3]));
+                            match[3] = match[3].replace(Y.Selector._reRegExpTokens, '\\$1');
+                            test = Y.DOM._getRegExp(test.replace('{val}', match[3]));
                         }
                         match[2] = test;
                     }
@@ -573,7 +624,7 @@ var PARENT_NODE = 'parentNode',
                 found = false; // reset after full pass
                 for (i = 0; (parser = Selector._parsers[i++]);) {
                     if ( (match = parser.re.exec(selector)) ) { // note assignment
-                        if (parser !== COMBINATOR ) {
+                        if (parser.name !== COMBINATOR ) {
                             token.selector = selector;
                         }
                         selector = selector.replace(match[0], ''); // strip current match from selector
@@ -627,7 +678,7 @@ var PARENT_NODE = 'parentNode',
 
             for (re in shorthand) {
                 if (shorthand.hasOwnProperty(re)) {
-                    selector = selector.replace(Selector._getRegExp(re, 'gi'), shorthand[re]);
+                    selector = selector.replace(Y.DOM._getRegExp(re, 'gi'), shorthand[re]);
                 }
             }
 
@@ -660,14 +711,14 @@ Y.mix(Y.Selector, SelectorCSS2, true);
 Y.Selector.getters.src = Y.Selector.getters.rel = Y.Selector.getters.href;
 
 // IE wants class with native queries
-if (Y.Selector.useNative && document.querySelector) {
+if (Y.Selector.useNative && Y.config.doc.querySelector) {
     Y.Selector.shorthand['\\.(-?[_a-z]+[-\\w]*)'] = '[class~=$1]';
 }
 
 
 
-}, '3.0.0' ,{requires:['selector-native']});
+}, '3.3.0' ,{requires:['selector-native']});
 
 
-YUI.add('selector', function(Y){}, '3.0.0' ,{use:['selector-native', 'selector-css2']});
+YUI.add('selector', function(Y){}, '3.3.0' ,{use:['selector-native', 'selector-css2']});
 

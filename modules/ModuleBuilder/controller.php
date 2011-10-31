@@ -75,7 +75,7 @@ class ModuleBuilderController extends SugarController
             return $mod_strings['LBL_DEVELOPER_TOOLS'];
         }
     }
-    
+
     function fromModuleBuilder ()
     {
         return (isset ( $_REQUEST [ 'MB' ] ) && ($_REQUEST [ 'MB' ] == '1')) ;
@@ -84,10 +84,10 @@ class ModuleBuilderController extends SugarController
     function process(){
     	$GLOBALS [ 'log' ]->info ( get_class($this).":" ) ;
         global $current_user;
-        $access = get_admin_modules_for_user($current_user);
-		if(is_admin($current_user) || (is_admin_for_any_module($current_user) && !isset($_REQUEST['view_module']) && (isset($_REQUEST['action']) && $_REQUEST['action'] != 'package'))||
+        $access = $current_user->getDeveloperModules();
+            if($current_user->isAdmin() || ($current_user->isDeveloperForAnyModule() && !isset($_REQUEST['view_module']) && (isset($_REQUEST['action']) && $_REQUEST['action'] != 'package'))||
           (isset($_REQUEST['view_module']) && (in_array($_REQUEST['view_module'], $access)|| empty($_REQUEST['view_module']))) ||
-          (isset($_REQUEST['type']) && (($_REQUEST['type']=='dropdowns' && is_admin_for_any_module($current_user))||
+               (isset($_REQUEST['type']) && (($_REQUEST['type']=='dropdowns' && $current_user->isDeveloperForAnyModule())||
           ($_REQUEST['type']=='studio' && displayStudioForCurrentUser() == true))))
         {
             $this->hasAccess = true;
@@ -189,7 +189,7 @@ class ModuleBuilderController extends SugarController
         {
             $mb->getPackage ( $load ) ;
             $mb->packages [ $load ]->build () ;
-        }        
+        }
     }
 
     function action_DeployPackage ()
@@ -198,7 +198,7 @@ class ModuleBuilderController extends SugarController
     		sugar_cache_reset();
     		SugarTemplateUtilities::disableCache();
     	}
-    	
+
         $mb = new ModuleBuilder ( ) ;
         $load = $_REQUEST [ 'package' ] ;
         $message = $GLOBALS [ 'mod_strings' ] [ 'LBL_MODULE_DEPLOYED' ] ;
@@ -213,22 +213,39 @@ class ModuleBuilderController extends SugarController
             copy ( $info [ 'manifest' ], $GLOBALS [ 'sugar_config' ] [ 'cache_dir' ] . '/' . 'upload/upgrades/module/' . $info [ 'name' ] . '-manifest.php' ) ;
             $_REQUEST [ 'install_file' ] = $GLOBALS [ 'sugar_config' ] [ 'cache_dir' ] . '/' . 'upload/upgrades/module/' . $info [ 'name' ] . '.zip' ;
             $GLOBALS [ 'mi_remove_tables' ] = false ;
-            $pm->performUninstall ( $load ) ;           
-			 //#23177 , js cache clear
-			 clearAllJsAndJsLangFilesWithoutOutput();
-    		//#30747, clear the cache in memory
-    		$cache_key = 'app_list_strings.'.$GLOBALS['current_language'];
-    		sugar_cache_clear($cache_key );
-    		sugar_cache_reset();
-    		//clear end
-            $pm->performInstall ( $_REQUEST [ 'install_file' ] , true) ;
+            $pm->performUninstall ( $load ) ;
+            //#23177 , js cache clear
+            clearAllJsAndJsLangFilesWithoutOutput();
+            //#30747, clear the cache in memory
+            $cache_key = 'app_list_strings.'.$GLOBALS['current_language'];
+            sugar_cache_clear($cache_key );
+            sugar_cache_reset();
+            //clear end
+            $pm->performInstall ( $_REQUEST [ 'install_file' ] , true);
 
-            //clear the unified_search_module.php file 
+            //clear the unified_search_module.php file
             require_once('modules/Home/UnifiedSearchAdvanced.php');
-            UnifiedSearchAdvanced::unlinkUnifiedSearchModulesFile();          
-        }        
-        echo 'complete' ;
+            UnifiedSearchAdvanced::unlinkUnifiedSearchModulesFile();
 
+            //bug 44269 - start
+            global $current_user;
+            //clear workflow admin modules cache
+            if (isset($_SESSION['get_workflow_admin_modules_for_user'])) unset($_SESSION['get_workflow_admin_modules_for_user']);
+
+            //clear "is_admin_for_module" cache
+            $sessionVar = 'MLA_'.$current_user->user_name;
+            foreach ($mb->packages as $package) {
+                foreach ($package->modules as $module) {
+                    $_SESSION[$sessionVar][$package->name . '_' . $module->name] = true;
+                }
+            }
+
+            //recreate acl cache
+            $actions = ACLAction::getUserActions($current_user->id, true);
+            //bug 44269 - end
+        }
+
+        echo 'complete' ;
     }
 
     function action_ExportPackage ()
@@ -245,7 +262,7 @@ class ModuleBuilderController extends SugarController
             $mb->packages [ $load ]->description = $description ;
             $mb->packages [ $load ]->exportProject () ;
             $mb->packages [ $load ]->readme = $readme ;
-        }       
+        }
     }
 
     function action_DeletePackage ()
@@ -351,18 +368,18 @@ class ModuleBuilderController extends SugarController
             if (! empty ( $_REQUEST [ 'view_module' ] ))
             {
                 $module = $_REQUEST [ 'view_module' ] ;
-                
+
                 $bean = loadBean($module);
                 if(!empty($bean))
                 {
-	                $field_defs = $bean->field_defs;          
+	                $field_defs = $bean->field_defs;
 	                if(isset($field_defs[$field->name. '_c']))
 	                {
 						$GLOBALS['log']->error($GLOBALS['mod_strings']['ERROR_ALREADY_EXISTS'] . '[' . $field->name . ']');
 						sugar_die($GLOBALS['mod_strings']['ERROR_ALREADY_EXISTS']);
 	                }
-                }                
-                
+                }
+
                 $df = new DynamicField ( $module ) ;
                 $class_name = $GLOBALS [ 'beanList' ] [ $module ] ;
                 require_once ($GLOBALS [ 'beanFiles' ] [ $class_name ]) ;
@@ -410,29 +427,29 @@ class ModuleBuilderController extends SugarController
         require_once ($GLOBALS [ 'beanFiles' ] [ $class_name ]) ;
         $mod = new $class_name ( ) ;
         $df->setup ( $mod ) ;
-        
+
         $field->module = $mod;
         $field->save ( $df ) ;
         $this->action_SaveLabel () ;
-        
+
         $MBmodStrings = $mod_strings;
         $GLOBALS [ 'mod_strings' ] = return_module_language ( '', 'Administration' ) ;
-        
+
        	include_once ('modules/Administration/QuickRepairAndRebuild.php') ;
         $GLOBALS [ 'mod_strings' ]['LBL_ALL_MODULES'] = 'all_modules';
         $_REQUEST['execute_sql'] = true;
-       
+
         $repair = new RepairAndClear();
         $repair->repairAndClearAll(array('rebuildExtensions', 'clearVardefs', 'clearTpls'), array($class_name), true, false);
         //#28707 ,clear all the js files in cache
         $repair->module_list = array();
         $repair->clearJsFiles();
-        
-         
+
+
         // now clear the cache so that the results are immediately visible
         include_once ('include/TemplateHandler/TemplateHandler.php') ;
         TemplateHandler::clearCache ( $module ) ;
-        
+
         $GLOBALS [ 'mod_strings' ] = $MBmodStrings;
     }
 
@@ -477,7 +494,7 @@ class ModuleBuilderController extends SugarController
         }
         $this->view = 'relationships' ;
 	}
-	
+
     function action_SaveRelationship ()
     {
         if(!empty($GLOBALS['current_user']) && empty($GLOBALS['modListHeader']))
@@ -528,6 +545,7 @@ class ModuleBuilderController extends SugarController
                 $relationships = new UndeployedRelationships ( $module->getModuleDir () ) ;
             }
             $relationships->delete ( $_REQUEST [ 'relationship_name' ] ) ;
+
             $relationships->save () ;
         }
         $this->view = 'relationships' ;
@@ -560,7 +578,7 @@ class ModuleBuilderController extends SugarController
                 //Need to load the entire field_meta_data for some field types
                 $field = $df->getFieldWidget($moduleName, $field->name);
                 $field->delete ( $df ) ;
-                
+
                 $GLOBALS [ 'mod_strings' ]['LBL_ALL_MODULES'] = 'all_modules';
                 $_REQUEST['execute_sql'] = true;
                 include_once ('modules/Administration/QuickRepairAndRebuild.php') ;
@@ -579,6 +597,18 @@ class ModuleBuilderController extends SugarController
         }
         $module->removeFieldFromLayouts( $field->name );
         $this->view = 'modulefields' ;
+
+        if (isset($GLOBALS['current_language']) && isset($_REQUEST['label']) &&
+                isset($_REQUEST['labelValue']) && isset($_REQUEST['view_module'])) {
+            $this->DeleteLabel($GLOBALS['current_language'], $_REQUEST['label'], $_REQUEST['labelValue'], $_REQUEST['view_module']);
+        }
+    }
+
+    function DeleteLabel($language, $label, $labelvalue, $modulename, $basepath = null, $forRelationshipLabel = false)
+    {
+        // remove the label
+        require_once 'modules/ModuleBuilder/parsers/parser.label.php';
+        ParserLabel::removeLabel($language, $label, $labelvalue, $modulename, $basepath, $forRelationshipLabel);
     }
 
     function action_CloneField ()
@@ -649,7 +679,7 @@ class ModuleBuilderController extends SugarController
             $parser = ParserFactory::getParser ( $_REQUEST [ 'view' ], $_REQUEST [ 'view_module' ], isset ( $_REQUEST [ 'view_package' ] ) ? $_REQUEST [ 'view_package' ] : null ) ;
             $this->view = 'layoutview' ;
         $parser->writeWorkingFile () ;
-        
+
     	if(!empty($_REQUEST [ 'sync_detail_and_edit' ]) && $_REQUEST['sync_detail_and_edit'] != false && $_REQUEST['sync_detail_and_edit'] != "false"){
 	        if(strtolower ($parser->_view) == MB_EDITVIEW){
 	        	$parser2 = ParserFactory::getParser ( MB_DETAILVIEW, $_REQUEST [ 'view_module' ], isset ( $_REQUEST [ 'view_package' ] ) ? $_REQUEST [ 'view_package' ] : null ) ;
@@ -664,7 +694,7 @@ class ModuleBuilderController extends SugarController
             $parser = ParserFactory::getParser ( $_REQUEST [ 'view' ], $_REQUEST [ 'view_module' ], isset ( $_REQUEST [ 'view_package' ] ) ? $_REQUEST [ 'view_package' ] : null ) ;
             $this->view = 'layoutview' ;
         $parser->handleSave () ;
-        
+
         if(!empty($_REQUEST [ 'sync_detail_and_edit' ]) && $_REQUEST['sync_detail_and_edit'] != false && $_REQUEST['sync_detail_and_edit'] != "false"){
 	        if(strtolower ($parser->_view) == MB_EDITVIEW){
 	        	$parser2 = ParserFactory::getParser ( MB_DETAILVIEW, $_REQUEST [ 'view_module' ], isset ( $_REQUEST [ 'view_package' ] ) ? $_REQUEST [ 'view_package' ] : null ) ;
@@ -689,7 +719,7 @@ class ModuleBuilderController extends SugarController
         $parser = ParserFactory::getParser ( $_REQUEST [ 'view' ], $_REQUEST [ 'view_module' ], $packageName, $subpanelName ) ;
         $this->view = 'listView' ;
         $parser->handleSave () ;
-        
+
     }
 
     function action_dashletSave () {
@@ -714,17 +744,36 @@ class ModuleBuilderController extends SugarController
 			$repair->show_output = false;
 			$class_name = $GLOBALS [ 'beanList' ] [ $_REQUEST [ 'view_module' ] ] ;
 			$repair->module_list = array($class_name);
-			$repair->clearTpls();	
+			$repair->clearTpls();
         }
-        
+
 	}
-	
+
     function action_searchViewSave ()
     {
         $packageName = (isset ( $_REQUEST [ 'view_package' ] )) ? $_REQUEST [ 'view_package' ] : null ;
         require_once 'modules/ModuleBuilder/parsers/views/SearchViewMetaDataParser.php' ;
         $parser = new SearchViewMetaDataParser ( $_REQUEST [ 'view' ], $_REQUEST [ 'view_module' ], $packageName ) ;
         $parser->handleSave () ;
+
+
+        //Repair or create a custom SearchFields.php file as needed
+        $module_name = $_REQUEST [ 'view_module' ] ;
+        global $beanList;
+        if (isset($beanList[$module_name]) && $beanList[$module_name]!="") {
+            $objectName = $beanList[$module_name];
+            if($objectName == 'aCase') // Bug 17614 - renamed aCase as Case in vardefs for backwards compatibililty with 451 modules
+            {
+                $objectName = 'Case';
+            }
+
+            //Load the vardefs for the module to pass to TemplateRange
+            VardefManager::loadVardef($module_name, $objectName, true);
+            global $dictionary;
+            $vardefs = $dictionary[$objectName]['fields'];
+            require_once('modules/DynamicFields/templates/Fields/TemplateRange.php');
+            TemplateRange::repairCustomSearchFields($vardefs, $module_name, $packageName);
+        }
         $this->view = 'searchView' ;
     }
 
@@ -774,7 +823,7 @@ class ModuleBuilderController extends SugarController
     {
         $this->view = 'history' ;
     }
-    
+
     function resetmodule()
     {
     	$this->view = 'resetmodule';

@@ -157,10 +157,12 @@ eoq;
 				}
 			}elseif(strlen($value) == 0){
 				if( isset($this->sugarbean->field_defs[$post]) && $this->sugarbean->field_defs[$post]['type'] == 'radioenum' && isset($_POST[$post]) ){
-					$_POST[$post] = '';
+				  $_POST[$post] = '';
 				}else{
-				unset($_POST[$post]);
-			}
+				  unset($_POST[$post]);
+			        }
+                        }elseif ( $value == '--null--'){  //Bug36693 MassUpdate for ENUM with Option '0'
+				$_POST[$post] = '';	
 			}
 			if(is_string($value) && isset($this->sugarbean->field_defs[$post])) {
 		        if(($this->sugarbean->field_defs[$post]['type'] == 'bool'
@@ -172,14 +174,17 @@ eoq;
 				 			if(strcmp($value, '2') == 0)$_POST[$post] = 'off';
 				 		}
     			}
-			    if($this->sugarbean->field_defs[$post]['type'] == 'radioenum' && isset($_POST[$post]) && strlen($value) == 0){
+
+			    if( ($this->sugarbean->field_defs[$post]['type'] == 'radioenum' && isset($_POST[$post]) && strlen($value) == 0)
+			    || ($this->sugarbean->field_defs[$post]['type'] == 'enum' && $value == '__SugarMassUpdateClearField__') // Set to '' if it's an explicit clear
+			    ){
 				    $_POST[$post] = '';
 			    }
                 if ($this->sugarbean->field_defs[$post]['type'] == 'bool') {
                     $this->checkClearField($post, $value);
                 }
 			    if($this->sugarbean->field_defs[$post]['type'] == 'date' && !empty($_POST[$post])){
-			        $_POST[$post] = $timedate->to_db_date($_POST[$post]);
+			        $_POST[$post] = $timedate->to_db_date($_POST[$post], false);
 			    }
                 if($this->sugarbean->field_defs[$post]['type'] == 'datetime' && !empty($_POST[$post])){
 			        $_POST[$post] = $timedate->to_db($this->date_to_dateTime($post, $value));
@@ -187,8 +192,8 @@ eoq;
 			    if($this->sugarbean->field_defs[$post]['type'] == 'datetimecombo' && !empty($_POST[$post])){
 			        $_POST[$post] = $timedate->to_db($_POST[$post]);
 			    }
-			}
-		}
+            }
+         }
 
 		//We need to disable_date_format so that date values for the beans remain in database format
 		//notice we make this call after the above section since the calls to TimeDate class there could wind up
@@ -351,6 +356,7 @@ eoq;
 		if($this->sugarbean->bean_implements('ACL') && !ACLController::checkAccess($this->sugarbean->module_dir, 'edit', true)){
 			return '';
 		}
+		
 		$lang_delete = translate('LBL_DELETE');
 		$lang_update = translate('LBL_UPDATE');
 		$lang_confirm= translate('NTC_DELETE_CONFIRMATION_MULTIPLE');
@@ -360,70 +366,74 @@ eoq;
 		$lang_archive = translate('LBL_ARCHIVE');
 		$lang_optout_primaryemail = $app_strings['LBL_OPT_OUT_FLAG_PRIMARY'];
 
-
-
-//		if(!isset($this->sugarbean->field_defs) || count($this->sugarbean->field_defs) == 0) {
-//			$html = "<table cellpadding='0' cellspacing='0' border='0' width='100%'><tr><td>";
-//
-//			if($this->sugarbean->ACLAccess('Delete', true) ){
-//				$html .= "<input type='submit' name='Delete' value='{$lang_delete}' onclick=\"return confirm('{$lang_confirm}')\" class='button'>";
-//			}
-//			$html .= "</td></tr></table>";
-//			return $html;
-//		}
-
-
-		$should_use = false;
+		$field_count = 0;
+		
 		$html = "<div id='massupdate_form' style='display:none;'><table width='100%' cellpadding='0' cellspacing='0' border='0' class='formHeader h3Row'><tr><td nowrap><h3><span>" . $app_strings['LBL_MASS_UPDATE']."</h3></td></tr></table>";
 		$html .= "<div id='mass_update_div'><table cellpadding='0' cellspacing='1' border='0' width='100%' class='edit view' id='mass_update_table'>";
 
 		$even = true;
-		if($this->sugarbean->object_name == 'Contact'){
+		
+		if($this->sugarbean->object_name == 'Contact')
+		{
 			$html .= "<tr><td width='15%' scope='row'>$lang_sync</td><td width='35%' class='dataField'><select name='Sync'><option value=''>{$GLOBALS['app_strings']['LBL_NONE']}</option><option value='false'>{$GLOBALS['app_list_strings']['checkbox_dom']['2']}</option><option value='true'>{$GLOBALS['app_list_strings']['checkbox_dom']['1']}</option></select></td>";
 			$even = false;
-		}
-
-		if($this->sugarbean->object_name == 'Employee'){
+		} else if($this->sugarbean->object_name == 'Employee') {
 			$this->sugarbean->field_defs['employee_status']['type'] = 'enum';
 			$this->sugarbean->field_defs['employee_status']['massupdate'] = true;
 			$this->sugarbean->field_defs['employee_status']['options'] = 'employee_status_dom';
-		}
-		if($this->sugarbean->object_name == 'InboundEmail'){
+		} else if($this->sugarbean->object_name == 'InboundEmail'){
 			$this->sugarbean->field_defs['status']['type'] = 'enum';
 			$this->sugarbean->field_defs['status']['options'] = 'user_status_dom';
 		}
 
+		//These fields should never appear on mass update form
 		static $banned = array('date_modified'=>1, 'date_entered'=>1, 'created_by'=>1, 'modified_user_id'=>1, 'deleted'=>1,'modified_by_name'=>1,);
-		foreach($this->sugarbean->field_defs as $field){
-
-			 if(!isset($banned[$field['name']]) && (!isset($field['massupdate']) || !empty($field['massupdate']))){
+		
+		foreach($this->sugarbean->field_defs as $field)
+		{
+			 if(!isset($banned[$field['name']]) && (!isset($field['massupdate']) || !empty($field['massupdate'])))
+			 {
 				$newhtml = '';
-				if($even){
+				
+				if($even)
+				{
 					$newhtml .= "<tr>";
 				}
-				if(isset($field['vname'])){
+				
+				if(isset($field['vname']))
+				{
 					$displayname = translate($field['vname']);
 				}else{
 					$displayname = '';
-
 				}
+				
 				if(isset($field['type']) && $field['type'] == 'relate' && isset($field['id_name']) && $field['id_name'] == 'assigned_user_id')
+				{
 					$field['type'] = 'assigned_user_name';
-				if(isset($field['custom_type']))$field['type'] = $field['custom_type'];
+				}
+				
+				if(isset($field['custom_type']))
+				{
+					$field['type'] = $field['custom_type'];
+				}
+				
 				if(isset($field['type']))
 				{
-					switch($field["type"]){
+					switch($field["type"])
+					{
 						case "relate":
     						    // bug 14691: avoid laying out an empty cell in the <table>
     							$handleRelationship = $this->handleRelationship($displayname, $field);
-    							if ($handleRelationship != '') {
+    							if ($handleRelationship != '') 
+    							{
     								$even = !$even;
     								$newhtml .= $handleRelationship;
     							}
 							break;
 						case "parent":$even = !$even; $newhtml .=$this->addParent($displayname, $field); break;
 						case "int":
-							if(!empty($field['massupdate']) && empty($field['auto_increment'])){
+							if(!empty($field['massupdate']) && empty($field['auto_increment']))
+							{
 								$even = !$even; $newhtml .=$this->addInputType($displayname, $field);
 							}
 							 break;
@@ -434,7 +444,8 @@ eoq;
 						case "bool": $even = !$even; $newhtml .= $this->addBool($displayname,  $field["name"]); break;
 						case "enum":
 						case "multienum":
-							if(!empty($field['isMultiSelect'])){
+							if(!empty($field['isMultiSelect']))
+							{
 								$even = !$even; $newhtml .= $this->addStatusMulti($displayname,  $field["name"], translate($field["options"])); break;
 							}else if(!empty($field['options'])) {
 								$even = !$even; $newhtml .= $this->addStatus($displayname,  $field["name"], translate($field["options"])); break;
@@ -451,11 +462,14 @@ eoq;
 						case "date":$even = !$even; $newhtml .= $this->addDate($displayname,  $field["name"]); break;
 					}
 				}
-				if($even){
+				
+				if($even)
+				{
 					$newhtml .="</tr>";
-				}else{
-					$should_use = true;
 				}
+					
+				$field_count++;
+				
 				if(!in_array($newhtml, array('<tr>', '</tr>', '<tr></tr>', '<tr><td></td></tr>'))){
 					$html.=$newhtml;
 				}
@@ -500,14 +514,19 @@ function toggleMassUpdateForm(){
 }
 </script>
 EOJS;
-		if($should_use){
+
+		if($field_count > 0)
+		{
 			return $html;
 		}else{
+			//If no fields are found, render either a form that still permits Mass Update deletes or just display a message that no fields are available
+			$html = "<div id='massupdate_form' style='display:none;'><table width='100%' cellpadding='0' cellspacing='0' border='0' class='formHeader h3Row'><tr><td nowrap><h3><span>" . $app_strings['LBL_MASS_UPDATE']."</h3></td></tr></table>";
 			if($this->sugarbean->ACLAccess('Delete', true) && !$hideDeleteIfNoFieldsAvailable){
-				return "<table cellpadding='0' cellspacing='0' border='0' width='100%'><tr><td><input type='submit' name='Delete' value='$lang_delete' onclick=\"return confirm('{$lang_confirm}')\" class='button'></td></tr></table>";
+				$html .= "<table cellpadding='0' cellspacing='0' border='0' width='100%'><tr><td><input type='submit' name='Delete' value='$lang_delete' onclick=\"return confirm('{$lang_confirm}')\" class='button'></td></tr></table></div>";
 			}else{
-				return '';
+				$html .= $app_strings['LBL_NO_MASS_UPDATE_FIELDS_AVAILABLE'] . "</div>";
 			}
+			return $html;
 		}
 	}
 
@@ -955,6 +974,13 @@ EOQ;
 			   	   $new_options[$key] = $value;
 			   }
 			   $options = $new_options;
+			}else{  #Bug36693 MassUpdate for ENUM with Option '0'
+				$new_options[''] = '';
+				$new_options['--null--'] = isset($options['']) ? $options[''] : $options['0'];
+				foreach($options as $key=>$value) {
+			   	   $new_options[$key] = $value;
+			    }
+			    $options = $new_options;
 			}
 			$options = get_select_options_with_id_separate_key($options, $options, '', true);;
 			$html .= '<select id="mass_'.$varname.'" name="'.$varname.'">'.$options.'</select>';
@@ -1140,6 +1166,12 @@ EOQ;
         } else {
         	$oldTime = $timedate->now();
         }
+        $oldTime = explode(" ", $oldTime);
+        if (isset($oldTime[1])) {
+        	$oldTime = $oldTime[1];
+        } else {
+        	$oldTime = $oldTime[0];
+        }
         $value = explode(" ", $value);
         $value = $value[0];
 	    return $value." ".$oldTime;
@@ -1217,7 +1249,7 @@ EOQ;
         }
 	/* bug 31271: using false to not add all bean fields since some beans - like SavedReports
 	   can have fields named 'module' etc. which may break the query */
-        $searchForm->populateFromArray(unserialize(base64_decode($query)), null, false); // see bug 31271
+        $searchForm->populateFromArray(unserialize(base64_decode($query)), null, true); // see bug 31271
         $this->searchFields = $searchForm->searchFields;
         $where_clauses = $searchForm->generateSearchWhere(true, $module);
         if (count($where_clauses) > 0 ) {

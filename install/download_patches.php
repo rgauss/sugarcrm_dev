@@ -184,7 +184,7 @@ $out =<<<EOQ
     </script>
 </head>
 
-<body onLoad="document.getElementById('defaultFocus').focus();">
+<body onLoad="document.getElementById('button_next2').focus();">
 {$fileMaxSize}
   <table cellspacing="0" width="100%" cellpadding="0" border="0" align="center" class="shell">
       <tr><td colspan="2" id="help"><a href="{$help_url}" target='_blank'>{$mod_strings['LBL_HELP']} </a></td></tr>
@@ -288,7 +288,7 @@ $out1 =<<<EOQ2
                                   
                                 </td>
                                 <td>
-                                    <input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="defaultFocus" {$disabled} />
+                                    <input class="button" type="submit" name="goto" value="{$mod_strings['LBL_NEXT']}" id="button_next2" {$disabled} />
                                 </td>
                             </tr>
                         </table>

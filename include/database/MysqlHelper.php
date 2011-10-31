@@ -172,7 +172,11 @@ class MysqlHelper extends DBHelper
            'file'      => 'varchar',
             );
 
-        return $map[$type];
+        // Bug 44291 - If requested type is in array, returns it. Otherwise return requested type, so devs could see exactly what went wrong in log.
+        if (isset($map[$type]))
+            return $map[$type];
+        else
+            return $type;
     }
 
     /**

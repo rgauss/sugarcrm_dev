@@ -150,7 +150,14 @@ class ImportFieldSanitize
         $vardef
         )
     {
-        if ( !empty($value) && !preg_match('/^\w+(?:[\'.\-+]\w+)*@\w+(?:[.\-]\w+)*(?:[.]\w{2,})+$/',$value) ) {
+        // cache $sea instance
+        static $sea;
+        
+        if ( !($sea instanceof SugarEmailAddress) ) {
+            $sea = new SugarEmailAddress;
+        }
+        
+        if ( !empty($value) && !preg_match($sea->regex,$value) ) {
             return false;
         }
 

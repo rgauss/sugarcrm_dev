@@ -206,43 +206,34 @@ function multiFiles( list_target){
 			// Add reference to this object
 			element.multi_selector = this;
 			// What to do when a file is selected
-            element.onchange = function(){
+            element.onchange = function() {
+                var url = 'index.php?to_pdf=1&module=EmailTemplates&action=AttachFiles',
+                    new_element;
 
-	        //AJAX call begins
-	        var callback = {
-			    upload:function(r) {
-	                var rets = JSON.parse(r.responseText);
-			    }
-	        }
+                //AJAX call begins
+                YAHOO.util.Connect.setForm(document.getElementById("upload_form"), true, true);
+                YAHOO.util.Connect.asyncRequest('POST', url, {upload: function() {}}, null);
+                //AJAX call ends
 
-	        var url ='index.php?to_pdf=1&module=EmailTemplates&action=AttachFiles';
-		    YAHOO.util.Connect.setForm(document.getElementById("upload_form"), true,true);
-            YAHOO.util.Connect.asyncRequest('POST', url, callback,null);
-            //AJAX call ends
+                // New file input
+                new_element = document.createElement('input');
+                new_element.type = 'file';
+                // new_element.name = 'email_attachment' +up++;
 
-               //var theForm = document.getElementById('upload_form');
-                 var theForm = document.getElementById('EditView');
-
-
-				// New file input
-				var new_element = document.createElement( 'input' );
-				new_element.type = 'file';
-		   	   // new_element.name = 'email_attachment' +up++;
-
-				// Add new element
-				this.parentNode.insertBefore( new_element, this );
-				// Apply 'update' to element
-				this.multi_selector.addElement( new_element );
-				// Update list
-				this.multi_selector.addListRow( this );
-				// Hide this: we can't use display:none because Safari doesn't like it
-                 //this.style.display='none';
+                // Add new element
+                this.parentNode.insertBefore(new_element, this);
+                // Apply 'update' to element
+                this.multi_selector.addElement(new_element);
+                // Update list
+                this.multi_selector.addListRow(this);
+                // Hide this: we can't use display:none because Safari doesn't like it
+                //this.style.display='none';
                 //display none works fine for FF and IE
                 this.style.display = 'none';
                 //later for Safari add following
-				//this.style.position = 'absolute';
-				//this.style.left = '-5000px';
-		};
+                //this.style.position = 'absolute';
+                //this.style.left = '-5000px';
+            };
 			// File element counter
 			this.count++;
 			// Most recent element
@@ -278,62 +269,53 @@ function multiFiles( list_target){
 		new_row_chk_box.checked =false;
 		new_row_chk_box.disabled =true;
 
-	   var new_row_attach_file = document.createElement( 'input' );
-	   new_row_attach_file.type = 'image';
-       new_row_attach_file.value ='/index.php?entryPoint=getImage&themeName='+SUGAR.themes.theme_name+'&imageName=company_logo.png';
-       new_row_attach_file.disabled ='true';
+        var new_row_attach_file = document.createElement( 'input' );
+        new_row_attach_file.type = 'image';
+        new_row_attach_file.value ='/index.php?entryPoint=getImage&themeName='+SUGAR.themes.theme_name+'&imageName=company_logo.png';
+        new_row_attach_file.disabled ='true';
 
-    var imgElement = document.createElement("img");
-	imgElement.setAttribute("src", "index.php?entryPoint=getImage&themeName="+SUGAR.themes.theme_name+"&imageName=Accounts.gif");
-	imgElement.setAttribute("align","absmiddle");
-	imgElement.setAttribute("alt",lbl_email_attachments_file);
-	imgElement.setAttribute("border","0");
-	imgElement.setAttribute("height","16");
-	imgElement.setAttribute("width","16");
+        var imgElement = document.createElement("img");
+        imgElement.setAttribute("src", "index.php?entryPoint=getImage&themeName="+SUGAR.themes.theme_name+"&imageName=Accounts.gif");
+        imgElement.setAttribute("align","absmiddle");
+        imgElement.setAttribute("alt",lbl_email_attachments_file);
+        imgElement.setAttribute("border","0");
+        imgElement.setAttribute("height","16");
+        imgElement.setAttribute("width","16");
 
-	var new_row_button_embed = document.createElement("img");
-	new_row_button_embed.setAttribute("src", "index.php?entryPoint=getImage&themeName="+SUGAR.themes.theme_name+"&imageName=attachment.gif");
-	new_row_button_embed.setAttribute("align","absmiddle");
-	new_row_button_embed.setAttribute("alt",lbl_email_attachments_embeded);
-	new_row_button_embed.setAttribute("border","0");
-	new_row_button_embed.setAttribute("height","16");
-	new_row_button_embed.setAttribute("width","16");
+        var new_row_button_embed = document.createElement("img");
+        new_row_button_embed.setAttribute("src", "index.php?entryPoint=getImage&themeName="+SUGAR.themes.theme_name+"&imageName=attachment.gif");
+        new_row_button_embed.setAttribute("align","absmiddle");
+        new_row_button_embed.setAttribute("alt",lbl_email_attachments_embeded);
+        new_row_button_embed.setAttribute("border","0");
+        new_row_button_embed.setAttribute("height","16");
+        new_row_button_embed.setAttribute("width","16");
 
-
-
-       /*
-		var new_row_button_embed = document.createElement( 'input' );
-        new_row_button_embed.type = 'button';
-		new_row_button_embed.value = 'Embed';
-       */
 		// References
 		new_row.element = element;
         element.size='40';
+
 		// Delete function
-		new_row_button_remove.onclick= function(){
-			// Remove element from form
-			this.parentNode.element.parentNode.removeChild( this.parentNode.element );
-			var filename = this.parentNode.element.value;
-			var filename =  filename.replace(/\\/g,'/');
-			var text = filename.split("/");
-			nbr_elements = text.length;
-	    	if(text[nbr_elements-1].indexOf('gif')>=0 || text[nbr_elements-1].indexOf('bmp') >= 0 || text[nbr_elements-1].indexOf('png') >= 0
-	    	   || text[nbr_elements-1].indexOf('jpg') >= 0 || text[nbr_elements-1].indexOf('GIF')>=0 || text[nbr_elements-1].indexOf('BMP') >= 0
-	    	   || text[nbr_elements-1].indexOf('PNG') >= 0 || text[nbr_elements-1].indexOf('JPG') >= 0)
-	    	   {
-	    		//var imglocation = unescape(document.location.pathname.substr(1));
-	    		//imglocation = imglocation.substring(0,imglocation.lastIndexOf('/')+1);
-                var tiny = tinyMCE.getInstanceById('body_text');
-				var currValTiny = tiny.getContent();
-	            while(currValTiny.indexOf(unescape(text[nbr_elements-1])) != -1){
-				   //check where the space is and keep replacing with $#32
-				   currValTiny = currValTiny.replace(unescape(text[nbr_elements-1]),'QW%%^%%WQ');
-                   currValTiny = currValTiny.replace(/<img[^<]*QW%%\^%%WQ[^>]*>?/,'&#32');
-				}
-				tiny.setContent(currValTiny);
-	    	}
+		new_row_button_remove.onclick = function() {
+			var filePathComponents = this.parentNode.element.value.split("\\"),
+                fileName = (filePathComponents[filePathComponents.length - 1]),
+
+                // tinymce related
+                tiny = tinyMCE.getInstanceById('body_text'),
+                currValTiny = tiny.getContent();
+
+			// Remove row element from form
+			this.parentNode.element.parentNode.removeChild(this.parentNode.element);
+
+            // find instances of the file and set it to ''
+            while (currValTiny.indexOf(fileName) !== -1) {
+                currValTiny = currValTiny.replace(fileName, 'QW%%^%%WQ');
+                currValTiny = currValTiny.replace(/<img[^<]*QW%%\^%%WQ[^>]*>?/, '');
+            }
+
+		    tiny.setContent(currValTiny);
+
 			// Remove this row from the list
-			this.parentNode.parentNode.removeChild( this.parentNode );
+			this.parentNode.parentNode.removeChild(this.parentNode);
 
 			// Decrement counter
 			this.parentNode.element.multi_selector.count--;
@@ -347,40 +329,26 @@ function multiFiles( list_target){
 			return false;
 		};
 
-		new_row_button_embed.onclick= function(){
+        // Embed image into the email body template
+        new_row_button_embed.onclick = function() {
+            var filePathComponents = element.value.split("\\"),
+                fileName = filePathComponents[filePathComponents.length - 1],
 
-	    	var filename =  element.value.replace(/\\/g,'/')
-			var text = filename.split("/");
-			nbr_elements = text.length;
+                // constants
+                allowedTypes = ['gif', 'bmp', 'png', 'jpg', 'jpeg'],
+                imglocation = sugar_cache_dir + 'images/';
 
-			//check if the file name has a space
-	    	text[nbr_elements-1]=text[nbr_elements-1].replace(/ /g,'&#32');
+            //check if filetype is valid
+            if (SUGAR.util.validateFileExt(fileName, allowedTypes)) {
+                cid = 'cid:' + fileName;
+                embedImage = '<img src="' + imglocation + encodeURI(fileName) + '">';
+                insert_variable(embedImage);
 
-			if(text[nbr_elements-1].indexOf('gif')>=0 || text[nbr_elements-1].indexOf('bmp') >= 0 || text[nbr_elements-1].indexOf('png') >= 0
-	    	   || text[nbr_elements-1].indexOf('jpg') >= 0 || text[nbr_elements-1].indexOf('GIF')>=0 || text[nbr_elements-1].indexOf('BMP') >= 0
-	    	   || text[nbr_elements-1].indexOf('PNG') >= 0 || text[nbr_elements-1].indexOf('JPG') >= 0)
-               {
-	 			 cid='cid:'+text[nbr_elements-1];
-	 			 /*
-	             var imglocation = unescape(document.location.pathname.substr(1));
-	             imglocation = imglocation.substring(0,imglocation.lastIndexOf('/')+1);
-	             imglocation='/'+imglocation+sugar_cache_dir+'images/';
-	             */
-	             var imglocation = sugar_cache_dir+'images/';
-	             embedImage="<img src="+imglocation+unescape(text[nbr_elements-1])+'>';
-	             //var tiny = tinyMCE.getInstanceById('body_text');
-	             embedImage = embedImage;
-	             embedImage1="<img src=cid:"+text[nbr_elements-1]+' width="1" height="1" >';
-	             //insert_variable(embedImage1);
-	             insert_variable(embedImage);
-
-		         this.parentNode.childNodes[2].checked='true';
-               }
-              else{
-              	 alert(select_image);
-              }
-
-		};
+                this.parentNode.childNodes[2].checked = 'true';
+            } else {
+                alert(select_image);
+            }
+        };
 
 		// Set row value
 	/*
@@ -421,7 +389,7 @@ function docUpload() {
     var rets ='';
 	var callback = {
 	    upload: function(r) {
-           rets = JSON.parse(r.responseText);
+           rets = YAHOO.lang.JSON.parse(r.responseText);
 	   }
     }
 
@@ -660,6 +628,7 @@ function selectDoc() {
 	URL="index.php?module=EmailTemplates&action=PopupDocumentsCampaignTemplate&to_pdf=true&target=" ;
 	windowName = 'selectDocument';
 	windowFeatures = 'width=800' + ',height=600' + ',resizable=1,scrollbars=1';
+
 	win = SUGAR.util.openWindow(URL, windowName, windowFeatures);
 	if(window.focus) {
 		// put the focus on the popup if the browser supports the focus() method
@@ -744,30 +713,6 @@ function toggle_textarea() {
 
 ///////////////////////////////////////////////////////////////////////////////
 ////	EMAIL TEMPLATE CODE
-function fill_email(id) {
-	var where = "parent_id='" + id + "'";
-	var order = '';
-
-	if(id == '') {
-		// query based on template, contact_id0,related_to
-		if(! append) {
-			document.EditView.name.value  = '';
-			document.EditView.description.value = '';
-			document.EditView.description_html.value = '';
-		}
-		return;
-	}
-	call_json_method('EmailTemplates','retrieve','record='+id,'email_template_object', appendEmailTemplateJSON);
-	args = {"module":"Notes","where":where, "order":order};
-
-	if(typeof(global_rpcClient) == 'undefined') {
-		global_rpcClient = new SugarRPCClient();
-	}
-
-	req_id = global_rpcClient.call_method('get_full_list', args);
-	global_request_registry[req_id] = [ejo, 'display'];
-}
-
 function appendEmailTemplateJSON() {
 	// query based on template, contact_id0,related_to
 	if(document.EditView.name.value == '') { // cn: bug 7743, don't stomp populated Subject Line

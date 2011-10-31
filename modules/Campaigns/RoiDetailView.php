@@ -184,6 +184,8 @@ $campaign_id = $focus->id;
     
     $detailView->processListNavigation($xtpl, "CAMPAIGN", $offset, $focus->is_AuditEnabled());
     // adding custom fields:
+    global $xtpl;
+    $xtpl = $smarty;
     require_once('modules/DynamicFields/templates/Files/DetailView.php');
     
 

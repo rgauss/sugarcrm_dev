@@ -1,20 +1,20 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dd-proxy', function(Y) {
 
 
     /**
-     * The Drag & Drop Utility allows you to create a draggable interface efficiently, buffering you from browser-level abnormalities and enabling you to focus on the interesting logic surrounding your particular implementation. This component enables you to create a variety of standard draggable objects with just a few lines of code and then, using its extensive API, add your own specific implementation logic.
+     * Plugin for dd-drag for creating a proxy drag node, instead of dragging the original node.
      * @module dd
      * @submodule dd-proxy
      */
     /**
-     * This plugin for dd-drag is for creating a proxy drag node, instead of dragging the original node.
+     * Plugin for dd-drag for creating a proxy drag node, instead of dragging the original node.
      * @class DDProxy
      * @extends Base
      * @constructor
@@ -24,15 +24,18 @@ YUI.add('dd-proxy', function(Y) {
         NODE = 'node',
         DRAG_NODE = 'dragNode',
         HOST = 'host',
-        TRUE = true;
-
-    var P = function(config) {
-        P.superclass.constructor.apply(this, arguments);
-    };
+        TRUE = true, proto,
+        P = function(config) {
+            P.superclass.constructor.apply(this, arguments);
+        };
     
     P.NAME = 'DDProxy';
     /**
-    * @property proxy
+    * @property NS
+    * @default con
+    * @readonly
+    * @protected
+    * @static
     * @description The Proxy instance will be placed on the Drag instance under the proxy namespace.
     * @type {String}
     */
@@ -80,10 +83,18 @@ YUI.add('dd-proxy', function(Y) {
         */
         borderStyle: {
             value: '1px solid #808080'
+        },
+        /**
+        * @attribute cloneNode
+        * @description Should the node be cloned into the proxy for you. Default: false
+        * @type Boolean
+        */
+        cloneNode: {
+            value: false
         }
     };
 
-    var proto = {
+    proto = {
         /**
         * @private
         * @property _hands
@@ -97,13 +108,14 @@ YUI.add('dd-proxy', function(Y) {
         */
         _init: function() {
             if (!DDM._proxy) {
+                DDM._createFrame();
                 Y.on('domready', Y.bind(this._init, this));
                 return;
             }
             if (!this._hands) {
                 this._hands = [];
             }
-            var i, h, h1, host = this.get(HOST), dnode = host.get(DRAG_NODE);
+            var h, h1, host = this.get(HOST), dnode = host.get(DRAG_NODE);
             if (dnode.compareTo(host.get(NODE))) {
                 if (DDM._proxy) {
                     host.set(DRAG_NODE, DDM._proxy);
@@ -125,6 +137,10 @@ YUI.add('dd-proxy', function(Y) {
                     if (this.get('hideOnEnd')) {
                         host.get(DRAG_NODE).setStyle('display', 'none');
                     }
+                    if (this.get('cloneNode')) {
+                        host.get(DRAG_NODE).remove();
+                        host.set(DRAG_NODE, DDM._proxy);
+                    }
                 }
             }, this));
             this._hands = [h, h1];
@@ -138,6 +154,18 @@ YUI.add('dd-proxy', function(Y) {
                 v.detach();
             });
             host.set(DRAG_NODE, host.get(NODE));
+        },
+        clone: function() {
+            var host = this.get(HOST),
+                n = host.get(NODE),
+                c = n.cloneNode(true);
+
+            delete c._yuid;
+            c.setAttribute('id', Y.guid());
+            c.setStyle('position', 'absolute');
+            n.get('parentNode').appendChild(c);
+            host.set(DRAG_NODE, c);
+            return c;
         }
     };
     
@@ -159,7 +187,7 @@ YUI.add('dd-proxy', function(Y) {
                 DDM._proxy = TRUE;
 
                 var p = Y.Node.create('<div></div>'),
-                b = Y.Node.get('body');
+                b = Y.one('body');
 
                 p.setStyles({
                     position: 'absolute',
@@ -169,8 +197,8 @@ YUI.add('dd-proxy', function(Y) {
                     left: '-999px'
                 });
 
-                b.insertBefore(p, b.get('firstChild'));
-                p.set('id', Y.stamp(p));
+                b.prepend(p);
+                p.set('id', Y.guid());
                 p.addClass(DDM.CSS_PREFIX + '-proxy');
                 DDM._proxy = p;
             }
@@ -185,12 +213,6 @@ YUI.add('dd-proxy', function(Y) {
         */
         _setFrame: function(drag) {
             var n = drag.get(NODE), d = drag.get(DRAG_NODE), ah, cur = 'auto';
-            if (drag.proxy.get('resizeFrame')) {
-                DDM._proxy.setStyles({
-                    height: n.get('offsetHeight') + 'px',
-                    width: n.get('offsetWidth') + 'px'
-                });
-            }
             
             ah = DDM.activeDrag.get('activeHandle');
             if (ah) {
@@ -200,7 +222,6 @@ YUI.add('dd-proxy', function(Y) {
                 cur = DDM.get('dragCursor');
             }
 
-
             d.setStyles({
                 visibility: 'hidden',
                 display: 'block',
@@ -208,7 +229,16 @@ YUI.add('dd-proxy', function(Y) {
                 border: drag.proxy.get('borderStyle')
             });
 
+            if (drag.proxy.get('cloneNode')) {
+                d = drag.proxy.clone();
+            }
 
+            if (drag.proxy.get('resizeFrame')) {
+                d.setStyles({
+                    height: n.get('offsetHeight') + 'px',
+                    width: n.get('offsetWidth') + 'px'
+                });
+            }
 
             if (drag.proxy.get('positionProxy')) {
                 d.setXY(drag.nodeXY);
@@ -218,8 +248,8 @@ YUI.add('dd-proxy', function(Y) {
     });
 
     //Create the frame when DOM is ready
-    Y.on('domready', Y.bind(DDM._createFrame, DDM));
+    //Y.on('domready', Y.bind(DDM._createFrame, DDM));
 
 
 
-}, '3.0.0' ,{requires:['dd-ddm', 'dd-drag'], skinnable:false});
+}, '3.3.0' ,{requires:['dd-ddm', 'dd-drag'], skinnable:false});

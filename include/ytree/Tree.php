@@ -50,8 +50,7 @@ class Tree {
   var $tree_style='include/ytree/TreeView/css/folders/tree.css';	
   var $_header_files=array(	
 		'include/javascript/yui/build/treeview/treeview.js',
-        'include/ytree/treeutil.js',				
-        'include/JSON.js',																					
+        'include/ytree/treeutil.js',
       );
 					 
   var $_debug_window=false;
@@ -69,11 +68,11 @@ class Tree {
   
   //optionally add json.js, required for making AJAX Calls. 
   function include_json_reference($reference=null) {
-  	if (empty($reference)) {
-  		$this->_header_files[]='include/JSON.js';
-  	} else { 
-  		$this->_header_files[]=$reference;
-  	} 												 
+    // if (empty($reference)) {
+    //  $this->_header_files[]='include/JSON.js';
+    // } else {
+    //  $this->_header_files[]=$reference;
+    // }
   }
            
   function add_node($node) {

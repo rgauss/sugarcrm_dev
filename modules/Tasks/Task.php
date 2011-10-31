@@ -304,21 +304,17 @@ class Task extends SugarBean {
 
 		//make sure we grab the localized version of the contact name, if a contact is provided
 		if (!empty($this->contact_id)) {
-			global $locale;
-			$query  = "SELECT first_name, last_name, salutation, title FROM contacts ";
-			$query .= "WHERE id='$this->contact_id' AND deleted=0";
-			$result = $this->db->limitQuery($query,0,1,true," Error filling in contact name fields: ");
-
-			// Get the contact name.
-			$row = $this->db->fetchByAssoc($result);
-
-			if($row != null)
-			{
-				$this->contact_name = $locale->getLocaleFormattedName($row['first_name'], $row['last_name'], $row['salutation'], $row['title']);
+            // Bug# 46125 - make first name, last name, salutation and title of Contacts respect field level ACLs
+            $contact = new Contact();
+			$contact->retrieve($this->contact_id);
+			if(isset($contact->id)) {
+			    $this->contact_name = $contact->full_name;
+                $this->contact_phone = $contact->phone_work;
 			}
 		}
 
 		$task_fields['CONTACT_NAME']= $this->contact_name;
+		$task_fields['CONTACT_PHONE']= $this->contact_phone;
 		$task_fields['TITLE'] = '';
 		if (!empty($task_fields['CONTACT_NAME'])) {
 			$task_fields['TITLE'] .= $current_module_strings['LBL_LIST_CONTACT'].": ".$task_fields['CONTACT_NAME'];

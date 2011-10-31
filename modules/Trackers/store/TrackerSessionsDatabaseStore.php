@@ -48,6 +48,12 @@ class TrackerSessionsDatabaseStore implements Store {
     public function flush($monitor) {
 
        $metrics = $monitor->getMetrics();
+       
+       if(isset($monitor->client_ip) && strlen($monitor->client_ip) > 20)
+       {
+          $monitor->client_ip = substr($monitor->client_ip, 0, 20);	  
+       }
+       
        $columns = array();
        $values = array();
        foreach($metrics as $name=>$metric) {
@@ -67,14 +73,14 @@ class TrackerSessionsDatabaseStore implements Store {
        	  return;
        }
        
-       if ( !isset($monitor->round_trips) ) $monitor->round_trips = 0;
-       if ( !isset($monitor->active) ) $monitor->active = 1;
-       if ( !isset($monitor->seconds) ) $monitor->seconds = 0;
+       if ( empty($monitor->round_trips) ) $monitor->round_trips = 0;
+       if ( empty($monitor->active) ) $monitor->active = 1;
+       if ( empty($monitor->seconds) ) $monitor->seconds = 0;
        if($monitor->round_trips == 1) {
 		  $query = "INSERT INTO $monitor->table_name (" .implode("," , $columns). " ) VALUES ( ". implode("," , $values). ')';
 		  $GLOBALS['db']->query($query);
        } else {
-       	  $query = "UPDATE $monitor->table_name SET date_end = '{$monitor->date_end}' , seconds = {$monitor->seconds}, active = '{$monitor->active}', round_trips = $monitor->round_trips WHERE session_id = '{$monitor->session_id}'";
+       	  $query = "UPDATE $monitor->table_name SET date_end = '{$monitor->date_end}' , seconds = '{$monitor->seconds}', active = '{$monitor->active}', round_trips = $monitor->round_trips WHERE session_id = '{$monitor->session_id}'";
        	  $GLOBALS['db']->query($query);
        }
     }

@@ -131,17 +131,14 @@ class ListViewSmarty extends ListViewDisplay{
 		$this->ss->assign('quickViewLinks', $this->quickViewLinks);
 
 		// handle save checks and stuff
-		if($this->multiSelect) {
-		
-		//if($this->data['pageData']['bean']['moduleDir']== 'KBDocuments')
-		//{ 
-		//	$this->ss->assign('selectedObjectsSpan', $this->buildSelectedObjectsSpan(true, $this->data['pageData']['offsets']['current']));
-		//} else {
+		if($this->multiSelect)
+        {
 			$this->ss->assign('selectedObjectsSpan', $this->buildSelectedObjectsSpan(true, $this->data['pageData']['offsets']['total']));
-		//}
-		
-		$this->ss->assign('multiSelectData', $this->getMultiSelectData());
-		}
+		    $this->ss->assign('multiSelectData', $this->getMultiSelectData());
+		} else {
+            $this->ss->assign('multiSelectData', '<textarea style="display: none" name="uid"></textarea>');
+        }
+
 		// include button for Adding to Target List if in one of four applicable modules
 		if ( isset ( $_REQUEST['module']) && in_array ( $_REQUEST['module'] , array ( 'Contacts','Prospects','Leads','Accounts' ))
 		&& ACLController::checkAccess('ProspectLists','edit',true)) {
@@ -153,8 +150,8 @@ class ListViewSmarty extends ListViewDisplay{
 		$this->ss->assign('rowColor', array('oddListRow', 'evenListRow'));
 		$this->ss->assign('bgColor', array($odd_bg, $even_bg));
         $this->ss->assign('contextMenus', $this->contextMenus);
-        $this->ss->assign('is_admin_for_user', is_admin_for_module($GLOBALS['current_user'],'Users'));
-        $this->ss->assign('is_admin', is_admin($GLOBALS['current_user']));
+        $this->ss->assign('is_admin_for_user', $GLOBALS['current_user']->isAdminForModule('Users'));
+        $this->ss->assign('is_admin', $GLOBALS['current_user']->isAdmin());
 
 
         if($this->contextMenus && !empty($contextMenuObjectsTypes)) {

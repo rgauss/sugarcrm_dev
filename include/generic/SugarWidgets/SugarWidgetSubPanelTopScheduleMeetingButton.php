@@ -144,7 +144,6 @@ class SugarWidgetSubPanelTopScheduleMeetingButton extends SugarWidgetSubPanelTop
 			}
 		}
 		$button .='<script type="text/javascript" src="include/SugarFields/Fields/Datetimecombo/Datetimecombo.js"></script>'."\n";
-		$button .='<script type="text/javascript" src="include/jsolait/init.js"></script>'."\n";
 		$button .='<script type="text/javascript" src="include/javascript/jsclass_base.js"></script>'."\n";
 		$button .='<script type="text/javascript" src="include/javascript/jsclass_async.js"></script>'."\n";
 		$button .='<script type="text/javascript" src="modules/Meetings/jsclass_scheduler.js"></script>'."\n";
@@ -162,4 +161,3 @@ class SugarWidgetSubPanelTopScheduleMeetingButton extends SugarWidgetSubPanelTop
 		return parent::display($defines, $additionalFormFields);
 	}
 }
-?>

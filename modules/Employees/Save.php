@@ -49,10 +49,23 @@ $tabs_def = urldecode(isset($_REQUEST['display_tabs_def']) ? $_REQUEST['display_
 $DISPLAY_ARR = array();
 parse_str($tabs_def,$DISPLAY_ARR); 
 
+//there was an issue where a non-admin user could use a proxy tool to intercept the save on their own Employee
+//record and swap out their record_id with the admin employee_id which would cause the email address
+//of the non-admin user to be associated with the admin user thereby allowing the non-admin to reset the password
+//of the admin user.
+if(isset($_POST['record']) && !is_admin($GLOBALS['current_user']) && !$GLOBALS['current_user']->isAdminForModule('Employees') && ($_POST['record'] != $GLOBALS['current_user']->id))
+{
+    sugar_die("Unauthorized access to administration.");
+}
+elseif (!isset($_POST['record']) && !is_admin($GLOBALS['current_user']) && !$GLOBALS['current_user']->isAdminForModule('Employees'))
+{
+    sugar_die ("Unauthorized access to user administration.");
+}
 
 $focus = new Employee();
 
 $focus->retrieve($_POST['record']);
+
 //rrs bug: 30035 - I am not sure how this ever worked b/c old_reports_to_id was not populated.
 $old_reports_to_id = $focus->reports_to_id;
 

@@ -37,7 +37,8 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 
 $searchFields['Users'] = 
 	array (
-	    'first_name' => array( 'query_type'=>'default'),
+	    'user_name' => array( 'query_type'=>'default'),
+		'first_name' => array( 'query_type'=>'default'),
 		'last_name'=> array('query_type'=>'default'),
         'search_name'=> array('query_type'=>'default','db_field'=>array('first_name','last_name')),
         'is_admin'=> array('query_type'=>'default', 'operator'=>'=', 'input_type' => 'checkbox'),

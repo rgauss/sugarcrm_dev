@@ -104,7 +104,7 @@ SUGAR.Administration = {
 					}
 				}
 
-				var beanId = JSON.stringifyNoSecurity(beanIds);
+				var beanId = YAHOO.lang.JSON.stringify(beanIds);
 				AjaxObject.startRequest(callbackRepairXssExecute, "&adminAction=repairXssExecute&bean=" + this.currentRepairObject + "&id=" + beanId);
 			}
 		},

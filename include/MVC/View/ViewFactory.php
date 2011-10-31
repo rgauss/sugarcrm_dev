@@ -54,8 +54,10 @@ class ViewFactory{
 		//first let's check if the module handles this view
 
 		$view = null;
-		
-		$view = null;
+
+        //Check to see if we should load a custom parent view instance
+        loadParentView($type);
+        
 		if(!empty($target_module)) {
 			if(file_exists('custom/modules/'.$target_module.'/views/view.'.$type.'.php')){
 				$view = ViewFactory::_buildFromFile('custom/modules/'.$target_module.'/views/view.'.$type.'.php', $bean, $view_object_map, $type, $target_module);

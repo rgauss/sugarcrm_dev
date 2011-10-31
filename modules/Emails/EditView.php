@@ -183,9 +183,6 @@ if($email_type == 'archived') {
 	} // if
 	header("Location: index.php?module=Emails&action=Compose&record=$focus->id&replyForward=true&reply=$replyType");
 	return;
-
-	echo getClassicModuleTitle('Emails', array($mod_strings['LBL_COMPOSE_MODULE_NAME']), true);
-	$xtpl=new XTemplate('modules/Emails/EditView.html');
 }
 echo "\n</p>\n";
 

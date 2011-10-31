@@ -1,5 +1,5 @@
 if (YUI && yuiConfig) {
-    YUI(yuiConfig).use('node', 'event-mouseenter', 'later', function(Y) {
+    YUI(yuiConfig).use('node', 'event-mouseenter', 'yui-later', function(Y) {
         var items = Y.all('.yui-syntax-highlight'),
             openWindow = function(node, print) {
                 var n = Y.one('#' + node.get('id') + '-plain'),

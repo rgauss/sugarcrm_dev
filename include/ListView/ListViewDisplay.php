@@ -72,12 +72,17 @@ class ListViewDisplay {
 		$this->searchColumns = array () ;
 	}
 	function shouldProcess($moduleDir){
+		$searching = false;
+		$sessionSearchQuery = "{$moduleDir}2_QUERY_QUERY";
+		if (!empty($_SESSION[$sessionSearchQuery])) {
+			$searching = true;
+		}
 		if(!empty($GLOBALS['sugar_config']['save_query']) && $GLOBALS['sugar_config']['save_query'] == 'populate_only'){
 		    if(empty($GLOBALS['displayListView']) 
 		            && (!empty($_REQUEST['clear_query']) 
 		                || $_REQUEST['module'] == $moduleDir 
 		                    && ((empty($_REQUEST['query']) || $_REQUEST['query'] == 'MSI' )
-		                        && (empty($_SESSION['last_search_mod']) || $_SESSION['last_search_mod'] != $moduleDir ) ))){
+		                        && (!$searching)))) {
 				$_SESSION['last_search_mod'] = $_REQUEST['module'] ;
 				$this->should_process = false;
 				return false;
@@ -255,7 +260,7 @@ class ListViewDisplay {
 		}
 		
 		$str = '';
-		if ($this->multiSelect == true && $this->show_mass_update_form) {
+		if ($this->show_mass_update_form) {
 			$str = $this->mass->getDisplayMassUpdateForm(true, $this->multi_select_popup).$this->mass->getMassUpdateFormHeader($this->multi_select_popup);
 		}
         

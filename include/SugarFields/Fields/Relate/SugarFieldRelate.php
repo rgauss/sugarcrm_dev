@@ -49,7 +49,11 @@ class SugarFieldRelate extends SugarFieldBase {
         return $this->fetch($this->findTemplate('DetailView'));
     }
     
-    function getEditViewSmarty($parentFieldArray, $vardef, $displayParams, $tabindex) {
+    /**
+     * @see SugarFieldBase::getEditViewSmarty()
+     */
+    public function getEditViewSmarty($parentFieldArray, $vardef, $displayParams, $tabindex) 
+    {
         if(!empty($vardef['function']['returns']) && $vardef['function']['returns'] == 'html'){
             return parent::getEditViewSmarty($parentFieldArray, $vardef, $displayParams, $tabindex);
         }
@@ -62,7 +66,12 @@ class SugarFieldRelate extends SugarFieldBase {
         if(isset($displayParams['formName'])) {
             $form_name = $displayParams['formName'];
         }
-        
+
+        if (isset($displayParams['idName']))
+        {
+            $rpos = strrpos($displayParams['idName'], $vardef['name']);
+            $displayParams['idNameHidden'] = substr($displayParams['idName'], 0, $rpos);
+        }
         //Special Case for accounts; use the displayParams array and retrieve
         //the key and copy indexes.  'key' is the suffix of the field we are searching
         //the Account's address with.  'copy' is the suffix we are copying the addresses
@@ -121,7 +130,9 @@ class SugarFieldRelate extends SugarFieldBase {
                 'call_back_function' => $call_back_function,
                 'form_name' => $form_name,
                 'field_to_name_array' => array(
-                          'id' => (empty($displayParams['idName']) ? $vardef['id_name'] : ($displayParams['idName'] . '_' . $vardef['id_name'])) ,
+                          //'id' => (empty($displayParams['idName']) ? $vardef['id_name'] : ($displayParams['idName'] . '_' . $vardef['id_name'])) ,
+                          //bug 43770: Assigned to value could not be saved during lead conversion
+                          'id' => (empty($displayParams['idNameHidden']) ? $vardef['id_name'] : ($displayParams['idNameHidden'] . $vardef['id_name'])) ,
                           ((empty($vardef['rname'])) ? 'name' : $vardef['rname']) => (empty($displayParams['idName']) ? $vardef['name'] : $displayParams['idName']),
                     ),
                 );

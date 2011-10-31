@@ -486,9 +486,14 @@ class CalendarActivity
 		$end_ts_obj = $timedate->tzUser($end_ts_obj);
 		switch ($view) {
 			case 'month':
-				$start = $start_ts_obj->get_day_begin(1);
+                //C.L. For the start date, go back 6 days since 99 hours is the max duration (6 days)
+                $start = $start_ts_obj->get("-6 days")->get_day_begin();
 				$end = $end_ts_obj->get("first day of next month")->get_day_begin();
 				break;
+            case 'freebusy':    //bug: 44586, for freebusy, don't modify the start/end dates
+                $start = $start_ts_obj;
+                $end = $end_ts_obj;
+                break;
 			default:
 				// Date for the past 5 days as that is the maximum duration of a single activity
 				$start = $start_ts_obj->get("-5 days")->get_day_begin();

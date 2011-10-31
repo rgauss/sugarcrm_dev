@@ -262,7 +262,7 @@ function OLpar(a,v){eval(v+'='+a);}
 function OLparQuo(a,v){eval(v+"='"+OLescSglQt(a)+"'");}
 function OLescSglQt(s){return s.toString().replace(/'/g,"\\'");}
 function OLtoggle(a,v){eval(v+'=('+v+'==0&&'+a+'>=0)?1:0');}
-function OLhasDims(s){return/[%\-a-z]+$/.test(s);}
+function OLhasDims(s){return /[%\-a-z]+$/.test(s);}
 function OLfontSize(){var i;if(OLhasDims(o3_textsize)){if(OLns4)o3_textsize="2";}else
 if(!OLns4){i=parseInt(o3_textsize);o3_textsize=(i>0&&i<8)?OLpct[i]:OLpct[0];}
 if(OLhasDims(o3_captionsize)){if(OLns4)o3_captionsize="2";}else

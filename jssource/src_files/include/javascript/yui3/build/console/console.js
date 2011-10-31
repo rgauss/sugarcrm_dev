@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('console', function(Y) {
 
@@ -25,10 +25,6 @@ YUI.add('console', function(Y) {
  * @param conf {Object} Configuration object (see Configuration attributes)
  * @constructor
  */
-function Console() {
-    Console.superclass.constructor.apply(this,arguments);
-}
-
 var getCN = Y.ClassNameManager.getClassName,
     CHECKED        = 'checked',
     CLEAR          = 'clear',
@@ -72,7 +68,7 @@ var getCN = Y.ClassNameManager.getClassName,
     C_PAUSE_LABEL      = getCN(CONSOLE,PAUSE,'label'),
 
     RE_INLINE_SOURCE = /^(\S+)\s/,
-    RE_AMP = /&/g,
+    RE_AMP = /&(?!#?[a-z0-9]+;)/g,
     RE_GT  = />/g,
     RE_LT  = /</g,
 
@@ -103,520 +99,14 @@ var getCN = Y.ClassNameManager.getClassName,
     substitute = Y.substitute;
     
 
-Y.mix(Console, {
+function Console() {
+    Console.superclass.constructor.apply(this,arguments);
+}
 
-    /**
-     * The identity of the widget.
-     *
-     * @property Console.NAME
-     * @type String
-     * @static
-     */
-    NAME : CONSOLE,
+Y.Console = Y.extend(Console, Y.Widget,
 
-    /**
-     * Static identifier for logLevel configuration setting to allow all
-     * incoming messages to generate Console entries.
-     *
-     * @property Console.LOG_LEVEL_INFO
-     * @type String
-     * @static
-     */
-    LOG_LEVEL_INFO  : INFO,
-
-    /**
-     * Static identifier for logLevel configuration setting to allow only
-     * incoming messages of logLevel &quot;warn&quot; or &quot;error&quot;
-     * to generate Console entries.
-     *
-     * @property Console.LOG_LEVEL_WARN
-     * @type String
-     * @static
-     */
-    LOG_LEVEL_WARN  : WARN,
-
-    /**
-     * Static identifier for logLevel configuration setting to allow only
-     * incoming messages of logLevel &quot;error&quot; to generate
-     * Console entries.
-     *
-     * @property Console.LOG_LEVEL_ERROR
-     * @type String
-     * @static
-     */
-    LOG_LEVEL_ERROR : ERROR,
-
-    /**
-     * Map (object) of classNames used to populate the placeholders in the
-     * Console.ENTRY_TEMPLATE markup when rendering a new Console entry.
-     *
-     * <p>By default, the keys contained in the object are:</p>
-     * <ul>
-     *    <li>entry_class</li>
-     *    <li>entry_meta_class</li>
-     *    <li>entry_cat_class</li>
-     *    <li>entry_src_class</li>
-     *    <li>entry_time_class</li>
-     *    <li>entry_content_class</li>
-     * </ul>
-     *
-     * @property Console.ENTRY_CLASSES
-     * @type Object
-     * @static
-     */
-    ENTRY_CLASSES   : {
-        entry_class         : C_ENTRY,
-        entry_meta_class    : C_ENTRY_META,
-        entry_cat_class     : C_ENTRY_CAT,
-        entry_src_class     : C_ENTRY_SRC,
-        entry_time_class    : C_ENTRY_TIME,
-        entry_content_class : C_ENTRY_CONTENT
-    },
-
-    /**
-     * Map (object) of classNames used to populate the placeholders in the
-     * Console.HEADER_TEMPLATE, Console.BODY_TEMPLATE, and
-     * Console.FOOTER_TEMPLATE markup when rendering the Console UI.
-     *
-     * <p>By default, the keys contained in the object are:</p>
-     * <ul>
-     *   <li>console_hd_class</li>
-     *   <li>console_bd_class</li>
-     *   <li>console_ft_class</li>
-     *   <li>console_controls_class</li>
-     *   <li>console_checkbox_class</li>
-     *   <li>console_pause_class</li>
-     *   <li>console_pause_label_class</li>
-     *   <li>console_button_class</li>
-     *   <li>console_clear_class</li>
-     *   <li>console_collapse_class</li>
-     *   <li>console_title_class</li>
-     * </ul>
-     *
-     * @property Console.CHROME_CLASSES
-     * @type Object
-     * @static
-     */
-    CHROME_CLASSES  : {
-        console_hd_class       : C_CONSOLE_HD,
-        console_bd_class       : C_CONSOLE_BD,
-        console_ft_class       : C_CONSOLE_FT,
-        console_controls_class : C_CONSOLE_CONTROLS,
-        console_checkbox_class : C_CHECKBOX,
-        console_pause_class    : C_PAUSE,
-        console_pause_label_class : C_PAUSE_LABEL,
-        console_button_class   : C_BUTTON,
-        console_clear_class    : C_CLEAR,
-        console_collapse_class : C_COLLAPSE,
-        console_title_class    : C_CONSOLE_TITLE
-    },
-
-    /**
-     * Markup template used to generate the DOM structure for the header
-     * section of the Console when it is rendered.  The template includes
-     * these {placeholder}s:
-     *
-     * <ul>
-     *   <li>console_button_class - contributed by Console.CHROME_CLASSES</li>
-     *   <li>console_collapse_class - contributed by Console.CHROME_CLASSES</li>
-     *   <li>console_hd_class - contributed by Console.CHROME_CLASSES</li>
-     *   <li>console_title_class - contributed by Console.CHROME_CLASSES</li>
-     *   <li>str_collapse - pulled from attribute strings.collapse</li>
-     *   <li>str_title - pulled from attribute strings.title</li>
-     * </ul>
-     *
-     * @property Console.HEADER_TEMPLATE
-     * @type String
-     * @static
-     */
-    HEADER_TEMPLATE :
-        '<div class="{console_hd_class}">'+
-            '<h4 class="{console_title_class}">{str_title}</h4>'+
-            '<button type="button" class="'+
-                '{console_button_class} {console_collapse_class}">{str_collapse}'+
-            '</button>'+
-        '</div>',
-
-    /**
-     * Markup template used to generate the DOM structure for the Console body
-     * (where the messages are inserted) when it is rendered.  The template
-     * includes only the {placeholder} &quot;console_bd_class&quot;, which is
-     * constributed by Console.CHROME_CLASSES.
-     *
-     * @property Console.BODY_TEMPLATE
-     * @type String
-     * @static
-     */
-    BODY_TEMPLATE : '<div class="{console_bd_class}"></div>',
-
-    /**
-     * Markup template used to generate the DOM structure for the footer
-     * section of the Console when it is rendered.  The template includes
-     * many of the {placeholder}s from Console.CHROME_CLASSES as well as:
-     *
-     * <ul>
-     *   <li>id_guid - generated unique id, relates the label and checkbox</li>
-     *   <li>str_pause - pulled from attribute strings.pause</li>
-     *   <li>str_clear - pulled from attribute strings.clear</li>
-     * </ul>
-     *
-     * @property Console.FOOTER_TEMPLATE
-     * @type String
-     * @static
-     */
-    FOOTER_TEMPLATE :
-        '<div class="{console_ft_class}">'+
-            '<div class="{console_controls_class}">'+
-                '<label for="{id_guid}" class="{console_pause_label_class}">'+
-                    '<input type="checkbox" class="{console_checkbox_class} '+
-                        '{console_pause_class}" value="1" id="{id_guid}"> '+
-                    '{str_pause}</label>' +
-                '<button type="button" class="'+
-                    '{console_button_class} {console_clear_class}">{str_clear}'+
-                '</button>'+
-            '</div>'+
-        '</div>',
-
-    /**
-     * Default markup template used to create the DOM structure for Console
-     * entries. The markup contains {placeholder}s for content and classes
-     * that are replaced via Y.substitute.  The default template contains
-     * the {placeholder}s identified in Console.ENTRY_CLASSES as well as the
-     * following placeholders that will be populated by the log entry data:
-     *
-     * <ul>
-     *   <li>cat_class</li>
-     *   <li>src_class</li>
-     *   <li>totalTime</li>
-     *   <li>elapsedTime</li>
-     *   <li>localTime</li>
-     *   <li>sourceAndDetail</li>
-     *   <li>message</li>
-     * </ul>
-     *
-     * @property Console.ENTRY_TEMPLATE
-     * @type String
-     * @static
-     */
-    ENTRY_TEMPLATE : ENTRY_TEMPLATE_STR,
-
-    /**
-     * Static property used to define the default attribute configuration of
-     * the Widget.
-     *
-     * @property Console.ATTRS
-     * @Type Object
-     * @static
-     */
-    ATTRS : {
-
-        /**
-         * Name of the custom event that will communicate log messages.
-         *
-         * @attribute logEvent
-         * @type String
-         * @default "yui:log"
-         */
-        logEvent : {
-            value : 'yui:log',
-            writeOnce : true,
-            validator : isString
-        },
-
-        /**
-         * Object that will emit the log events.  By default the YUI instance.
-         * To have a single Console capture events from all YUI instances, set
-         * this to the Y.Global object.
-         *
-         * @attribute logSource
-         * @type EventTarget
-         * @default Y
-         */
-        logSource : {
-            value : Y,
-            writeOnce : true,
-            validator : function (v) {
-                return v && Y.Lang.isFunction(v.on);
-            }
-        },
-
-        /**
-         * Collection of strings used to label elements in the Console UI.
-         * Default collection contains the following name:value pairs:
-         *
-         * <ul>
-         *   <li>title : &quot;Log Console&quot;</li>
-         *   <li>pause : &quot;Pause&quot;</li>
-         *   <li>clear : &quot;Clear&quot;</li>
-         *   <li>collapse : &quot;Collapse&quot;</li>
-         *   <li>expand : &quot;Expand&quot;</li>
-         * </ul>
-         *
-         * @attribute strings
-         * @type Object
-         */
-        strings : {
-            value : {
-                title : "Log Console",
-                pause : "Pause",
-                clear : "Clear",
-                collapse : "Collapse",
-                expand   : "Expand"
-            }
-        },
-
-        /**
-         * Boolean to pause the outputting of new messages to the console.
-         * When paused, messages will accumulate in the buffer.
-         *
-         * @attribute paused
-         * @type boolean
-         * @default false
-         */
-        paused : {
-            value : false,
-            validator : L.isBoolean
-        },
-
-        /**
-         * If a category is not specified in the Y.log(..) statement, this
-         * category will be used. Categories &quot;info&quot;,
-         * &quot;warn&quot;, and &quot;error&quot; are also called log level.
-         *
-         * @attribute defaultCategory
-         * @type String
-         * @default "info"
-         */
-        defaultCategory : {
-            value : INFO,
-            validator : isString
-        },
-
-        /**
-         * If a source is not specified in the Y.log(..) statement, this
-         * source will be used.
-         *
-         * @attribute defaultSource
-         * @type String
-         * @default "global"
-         */
-        defaultSource   : {
-            value : 'global',
-            validator : isString
-        },
-
-        /**
-         * Markup template used to create the DOM structure for Console entries.
-         *
-         * @attribute entryTemplate
-         * @type String
-         * @default Console.ENTRY_TEMPLATE
-         */
-        entryTemplate : {
-            value : ENTRY_TEMPLATE_STR,
-            validator : isString
-        },
-
-        /**
-         * Minimum entry log level to render into the Console.  The initial
-         * logLevel value for all Console instances defaults from the
-         * Y.config.logLevel YUI configuration, or Console.LOG_LEVEL_INFO if
-         * that configuration is not set.
-         *
-         * Possible values are &quot;info&quot;, &quot;warn&quot;,
-         * &quot;error&quot; (case insensitive), or their corresponding statics
-         * Console.LOG_LEVEL_INFO and so on.
-         *
-         * @attribute logLevel
-         * @type String
-         * @default Y.config.logLevel or Console.LOG_LEVEL_INFO
-         */
-        logLevel : {
-            value : Y.config.logLevel || INFO,
-            setter : function (v) {
-                return this._setLogLevel(v);
-            }
-        },
-
-        /**
-         * Millisecond timeout between iterations of the print loop, moving
-         * entries from the buffer to the UI.
-         *
-         * @attribute printTimeout
-         * @type Number
-         * @default 100
-         */
-        printTimeout : {
-            value : 100,
-            validator : isNumber
-        },
-
-        /**
-         * Maximum number of entries printed in each iteration of the print
-         * loop. This is used to prevent excessive logging locking the page UI.
-         *
-         * @attribute printLimit
-         * @type Number
-         * @default 50
-         */
-        printLimit : {
-            value : 50,
-            validator : isNumber
-        },
-
-        /**
-         * Maximum number of Console entries allowed in the Console body at one
-         * time.  This is used to keep acquired messages from exploding the
-         * DOM tree and impacting page performance.
-         *
-         * @attribute consoleLimit
-         * @type Number
-         * @default 300
-         */
-        consoleLimit : {
-            value : 300,
-            validator : isNumber
-        },
-
-        /**
-         * New entries should display at the top of the Console or the bottom?
-         *
-         * @attribute newestOnTop
-         * @type Boolean
-         * @default true
-         */
-        newestOnTop : {
-            value : true
-        },
-
-        /**
-         * When new entries are added to the Console UI, should they be
-         * scrolled into view?
-         *
-         * @attribute scrollIntoView
-         * @type Boolean
-         * @default true
-         */
-        scrollIntoView : {
-            value : true
-        },
-
-        /**
-         * The baseline time for this Console instance, used to measure elapsed
-         * time from the moment the console module is <code>use</code>d to the
-         * moment each new entry is logged (not rendered).
-         *
-         * This value is reset by the instance method myConsole.reset().
-         *
-         * @attribute startTime
-         * @type Date
-         * @default The moment the console module is <code>use</code>d
-         */
-        startTime : {
-            value : new Date()
-        },
-
-        /**
-         * The precise time the last entry was logged.  Used to measure elapsed
-         * time between log messages.
-         *
-         * @attribute lastTime
-         * @type Date
-         * @default The moment the console module is <code>use</code>d
-         */
-        lastTime : {
-            value : new Date(),
-            readOnly: true
-        },
-
-        /**
-         * Controls the collapsed state of the Console
-         *
-         * @attribute collapsed
-         * @type Boolean
-         * @default false
-         */
-        collapsed : {
-            value : false
-        },
-
-        /**
-        * String with units, or number, representing the height of the Console,
-        * inclusive of header and footer. If a number is provided, the default
-        * unit, defined by Widget's DEF_UNIT, property is used.
-        *
-        * @attribute height
-        * @default "300px"
-        * @type {String | Number}
-        */
-        height: {
-            value: "300px"
-        },
-
-        /**
-        * String with units, or number, representing the width of the Console.
-        * If a number is provided, the default unit, defined by Widget's
-        * DEF_UNIT, property is used.
-        *
-        * @attribute width
-        * @default "300px"
-        * @type {String | Number}
-        */
-        width: {
-            value: "300px"
-        },
-
-        /**
-         * Pass through to the YUI instance useBrowserConsole configuration.
-         * By default this is set to false, which will disable logging to the
-         * browser console when a Console instance is created.  If the
-         * logSource is not a YUI instance, this has no effect.
-         * 
-         * @attribute useBrowserConsole
-         * @type {Boolean}
-         * @default false
-         */
-         useBrowserConsole : {
-            lazyAdd: false,
-            value: false,
-            getter : function () {
-                var logSource = this.get('logSource');
-                return logSource instanceof YUI ?
-                    logSource.config.useBrowserConsole : null;
-            },
-            setter : function (v) {
-                var logSource = this.get('logSource');
-                if (logSource instanceof YUI) {
-                    v = !!v;
-                    logSource.config.useBrowserConsole = !!v;
-                    return v;
-                } else {
-                    return Y.Attribute.INVALID_VALUE;
-                }
-            }
-         },
-
-         /**
-          * Allows the Console to flow in the document.  Available values are
-          * 'inline', 'block', and 'separate' (the default).  
-          *
-          * @attribute style
-          * @type {String}
-          * @default 'separate'
-          */
-         style : {
-            value : 'separate',
-            writeOnce : true,
-            validator : function (v) {
-                return this._validateStyle(v);
-            }
-         }
-    }
-
-});
-
-Y.extend(Console,Y.Widget,{
-
+// Y.Console prototype
+{
     /**
      * Category to prefix all event subscriptions to allow for ease of detach
      * during destroy.
@@ -878,7 +368,7 @@ Y.extend(Console,Y.Widget,{
         // Apply positioning to the bounding box if appropriate
         var style = this.get('style');
         if (style !== 'block') {
-            this.get('boundingBox').addClass('yui-'+style+'-console');
+            this.get('boundingBox').addClass('yui3-'+style+'-console');
         }
     },
 
@@ -900,15 +390,15 @@ Y.extend(Console,Y.Widget,{
      * @protected
      */
     bindUI : function () {
-        this.get(CONTENT_BOX).query('button.'+C_COLLAPSE).
+        this.get(CONTENT_BOX).one('button.'+C_COLLAPSE).
             on(CLICK,this._onCollapseClick,this);
 
-        this.get(CONTENT_BOX).query('input[type=checkbox].'+C_PAUSE).
+        this.get(CONTENT_BOX).one('input[type=checkbox].'+C_PAUSE).
             on(CLICK,this._onPauseClick,this);
 
-        this.get(CONTENT_BOX).query('button.'+C_CLEAR).
+        this.get(CONTENT_BOX).one('button.'+C_CLEAR).
             on(CLICK,this._onClearClick,this);
-        
+
         // Attribute changes
         this.after(this._evtCat + 'stringsChange',
             this._afterStringsChange);
@@ -1133,7 +623,7 @@ Y.extend(Console,Y.Widget,{
             entries,e,i,l;
 
         if (bd) {
-            entries = bd.queryAll(DOT+C_ENTRY);
+            entries = bd.all(DOT+C_ENTRY);
             l = entries.size() - limit;
 
             if (l > 0) {
@@ -1242,6 +732,19 @@ Y.extend(Console,Y.Widget,{
 
 
     /**
+     * Validator for logSource attribute.
+     *
+     * @method _validateLogSource
+     * @param v {Object} the desired logSource
+     * @return {Boolean} true if the input is an object with an <code>on</code>
+     *                   method
+     * @protected
+     */
+    _validateLogSource: function (v) {
+        return v && Y.Lang.isFunction(v.on);
+    },
+
+    /**
      * Setter method for logLevel attribute.  Acceptable values are
      * &quot;error&quot, &quot;warn&quot, and &quot;info&quot (case
      * insensitive).  Other values are treated as &quot;info&quot;.
@@ -1257,6 +760,43 @@ Y.extend(Console,Y.Widget,{
         }
         
         return (v === WARN || v === ERROR) ? v : INFO;
+    },
+
+    /**
+     * Getter method for useBrowserConsole attribute.  Just a pass through to
+     * the YUI instance configuration setting.
+     *
+     * @method _getUseBrowserConsole
+     * @return {Boolean} or null if logSource is not a YUI instance
+     * @protected
+     */
+    _getUseBrowserConsole: function () {
+        var logSource = this.get('logSource');
+        return logSource instanceof YUI ?
+            logSource.config.useBrowserConsole : null;
+    },
+
+    /**
+     * Setter method for useBrowserConsole attributes.  Only functional if the
+     * logSource attribute points to a YUI instance.  Passes the value down to
+     * the YUI instance.  NOTE: multiple Console instances cannot maintain
+     * independent useBrowserConsole values, since it is just a pass through to
+     * the YUI instance configuration.
+     *
+     * @method _setUseBrowserConsole
+     * @param v {Boolean} false to disable browser console printing (default)
+     * @return {Boolean} true|false if logSource is a YUI instance
+     * @protected
+     */
+    _setUseBrowserConsole: function (v) {
+        var logSource = this.get('logSource');
+        if (logSource instanceof YUI) {
+            v = !!v;
+            logSource.config.useBrowserConsole = v;
+            return v;
+        } else {
+            return Y.Attribute.INVALID_VALUE;
+        }
     },
 
     /**
@@ -1280,6 +820,18 @@ Y.extend(Console,Y.Widget,{
     },
 
     /**
+     * Over-ride default content box sizing to do nothing, since we're sizing
+     * the body section to fill out height ourselves.
+     * 
+     * @method _uiSizeCB
+     * @protected
+     */
+    _uiSizeCB : function() {
+        // Do Nothing. Ideally want to move to Widget-StdMod, which accounts for
+        // _uiSizeCB        
+    },
+
+    /**
      * Updates the UI if changes are made to any of the strings in the strings
      * attribute.
      *
@@ -1294,15 +846,15 @@ Y.extend(Console,Y.Widget,{
             after  = e.newVal;
 
         if ((!prop || prop === TITLE) && before.title !== after.title) {
-            cb.queryAll(DOT+C_CONSOLE_TITLE).set(INNER_HTML, after.title);
+            cb.all(DOT+C_CONSOLE_TITLE).set(INNER_HTML, after.title);
         }
 
         if ((!prop || prop === PAUSE) && before.pause !== after.pause) {
-            cb.queryAll(DOT+C_PAUSE_LABEL).set(INNER_HTML, after.pause);
+            cb.all(DOT+C_PAUSE_LABEL).set(INNER_HTML, after.pause);
         }
 
         if ((!prop || prop === CLEAR) && before.clear !== after.clear) {
-            cb.queryAll(DOT+C_CLEAR).set('value',after.clear);
+            cb.all(DOT+C_CLEAR).set('value',after.clear);
         }
     },
 
@@ -1335,7 +887,7 @@ Y.extend(Console,Y.Widget,{
      * @protected
      */
     _uiUpdatePaused : function (on) {
-        var node = this._foot.queryAll('input[type=checkbox].'+C_PAUSE);
+        var node = this._foot.all('input[type=checkbox].'+C_PAUSE);
 
         if (node) {
             node.set(CHECKED,on);
@@ -1376,7 +928,7 @@ Y.extend(Console,Y.Widget,{
      */
     _uiUpdateCollapsed : function (v) {
         var bb     = this.get('boundingBox'),
-            button = bb.queryAll('button.'+C_COLLAPSE),
+            button = bb.all('button.'+C_COLLAPSE),
             method = v ? 'addClass' : 'removeClass',
             str    = this.get('strings.'+(v ? 'expand' : 'collapse'));
 
@@ -1470,9 +1022,504 @@ Y.extend(Console,Y.Widget,{
         }
     }
 
+},
+
+// Y.Console static properties
+{
+    /**
+     * The identity of the widget.
+     *
+     * @property Console.NAME
+     * @type String
+     * @static
+     */
+    NAME : CONSOLE,
+
+    /**
+     * Static identifier for logLevel configuration setting to allow all
+     * incoming messages to generate Console entries.
+     *
+     * @property Console.LOG_LEVEL_INFO
+     * @type String
+     * @static
+     */
+    LOG_LEVEL_INFO  : INFO,
+
+    /**
+     * Static identifier for logLevel configuration setting to allow only
+     * incoming messages of logLevel &quot;warn&quot; or &quot;error&quot;
+     * to generate Console entries.
+     *
+     * @property Console.LOG_LEVEL_WARN
+     * @type String
+     * @static
+     */
+    LOG_LEVEL_WARN  : WARN,
+
+    /**
+     * Static identifier for logLevel configuration setting to allow only
+     * incoming messages of logLevel &quot;error&quot; to generate
+     * Console entries.
+     *
+     * @property Console.LOG_LEVEL_ERROR
+     * @type String
+     * @static
+     */
+    LOG_LEVEL_ERROR : ERROR,
+
+    /**
+     * Map (object) of classNames used to populate the placeholders in the
+     * Console.ENTRY_TEMPLATE markup when rendering a new Console entry.
+     *
+     * <p>By default, the keys contained in the object are:</p>
+     * <ul>
+     *    <li>entry_class</li>
+     *    <li>entry_meta_class</li>
+     *    <li>entry_cat_class</li>
+     *    <li>entry_src_class</li>
+     *    <li>entry_time_class</li>
+     *    <li>entry_content_class</li>
+     * </ul>
+     *
+     * @property Console.ENTRY_CLASSES
+     * @type Object
+     * @static
+     */
+    ENTRY_CLASSES   : {
+        entry_class         : C_ENTRY,
+        entry_meta_class    : C_ENTRY_META,
+        entry_cat_class     : C_ENTRY_CAT,
+        entry_src_class     : C_ENTRY_SRC,
+        entry_time_class    : C_ENTRY_TIME,
+        entry_content_class : C_ENTRY_CONTENT
+    },
+
+    /**
+     * Map (object) of classNames used to populate the placeholders in the
+     * Console.HEADER_TEMPLATE, Console.BODY_TEMPLATE, and
+     * Console.FOOTER_TEMPLATE markup when rendering the Console UI.
+     *
+     * <p>By default, the keys contained in the object are:</p>
+     * <ul>
+     *   <li>console_hd_class</li>
+     *   <li>console_bd_class</li>
+     *   <li>console_ft_class</li>
+     *   <li>console_controls_class</li>
+     *   <li>console_checkbox_class</li>
+     *   <li>console_pause_class</li>
+     *   <li>console_pause_label_class</li>
+     *   <li>console_button_class</li>
+     *   <li>console_clear_class</li>
+     *   <li>console_collapse_class</li>
+     *   <li>console_title_class</li>
+     * </ul>
+     *
+     * @property Console.CHROME_CLASSES
+     * @type Object
+     * @static
+     */
+    CHROME_CLASSES  : {
+        console_hd_class       : C_CONSOLE_HD,
+        console_bd_class       : C_CONSOLE_BD,
+        console_ft_class       : C_CONSOLE_FT,
+        console_controls_class : C_CONSOLE_CONTROLS,
+        console_checkbox_class : C_CHECKBOX,
+        console_pause_class    : C_PAUSE,
+        console_pause_label_class : C_PAUSE_LABEL,
+        console_button_class   : C_BUTTON,
+        console_clear_class    : C_CLEAR,
+        console_collapse_class : C_COLLAPSE,
+        console_title_class    : C_CONSOLE_TITLE
+    },
+
+    /**
+     * Markup template used to generate the DOM structure for the header
+     * section of the Console when it is rendered.  The template includes
+     * these {placeholder}s:
+     *
+     * <ul>
+     *   <li>console_button_class - contributed by Console.CHROME_CLASSES</li>
+     *   <li>console_collapse_class - contributed by Console.CHROME_CLASSES</li>
+     *   <li>console_hd_class - contributed by Console.CHROME_CLASSES</li>
+     *   <li>console_title_class - contributed by Console.CHROME_CLASSES</li>
+     *   <li>str_collapse - pulled from attribute strings.collapse</li>
+     *   <li>str_title - pulled from attribute strings.title</li>
+     * </ul>
+     *
+     * @property Console.HEADER_TEMPLATE
+     * @type String
+     * @static
+     */
+    HEADER_TEMPLATE :
+        '<div class="{console_hd_class}">'+
+            '<h4 class="{console_title_class}">{str_title}</h4>'+
+            '<button type="button" class="'+
+                '{console_button_class} {console_collapse_class}">{str_collapse}'+
+            '</button>'+
+        '</div>',
+
+    /**
+     * Markup template used to generate the DOM structure for the Console body
+     * (where the messages are inserted) when it is rendered.  The template
+     * includes only the {placeholder} &quot;console_bd_class&quot;, which is
+     * constributed by Console.CHROME_CLASSES.
+     *
+     * @property Console.BODY_TEMPLATE
+     * @type String
+     * @static
+     */
+    BODY_TEMPLATE : '<div class="{console_bd_class}"></div>',
+
+    /**
+     * Markup template used to generate the DOM structure for the footer
+     * section of the Console when it is rendered.  The template includes
+     * many of the {placeholder}s from Console.CHROME_CLASSES as well as:
+     *
+     * <ul>
+     *   <li>id_guid - generated unique id, relates the label and checkbox</li>
+     *   <li>str_pause - pulled from attribute strings.pause</li>
+     *   <li>str_clear - pulled from attribute strings.clear</li>
+     * </ul>
+     *
+     * @property Console.FOOTER_TEMPLATE
+     * @type String
+     * @static
+     */
+    FOOTER_TEMPLATE :
+        '<div class="{console_ft_class}">'+
+            '<div class="{console_controls_class}">'+
+                '<label for="{id_guid}" class="{console_pause_label_class}">'+
+                    '<input type="checkbox" class="{console_checkbox_class} '+
+                        '{console_pause_class}" value="1" id="{id_guid}"> '+
+                    '{str_pause}</label>' +
+                '<button type="button" class="'+
+                    '{console_button_class} {console_clear_class}">{str_clear}'+
+                '</button>'+
+            '</div>'+
+        '</div>',
+
+    /**
+     * Default markup template used to create the DOM structure for Console
+     * entries. The markup contains {placeholder}s for content and classes
+     * that are replaced via Y.substitute.  The default template contains
+     * the {placeholder}s identified in Console.ENTRY_CLASSES as well as the
+     * following placeholders that will be populated by the log entry data:
+     *
+     * <ul>
+     *   <li>cat_class</li>
+     *   <li>src_class</li>
+     *   <li>totalTime</li>
+     *   <li>elapsedTime</li>
+     *   <li>localTime</li>
+     *   <li>sourceAndDetail</li>
+     *   <li>message</li>
+     * </ul>
+     *
+     * @property Console.ENTRY_TEMPLATE
+     * @type String
+     * @static
+     */
+    ENTRY_TEMPLATE : ENTRY_TEMPLATE_STR,
+
+    /**
+     * Static property used to define the default attribute configuration of
+     * the Widget.
+     *
+     * @property Console.ATTRS
+     * @Type Object
+     * @static
+     */
+    ATTRS : {
+
+        /**
+         * Name of the custom event that will communicate log messages.
+         *
+         * @attribute logEvent
+         * @type String
+         * @default "yui:log"
+         */
+        logEvent : {
+            value : 'yui:log',
+            writeOnce : true,
+            validator : isString
+        },
+
+        /**
+         * Object that will emit the log events.  By default the YUI instance.
+         * To have a single Console capture events from all YUI instances, set
+         * this to the Y.Global object.
+         *
+         * @attribute logSource
+         * @type EventTarget
+         * @default Y
+         */
+        logSource : {
+            value : Y,
+            writeOnce : true,
+            validator : function (v) {
+                return this._validateLogSource(v);
+            }
+        },
+
+        /**
+         * Collection of strings used to label elements in the Console UI.
+         * Default collection contains the following name:value pairs:
+         *
+         * <ul>
+         *   <li>title : &quot;Log Console&quot;</li>
+         *   <li>pause : &quot;Pause&quot;</li>
+         *   <li>clear : &quot;Clear&quot;</li>
+         *   <li>collapse : &quot;Collapse&quot;</li>
+         *   <li>expand : &quot;Expand&quot;</li>
+         * </ul>
+         *
+         * @attribute strings
+         * @type Object
+         */
+        strings : {
+            valueFn: function() { return Y.Intl.get("console"); }
+        },
+
+        /**
+         * Boolean to pause the outputting of new messages to the console.
+         * When paused, messages will accumulate in the buffer.
+         *
+         * @attribute paused
+         * @type boolean
+         * @default false
+         */
+        paused : {
+            value : false,
+            validator : L.isBoolean
+        },
+
+        /**
+         * If a category is not specified in the Y.log(..) statement, this
+         * category will be used. Categories &quot;info&quot;,
+         * &quot;warn&quot;, and &quot;error&quot; are also called log level.
+         *
+         * @attribute defaultCategory
+         * @type String
+         * @default "info"
+         */
+        defaultCategory : {
+            value : INFO,
+            validator : isString
+        },
+
+        /**
+         * If a source is not specified in the Y.log(..) statement, this
+         * source will be used.
+         *
+         * @attribute defaultSource
+         * @type String
+         * @default "global"
+         */
+        defaultSource   : {
+            value : 'global',
+            validator : isString
+        },
+
+        /**
+         * Markup template used to create the DOM structure for Console entries.
+         *
+         * @attribute entryTemplate
+         * @type String
+         * @default Console.ENTRY_TEMPLATE
+         */
+        entryTemplate : {
+            value : ENTRY_TEMPLATE_STR,
+            validator : isString
+        },
+
+        /**
+         * Minimum entry log level to render into the Console.  The initial
+         * logLevel value for all Console instances defaults from the
+         * Y.config.logLevel YUI configuration, or Console.LOG_LEVEL_INFO if
+         * that configuration is not set.
+         *
+         * Possible values are &quot;info&quot;, &quot;warn&quot;,
+         * &quot;error&quot; (case insensitive), or their corresponding statics
+         * Console.LOG_LEVEL_INFO and so on.
+         *
+         * @attribute logLevel
+         * @type String
+         * @default Y.config.logLevel or Console.LOG_LEVEL_INFO
+         */
+        logLevel : {
+            value : Y.config.logLevel || INFO,
+            setter : function (v) {
+                return this._setLogLevel(v);
+            }
+        },
+
+        /**
+         * Millisecond timeout between iterations of the print loop, moving
+         * entries from the buffer to the UI.
+         *
+         * @attribute printTimeout
+         * @type Number
+         * @default 100
+         */
+        printTimeout : {
+            value : 100,
+            validator : isNumber
+        },
+
+        /**
+         * Maximum number of entries printed in each iteration of the print
+         * loop. This is used to prevent excessive logging locking the page UI.
+         *
+         * @attribute printLimit
+         * @type Number
+         * @default 50
+         */
+        printLimit : {
+            value : 50,
+            validator : isNumber
+        },
+
+        /**
+         * Maximum number of Console entries allowed in the Console body at one
+         * time.  This is used to keep acquired messages from exploding the
+         * DOM tree and impacting page performance.
+         *
+         * @attribute consoleLimit
+         * @type Number
+         * @default 300
+         */
+        consoleLimit : {
+            value : 300,
+            validator : isNumber
+        },
+
+        /**
+         * New entries should display at the top of the Console or the bottom?
+         *
+         * @attribute newestOnTop
+         * @type Boolean
+         * @default true
+         */
+        newestOnTop : {
+            value : true
+        },
+
+        /**
+         * When new entries are added to the Console UI, should they be
+         * scrolled into view?
+         *
+         * @attribute scrollIntoView
+         * @type Boolean
+         * @default true
+         */
+        scrollIntoView : {
+            value : true
+        },
+
+        /**
+         * The baseline time for this Console instance, used to measure elapsed
+         * time from the moment the console module is <code>use</code>d to the
+         * moment each new entry is logged (not rendered).
+         *
+         * This value is reset by the instance method myConsole.reset().
+         *
+         * @attribute startTime
+         * @type Date
+         * @default The moment the console module is <code>use</code>d
+         */
+        startTime : {
+            value : new Date()
+        },
+
+        /**
+         * The precise time the last entry was logged.  Used to measure elapsed
+         * time between log messages.
+         *
+         * @attribute lastTime
+         * @type Date
+         * @default The moment the console module is <code>use</code>d
+         */
+        lastTime : {
+            value : new Date(),
+            readOnly: true
+        },
+
+        /**
+         * Controls the collapsed state of the Console
+         *
+         * @attribute collapsed
+         * @type Boolean
+         * @default false
+         */
+        collapsed : {
+            value : false
+        },
+
+        /**
+        * String with units, or number, representing the height of the Console,
+        * inclusive of header and footer. If a number is provided, the default
+        * unit, defined by Widget's DEF_UNIT, property is used.
+        *
+        * @attribute height
+        * @default "300px"
+        * @type {String | Number}
+        */
+        height: {
+            value: "300px"
+        },
+
+        /**
+        * String with units, or number, representing the width of the Console.
+        * If a number is provided, the default unit, defined by Widget's
+        * DEF_UNIT, property is used.
+        *
+        * @attribute width
+        * @default "300px"
+        * @type {String | Number}
+        */
+        width: {
+            value: "300px"
+        },
+
+        /**
+         * Pass through to the YUI instance useBrowserConsole configuration.
+         * By default this is set to false, which will disable logging to the
+         * browser console when a Console instance is created.  If the
+         * logSource is not a YUI instance, this has no effect.
+         * 
+         * @attribute useBrowserConsole
+         * @type {Boolean}
+         * @default false
+         */
+         useBrowserConsole : {
+            lazyAdd: false,
+            value: false,
+            getter : function () {
+                return this._getUseBrowserConsole();
+            },
+            setter : function (v) {
+                return this._setUseBrowserConsole(v);
+            }
+         },
+
+         /**
+          * Allows the Console to flow in the document.  Available values are
+          * 'inline', 'block', and 'separate' (the default).  
+          *
+          * @attribute style
+          * @type {String}
+          * @default 'separate'
+          */
+         style : {
+            value : 'separate',
+            writeOnce : true,
+            validator : function (v) {
+                return this._validateStyle(v);
+            }
+         }
+    }
+
 });
 
-Y.Console = Console;
 
-
-}, '3.0.0' ,{requires:['substitute','widget']});
+}, '3.3.0' ,{requires:['substitute','widget'], lang:['en', 'es' ]});

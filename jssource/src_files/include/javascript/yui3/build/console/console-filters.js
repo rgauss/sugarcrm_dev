@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('console-filters', function(Y) {
 
@@ -28,7 +28,6 @@ var getCN = Y.ClassNameManager.getClassName,
     SOURCE_DOT   = 'source.',
 
     HOST     = 'host',
-    PARENT_NODE = 'parentNode',
     CHECKED  = 'checked',
     DEF_VISIBILITY = 'defaultVisibility',
 
@@ -46,163 +45,10 @@ function ConsoleFilters() {
     ConsoleFilters.superclass.constructor.apply(this,arguments);
 }
 
-Y.mix(ConsoleFilters,{
-    /**
-     * Plugin name.
-     *
-     * @property ConsoleFilters.NAME
-     * @type String
-     * @static
-     * @default 'consoleFilters'
-     */
-    NAME : 'consoleFilters',
+Y.namespace('Plugin').ConsoleFilters = Y.extend(ConsoleFilters, Y.Plugin.Base,
 
-    /**
-     * The namespace hung off the host object that this plugin will inhabit.
-     *
-     * @property ConsoleFilters.NS
-     * @type String
-     * @static
-     * @default 'filter'
-     */
-    NS : FILTER,
-
-    /**
-     * Markup template used to create the container for the category filters.
-     *
-     * @property ConsoleFilters.CATEGORIES_TEMPLATE
-     * @type String
-     * @static
-     */
-    CATEGORIES_TEMPLATE :
-        '<div class="{categories}"></div>',
-
-    /**
-     * Markup template used to create the container for the source filters.
-     *
-     * @property ConsoleFilters.SOURCES_TEMPLATE
-     * @type String
-     * @static
-     */
-    SOURCES_TEMPLATE :
-        '<div class="{sources}"></div>',
-
-    /**
-     * Markup template used to create the category and source filter checkboxes.
-     *
-     * @property ConsoleFilters.FILTER_TEMPLATE
-     * @type String
-     * @static
-     */
-    FILTER_TEMPLATE :
-        // IE8 and FF3 don't permit breaking _between_ nowrap elements.  IE8
-        // doesn't understand (non spec) wbr tag, nor does it create text nodes
-        // for spaces in innerHTML strings.  The thin-space entity suffices to
-        // create a breakable point.
-        '<label class="{filter_label}">'+
-            '<input type="checkbox" value="{filter_name}" '+
-                'class="{filter} {filter_class}"> {filter_name}'+
-        '</label>&#8201;',
-
-    /** 
-     * Classnames used by the templates when creating nodes.
-     *
-     * @property ConsoleFilters.CHROME_CLASSES
-     * @type Object
-     * @static
-     * @protected
-     */
-    CHROME_CLASSES : {
-        categories   : getCN(CONSOLE,FILTERS,'categories'),
-        sources      : getCN(CONSOLE,FILTERS,'sources'),
-        category     : getCN(CONSOLE,FILTER,CATEGORY),
-        source       : getCN(CONSOLE,FILTER,SOURCE),
-        filter       : getCN(CONSOLE,FILTER),
-        filter_label : getCN(CONSOLE,FILTER,'label')
-    },
-
-    ATTRS : {
-        /**
-         * Default visibility applied to new categories and sources.
-         *
-         * @attribute defaultVisibility
-         * @type {Boolean}
-         * @default true
-         */
-        defaultVisibility : {
-            value : true,
-            validator : Y.Lang.isBoolean
-        },
-
-        /**
-         * <p>Map of entry categories to their visibility status.  Update a
-         * particular category's visibility by setting the subattribute to true
-         * (visible) or false (hidden).</p>
-         *
-         * <p>For example, yconsole.filter.set('category.info', false) to hide
-         * log entries with the category/logLevel of 'info'.</p>
-         *
-         * <p>Similarly, yconsole.filter.get('category.warn') will return a
-         * boolean indicating whether that category is currently being included
-         * in the UI.</p>
-         *
-         * <p>Unlike the YUI instance configuration's logInclude and logExclude
-         * properties, filtered entries are only hidden from the UI, but
-         * can be made visible again.</p>
-         *
-         * @attribute category
-         * @type Object
-         */
-        category : {
-            value : {},
-            validator : function (v,k) {
-                return this._validateCategory(k,v);
-            }
-        },
-
-        /**
-         * <p>Map of entry sources to their visibility status.  Update a
-         * particular sources's visibility by setting the subattribute to true
-         * (visible) or false (hidden).</p>
-         *
-         * <p>For example, yconsole.filter.set('sources.slider', false) to hide
-         * log entries originating from Y.Slider.</p>
-         *
-         * @attribute source
-         * @type Object
-         */
-        source : {
-            value : {},
-            validator : function (v,k) {
-                return this._validateSource(k,v);
-            }
-        },
-
-        /**
-         * Maximum number of entries to store in the message cache.  Use this to
-         * limit the memory footprint in environments with heavy log usage.
-         * By default, there is no limit (Number.POSITIVE_INFINITY).
-         *
-         * @attribute cacheLimit
-         * @type {Number}
-         * @default Number.POSITIVE_INFINITY
-         */
-        cacheLimit : {
-            value : Number.POSITIVE_INFINITY,
-            setter : function (v) {
-                if (Y.Lang.isNumber(v)) {
-                    this._cacheLimit = v;
-                    return v;
-                } else {
-                    return Y.Attribute.INVALID_VALUE;
-                }
-            }
-        }
-    }
-});
-
-Y.extend(ConsoleFilters, Y.Plugin.Base, {
-
+// Y.Plugin.ConsoleFilters prototype
+{
     /**
      * Collection of all log messages passed through since the plugin's
      * instantiation.  This holds all messages regardless of filter status.
@@ -215,6 +61,14 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      */
     _entries : null,
 
+    /**
+     * Maximum number of entries to store in the message cache.
+     *
+     * @property _cacheLimit
+     * @type {Number}
+     * @default Infinity
+     * @protected
+     */
     _cacheLimit : Number.POSITIVE_INFINITY,
 
     /**
@@ -274,10 +128,10 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
         this._entries = [];
 
         if (this._categories) {
-            this._categories.get(PARENT_NODE).removeChild(this._categories);
+            this._categories.remove();
         }
         if (this._sources) {
-            this._sources.get(PARENT_NODE).removeChild(this._sources);
+            this._sources.remove();
         }
     },
 
@@ -288,7 +142,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      * @protected
      */
     renderUI : function () {
-        var foot = this.get(HOST).get('contentBox').query(C_FOOT),
+        var foot = this.get(HOST).get('contentBox').one(C_FOOT),
             html;
 
         if (foot) {
@@ -495,7 +349,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
     refreshConsole : function () {
         var entries   = this._entries,
             host      = this.get(HOST),
-            body      = host.get('contentBox').query(C_BODY),
+            body      = host.get('contentBox').one(C_BODY),
             remaining = host.get('consoleLimit'),
             cats      = this.get(CATEGORY),
             srcs      = this.get(SOURCE),
@@ -514,7 +368,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
                 }
             }
 
-            body.set('innerHTML',EMPTY);
+            body.setContent(EMPTY);
             host.buffer = buffer;
             host.printBuffer();
         }
@@ -536,7 +390,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
                                 this._categories :
                                 this._sources,
                 sel      = SEL_CHECK + getCN(CONSOLE,FILTER,item),
-                checkbox = container.query(sel),
+                checkbox = container.one(sel),
                 host;
                 
             if (!checkbox) {
@@ -544,7 +398,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
 
                 this._createCheckbox(container, item);
 
-                checkbox = container.query(sel);
+                checkbox = container.one(sel);
 
                 host._uiSetHeight(host.get('height'));
             }
@@ -599,7 +453,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      */
     hideCategory : function (cat, multiple) {
         if (isString(multiple)) {
-            Y.Array.each(arguments, arguments.callee, this);
+            Y.Array.each(arguments, this.hideCategory, this);
         } else {
             this.set(CATEGORY_DOT + cat, false);
         }
@@ -615,7 +469,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      */
     showCategory : function (cat, multiple) {
         if (isString(multiple)) {
-            Y.Array.each(arguments, arguments.callee, this);
+            Y.Array.each(arguments, this.showCategory, this);
         } else {
             this.set(CATEGORY_DOT + cat, true);
         }
@@ -631,7 +485,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      */
     hideSource : function (src, multiple) {
         if (isString(multiple)) {
-            Y.Array.each(arguments, arguments.callee, this);
+            Y.Array.each(arguments, this.hideSource, this);
         } else {
             this.set(SOURCE_DOT + src, false);
         }
@@ -647,7 +501,7 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      */
     showSource : function (src, multiple) {
         if (isString(multiple)) {
-            Y.Array.each(arguments, arguments.callee, this);
+            Y.Array.each(arguments, this.showSource, this);
         } else {
             this.set(SOURCE_DOT + src, true);
         }
@@ -700,11 +554,177 @@ Y.extend(ConsoleFilters, Y.Plugin.Base, {
      */
     _validateSource : function (src, v) {
         return Y.Lang.isObject(v,true) && src.split(/\./).length < 3;
-    }
+    },
 
+    /**
+     * Setter method for cacheLimit attribute.  Basically a validator to ensure
+     * numeric input.
+     *
+     * @method _setCacheLimit
+     * @param v {Number} Maximum number of entries
+     * @return {Number}
+     * @protected
+     */
+    _setCacheLimit: function (v) {
+        if (Y.Lang.isNumber(v)) {
+            this._cacheLimit = v;
+            return v;
+        } else {
+            return Y.Attribute.INVALID_VALUE;
+        }
+    }
+},
+
+// Y.Plugin.ConsoleFilters static properties
+{
+    /**
+     * Plugin name.
+     *
+     * @property ConsoleFilters.NAME
+     * @type String
+     * @static
+     * @default 'consoleFilters'
+     */
+    NAME : 'consoleFilters',
+
+    /**
+     * The namespace hung off the host object that this plugin will inhabit.
+     *
+     * @property ConsoleFilters.NS
+     * @type String
+     * @static
+     * @default 'filter'
+     */
+    NS : FILTER,
+
+    /**
+     * Markup template used to create the container for the category filters.
+     *
+     * @property ConsoleFilters.CATEGORIES_TEMPLATE
+     * @type String
+     * @static
+     */
+    CATEGORIES_TEMPLATE :
+        '<div class="{categories}"></div>',
+
+    /**
+     * Markup template used to create the container for the source filters.
+     *
+     * @property ConsoleFilters.SOURCES_TEMPLATE
+     * @type String
+     * @static
+     */
+    SOURCES_TEMPLATE :
+        '<div class="{sources}"></div>',
+
+    /**
+     * Markup template used to create the category and source filter checkboxes.
+     *
+     * @property ConsoleFilters.FILTER_TEMPLATE
+     * @type String
+     * @static
+     */
+    FILTER_TEMPLATE :
+        // IE8 and FF3 don't permit breaking _between_ nowrap elements.  IE8
+        // doesn't understand (non spec) wbr tag, nor does it create text nodes
+        // for spaces in innerHTML strings.  The thin-space entity suffices to
+        // create a breakable point.
+        '<label class="{filter_label}">'+
+            '<input type="checkbox" value="{filter_name}" '+
+                'class="{filter} {filter_class}"> {filter_name}'+
+        '</label>&#8201;',
+
+    /** 
+     * Classnames used by the templates when creating nodes.
+     *
+     * @property ConsoleFilters.CHROME_CLASSES
+     * @type Object
+     * @static
+     * @protected
+     */
+    CHROME_CLASSES : {
+        categories   : getCN(CONSOLE,FILTERS,'categories'),
+        sources      : getCN(CONSOLE,FILTERS,'sources'),
+        category     : getCN(CONSOLE,FILTER,CATEGORY),
+        source       : getCN(CONSOLE,FILTER,SOURCE),
+        filter       : getCN(CONSOLE,FILTER),
+        filter_label : getCN(CONSOLE,FILTER,'label')
+    },
+
+    ATTRS : {
+        /**
+         * Default visibility applied to new categories and sources.
+         *
+         * @attribute defaultVisibility
+         * @type {Boolean}
+         * @default true
+         */
+        defaultVisibility : {
+            value : true,
+            validator : Y.Lang.isBoolean
+        },
+
+        /**
+         * <p>Map of entry categories to their visibility status.  Update a
+         * particular category's visibility by setting the subattribute to true
+         * (visible) or false (hidden).</p>
+         *
+         * <p>For example, yconsole.filter.set('category.info', false) to hide
+         * log entries with the category/logLevel of 'info'.</p>
+         *
+         * <p>Similarly, yconsole.filter.get('category.warn') will return a
+         * boolean indicating whether that category is currently being included
+         * in the UI.</p>
+         *
+         * <p>Unlike the YUI instance configuration's logInclude and logExclude
+         * properties, filtered entries are only hidden from the UI, but
+         * can be made visible again.</p>
+         *
+         * @attribute category
+         * @type Object
+         */
+        category : {
+            value : {},
+            validator : function (v,k) {
+                return this._validateCategory(k,v);
+            }
+        },
+
+        /**
+         * <p>Map of entry sources to their visibility status.  Update a
+         * particular sources's visibility by setting the subattribute to true
+         * (visible) or false (hidden).</p>
+         *
+         * <p>For example, yconsole.filter.set('sources.slider', false) to hide
+         * log entries originating from Y.Slider.</p>
+         *
+         * @attribute source
+         * @type Object
+         */
+        source : {
+            value : {},
+            validator : function (v,k) {
+                return this._validateSource(k,v);
+            }
+        },
+
+        /**
+         * Maximum number of entries to store in the message cache.  Use this to
+         * limit the memory footprint in environments with heavy log usage.
+         * By default, there is no limit (Number.POSITIVE_INFINITY).
+         *
+         * @attribute cacheLimit
+         * @type {Number}
+         * @default Number.POSITIVE_INFINITY
+         */
+        cacheLimit : {
+            value : Number.POSITIVE_INFINITY,
+            setter : function (v) {
+                return this._setCacheLimit(v);
+            }
+        }
+    }
 });
 
-Y.namespace('Plugin').ConsoleFilters = ConsoleFilters;
 
-
-}, '3.0.0' ,{requires:['console','plugin']});
+}, '3.3.0' ,{requires:['console','plugin']});

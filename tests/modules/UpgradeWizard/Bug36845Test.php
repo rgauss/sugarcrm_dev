@@ -44,6 +44,10 @@ class Bug36845Test extends Sugar_PHPUnit_Framework_TestCase
 
     public function setUp() 
     {
+        //$this->useOutputBuffering = false;
+        require('include/modules.php');
+        global $beanFiles, $beanList;
+
         if(file_exists('cache/modules/unified_search_modules.php'))
         {
             $this->has_custom_unified_search_modules = true;
@@ -136,8 +140,7 @@ EOQ;
         $fp = sugar_fopen($this->module_dir . '/clabc_Bug36845Test.php', "w");
         fwrite( $fp, $the_string );
         fclose( $fp );
-        
-        global $beanFiles, $beanList;
+
         $beanFiles['clabc_Bug36845Test'] = 'modules/clabc_Bug36845Test/clabc_Bug36845Test.php';
         $beanList['clabc_Bug36845Test'] = 'clabc_Bug36845Test';
 
@@ -166,7 +169,13 @@ EOQ;
             copy('custom/modules/unified_search_modules_display.php.bak', 'custom/modules/unified_search_modules_display.php');
             unlink('custom/modules/unified_search_modules_display.php.bak');
         }	
+
         
+        if(file_exists("custom/{$this->module_dir}/metadata"))
+        {
+            rmdir_recursive("custom/{$this->module_dir}/metadata");
+        }
+
         if(file_exists($this->module_dir))
         {
            rmdir_recursive($this->module_dir);
@@ -191,8 +200,13 @@ EOQ;
     
     public function test_update_custom_vardefs_without_searchfields()
     {
+        if(!file_exists("custom/{$this->module_dir}/metadata"))
+        {
+            mkdir_recursive("custom/{$this->module_dir}/metadata");
+        }
+        copy("{$this->module_dir}/metadata/SearchFields.php", "custom/{$this->module_dir}/metadata/SearchFields.php");
         unlink("{$this->module_dir}/metadata/SearchFields.php");
-        $this->assertTrue(!file_exists("{$this->module_dir}/metadata/SearchFields.php"), 'Assert that we have a SearchFields.php file');
+        $this->assertTrue(!file_exists("{$this->module_dir}/metadata/SearchFields.php"), 'Assert that we do not have a SearchFields.php file in modules directory');
         $this->assertTrue(file_exists("{$this->module_dir}/vardefs.php"), 'Assert that we have a vardefs.php file');
         require_once('modules/UpgradeWizard/uw_utils.php');
         add_unified_search_to_custom_modules_vardefs();
@@ -201,7 +215,8 @@ EOQ;
         $usa->buildCache();
         $this->assertTrue(file_exists("cache/modules/unified_search_modules.php"), 'Assert that we have a unified_search_modules.php file');
         include('cache/modules/unified_search_modules.php');
-        $this->assertTrue(!isset($unified_search_modules['clabc_Bug36845Test']), 'Assert that the custom module was not added to unified_search_modules.php');
+        //echo var_export($unified_search_modules['clabc_Bug36845Test'], true);
+        $this->assertTrue(isset($unified_search_modules['clabc_Bug36845Test']), 'Assert that the custom module was added to unified_search_modules.php');
         
     }
     

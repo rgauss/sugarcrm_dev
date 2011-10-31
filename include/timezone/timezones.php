@@ -484,6 +484,10 @@ $timezones = array (
   array (
     'gmtOffset' => 330,
   ),
+  'Asia/Kolkata' => 
+  array (
+    'gmtOffset' => 330,
+  ),
   'Asia/Jakarta' => 
   array (
     'gmtOffset' => 420,

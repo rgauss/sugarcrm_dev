@@ -267,6 +267,17 @@ class UndeployedRelationships extends AbstractRelationships implements Relations
             $module->save () ;
 
         }
+		else
+		{
+			//Bug42170================================
+			$appStrings = $module->getAppListStrings () ;
+            unset($appStrings [ 'parent_type_display' ] [ $module->key_name ]); 
+			unset($appStrings [ 'record_type_display' ] [ $module->key_name ]);
+			unset($appStrings [ 'record_type_display_notes' ] [ $module->key_name ]);
+		    $module->setAppListStrings ( 'en_us', $appStrings ) ;
+            $module->save () ;
+			//Bug42170================================
+		}
         
         // use an installDefPrefix of <basepath>/SugarModules for compatibility with the rest of ModuleBuilder
         $this->installDefs = parent::build ( $basepath, "<basepath>/SugarModules", $relationships ) ;

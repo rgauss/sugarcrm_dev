@@ -83,16 +83,35 @@ class Scheduler extends SugarBean {
 	var $order_by;
 
 
-	function Scheduler($init=true) {
-		parent::SugarBean();
-
-		if($init) {
-
-			$user = new User();
-			$user->retrieve('1'); // Scheduler jobs run as Admin
-			$this->user = $user;
-		}
-	}
+    function Scheduler($init=true) {
+        parent::SugarBean();
+        if($init) {
+            $user = new User();
+            //check is default admin exists
+            $adminId = $this->db->getOne(
+                'SELECT id FROM users WHERE id=\'1\' AND is_admin=1 AND deleted=0 AND status=\'Active\'',
+                true, 
+                'Error retrieving Admin account info'
+            );
+            if (false === $adminId) {//retrive another admin
+                $adminId = $this->db->getOne(
+                    'SELECT id FROM users WHERE is_admin=1 AND deleted=0 AND status=\'Active\'',
+                    true, 
+                    'Error retrieving Admin account info'
+                );
+                if ($adminId) {
+                    $user->retrieve($adminId);
+                } else {
+                    $GLOBALS['log']->fatal('No Admin account found!');
+                    return false;
+                }
+                
+            } else {
+                $user->retrieve('1'); // Scheduler jobs run as default Admin
+            }
+            $this->user = $user;
+        }
+    }
 
 
 	///////////////////////////////////////////////////////////////////////////
@@ -220,7 +239,7 @@ class Scheduler extends SugarBean {
 		}
 
 		$now = TimeDate::getInstance()->getNow();
-		$now = $now->setTime($now->hour, $now->min)->asDb();
+		$now = $now->setTime($now->hour, $now->min, "00")->asDb();
 		$validTimes = $this->deriveDBDateTimes($this);
 
 		if(is_array($validTimes) && in_array($now, $validTimes)) {
@@ -581,15 +600,17 @@ class Scheduler extends SugarBean {
 		/**
 		 * If "Execute If Missed bit is set
 		 */
+        $now = TimeDate::getInstance()->getNow();
+		$now = $now->setTime($now->hour, $now->min, "00")->asDb();
+        
 		if($focus->catch_up == 1) {
 			if($focus->last_run == null) {
 				// always "catch-up"
-				$validJobTime[] = $timedate->nowDb();
+				$validJobTime[] = $now;
 			} else {
 				// determine what the interval in min/hours is
 				// see if last_run is in it
 				// if not, add NOW
-                $now = $timedate->nowDb();
                 if(!empty($validJobTime) && ($focus->last_run < $validJobTime[0]) && ($now > $validJobTime[0])) {
 				// cn: empty() bug 5914;
 				//if(!empty) should be checked, becasue if a scheduler is defined to run every day 4pm, then after 4pm, and it runs as 4pm, the $validJobTime will be empty, and it should not catch up
@@ -819,13 +840,13 @@ class Scheduler extends SugarBean {
         if(is_windows()) {
 			if(isset($_SERVER['Path']) && !empty($_SERVER['Path'])) { // IIS IUSR_xxx may not have access to Path or it is not set
 				if(!strpos($_SERVER['Path'], 'php')) {
-					$error = '<em>'.$mod_strings['LBL_NO_PHP_CLI'].'</em>';
+//					$error = '<em>'.$mod_strings['LBL_NO_PHP_CLI'].'</em>';
 				}
 			}
 		} else {
 			if(isset($_SERVER['Path']) && !empty($_SERVER['Path'])) { // some Linux servers do not make this available
 				if(!strpos($_SERVER['PATH'], 'php')) {
-					$error = '<em>'.$mod_strings['LBL_NO_PHP_CLI'].'</em>';
+//					$error = '<em>'.$mod_strings['LBL_NO_PHP_CLI'].'</em>';
 				}
 			}
 		}

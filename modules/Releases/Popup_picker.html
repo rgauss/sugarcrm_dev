@@ -37,8 +37,7 @@
 -->
 
 <!-- BEGIN: main -->
-<!-- BEGIN: SearchHeader -->
-<script type="text/javascript" src="include/JSON.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
+<!-- BEGIN: SearchHeader -->s
 <script type="text/javascript" src="include/javascript/popup_helper.js?s={SUGAR_VERSION}&c={JS_CUSTOM_VERSION}"></script>
 
 <table cellpadding="0" cellspacing="0" border="0" width="100%" class="edit view">
@@ -57,7 +56,7 @@
 <input type="hidden" name="request_data" value="{request_data}" />
 <input type="hidden" name="populate_parent" value="false" />
 <input type="hidden" name="record_id" value="" />
-<input type="submit" name="button" class="button"
+<input type="submit" name="button" class="button" id="search_form_submit"
 	title="{APP.LBL_SEARCH_BUTTON_TITLE}"
 	accessKey="{APP.LBL_SEARCH_BUTTON_KEY}"
 	value="{APP.LBL_SEARCH_BUTTON_LABEL}" />
@@ -69,17 +68,6 @@
 </tr>
 </table>
 
-<script type="text/javascript">
-<!--
-/* initialize the popup request from the parent */
-
-if(window.document.forms['popup_query_form'].request_data.value == "")
-{
-	window.document.forms['popup_query_form'].request_data.value
-		= JSON.stringify(window.opener.get_popup_request_data());
-}
--->
-</script>
 
 <!-- END: SearchHeader -->
 <table width="100%" border="0" cellspacing="0" cellpadding="0" class="list view">

@@ -276,6 +276,50 @@ class Popup_Picker
 									 );
 		} //end Emails
 
+        // Bug 46439 'No email archived when clicking on View Summary' (All condition)
+        if (method_exists($focus,'get_unlinked_email_query'))
+        {
+            $queryArray = $focus->get_unlinked_email_query(array('return_as_array'=>'true'));
+            $query = $queryArray['select'];
+            $query .= $queryArray['from'];
+            if (!empty($queryArray['join_tables']))
+            {
+                foreach ($queryArray['join_tables'] as $join_table)
+                {
+                    if ($join_table != '')
+                    {
+                        $query .= ', '.$join_table.' ';
+                    }
+                }
+            }
+            $query .= $queryArray['join'];
+            $query .= $queryArray['where'];
+            $emails = new Email();
+            $focus_unlinked_emails_list = $emails->process_list_query($query, 0);
+            $focus_unlinked_emails_list = $focus_unlinked_emails_list['list'];
+            foreach ($focus_unlinked_emails_list as $email)
+            {
+                $email->retrieve($email->id);
+                $history_list[] = array(
+                    'name' => $email->name,
+                    'id' => $email->id,
+                    'type' => "Email",
+                    'direction' => '',
+                    'module' => "Emails",
+                    'status' => '',
+                    'parent_id' => $email->parent_id,
+                    'parent_type' => $email->parent_type,
+                    'parent_name' => $email->parent_name,
+                    'contact_id' => $email->contact_id,
+                    'contact_name' => $email->contact_name,
+                    'date_modified' => $email->date_start." ".$email->time_start,
+                    'description' => $this->getEmailDetails($email),
+                    'date_type' => $app_strings['DATA_TYPE_SENT'],
+                    'sort_value' => strtotime($email->fetched_row['date_sent'].' GMT'),
+                );
+            }
+        } //end Unlinked Emails
+
 		foreach ($focus_notes_list as $note) {
 			
 			$history_list[] = array('name' => $note->name,

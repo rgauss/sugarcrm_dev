@@ -119,8 +119,9 @@ $dictionary['Task'] = array('table' => 'tasks',
   	 'group'=>'parent_name',
   	'required'=>false,
 	'len'=>'255',
-    'comment' => 'The Sugar object to which the call is related'
-  ),
+    'comment' => 'The Sugar object to which the call is related',
+    'options' => 'parent_type_display',
+),
 
   'parent_name'=>
   array(
@@ -176,6 +177,7 @@ $dictionary['Task'] = array('table' => 'tasks',
         'type'=>'phone',
         'source'=>'non-db',
         'vname'=>'LBL_CONTACT_PHONE',
+        'studio'=>array('listview' => true)
     ),
 
  'contact_email'=>
@@ -184,6 +186,7 @@ $dictionary['Task'] = array('table' => 'tasks',
         'type'=>'varchar',
 		'vname' => 'LBL_EMAIL_ADDRESS',
 		'source' => 'non-db',
+        'studio' => 'hidden'
     ),
 
   'priority' =>
@@ -259,6 +262,17 @@ $dictionary['Task'] = array('table' => 'tasks',
     'source'=>'non-db',
     'vname'=>'LBL_PROJECT_TASKS',
   ),
+    'notes' =>
+  array (
+  	'name' => 'notes',
+    'type' => 'link',
+    'relationship' => 'tasks_notes',
+    'module'=>'Notes',
+    'bean_name'=>'Note',
+    'source'=>'non-db',
+		'vname'=>'LBL_NOTES',
+  ),
+  
 	'contact_parent'=>
 		array (
 			'name' => 'contact_parent',
@@ -269,6 +283,15 @@ $dictionary['Task'] = array('table' => 'tasks',
 )
 ,
  'relationships' => array (
+		'tasks_notes' => array(
+			'lhs_module'		=> 'Tasks',
+			'lhs_table'			=> 'tasks',
+			'lhs_key'			=> 'id',
+			'rhs_module'		=> 'Notes',
+			'rhs_table'			=> 'notes',
+			'rhs_key'			=> 'parent_id',
+			'relationship_type'	=> 'one-to-many',
+		),
 
   'tasks_assigned_user' =>
    array('lhs_module'=> 'Users', 'lhs_table'=> 'users', 'lhs_key' => 'id',

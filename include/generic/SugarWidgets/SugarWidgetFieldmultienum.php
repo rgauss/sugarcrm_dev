@@ -38,7 +38,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 require_once ('include/generic/SugarWidgets/SugarWidgetFieldenum.php');
 
 class SugarWidgetFieldMultiEnum extends SugarWidgetFieldEnum {
-	function queryFilternot_one_of(& $layout_def) {
+	public function queryFilternot_one_of(&$layout_def) {
 		$arr = array ();
 		foreach ($layout_def['input_name0'] as $value) {
 			array_push($arr, "'".$GLOBALS['db']->quote($value)."'");
@@ -59,7 +59,7 @@ class SugarWidgetFieldMultiEnum extends SugarWidgetFieldEnum {
 		return '('.$query.')';        
 	}
         
-    function queryFilterone_of(& $layout_def) {
+    public function queryFilterone_of(&$layout_def) {
 		$arr = array ();
 		foreach ($layout_def['input_name0'] as $value) {
 			array_push($arr, "'".$GLOBALS['db']->quote($value)."'");
@@ -80,13 +80,23 @@ class SugarWidgetFieldMultiEnum extends SugarWidgetFieldEnum {
 		return '('.$query.')';        
 	}
 	
-	function queryFilteris(& $layout_def) {
+	public function queryFilteris(&$layout_def) {
 		$input_name0 = $layout_def['input_name0'];
 		if (is_array($layout_def['input_name0'])) {
 			$input_name0 = $layout_def['input_name0'][0];
 		}
 		return $this->_get_column_select($layout_def)." like '%".$GLOBALS['db']->quote($input_name0)."%'\n";
-	}	
+	}
+
+    /**
+     * Returns an OrderBy query for multi-select. We treat multi-select the same as a normal field because
+     * the values stored in the database are in the format ^A^,^B^,^C^ though not necessarily in that order.
+     * @param  $layout_def
+     * @return string
+     */
+    public function queryOrderBy($layout_def) {
+        return SugarWidgetReportField::queryOrderBy($layout_def);
+    }
 }
 ?>
 

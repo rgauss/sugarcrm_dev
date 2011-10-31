@@ -213,8 +213,9 @@ class ListViewDisplayTest extends Sugar_PHPUnit_Framework_TestCase
         $_REQUEST['query'] = '';
         $_SESSION['last_search_mod'] = 'foo';
 
-        $this->assertTrue($this->_lvd->shouldProcess('foo'));
-        $this->assertTrue($this->_lvd->should_process);
+        //C.L. Because of fix to 40186, the following two tests are now set to assertFalse
+        $this->assertFalse($this->_lvd->shouldProcess('foo'), 'Assert that ListViewDisplay->shouldProcess is false even if module is the same because no query was specified');
+        $this->assertFalse($this->_lvd->should_process, 'Assert that ListViewDisplay->shouldProcess class variable is false');
 
         if ( isset($oldsavequery) ) {
             $GLOBALS['sugar_config']['save_query'] = $oldsavequery;

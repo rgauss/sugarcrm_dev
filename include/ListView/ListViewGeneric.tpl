@@ -46,9 +46,9 @@
 	<script type='text/javascript' src='{sugar_getjspath file='include/javascript/sugar_grp_overlib.js'}'></script>
 	<div id='overDiv' style='position:absolute; visibility:hidden; z-index:1000;'></div>
 {/if}
-{if $prerow}
-	{$multiSelectData}
-{/if}
+
+{$multiSelectData}
+
 <table cellpadding='0' cellspacing='0' width='100%' border='0' class='list view'>
 {include file='include/ListView/ListViewPagination.tpl'}
 <tr height='20'>
@@ -123,7 +123,7 @@
 			</td>
 			{/if}
 			{if !empty($quickViewLinks)}
-			<td width='2%' nowrap>{if $pageData.rowAccess[$id].edit}<a title='{$editLinkString}' href="#" onMouseOver="javascript:lvg_nav('{if $params.dynamic_module}{$rowData[$params.dynamic_module]}{else}{$pageData.bean.moduleDir}{/if}', '{$rowData.ID}', {if $act}'{$act}'{else}'e'{/if}, {$offset}, this)" onFocus="javascript:lvg_nav('{if $params.dynamic_module}{$rowData[$params.dynamic_module]}{else}{$pageData.bean.moduleDir}{/if}', '{$rowData.ID}', {if $act}'{$act}'{else}'e'{/if}, {$offset}, this)"><img border=0 src='{sugar_getimagepath file='edit_inline.gif'}'></a>{/if}</td>
+			<td width='2%' nowrap>{if $pageData.rowAccess[$id].edit}<a title='{$editLinkString}' id="edit-{$rowData.ID}" href="#" onMouseOver="javascript:lvg_nav('{if $params.dynamic_module}{$rowData[$params.dynamic_module]}{else}{$pageData.bean.moduleDir}{/if}', '{$rowData.ID}', {if $act}'{$act}'{else}'e'{/if}, {$offset}, this)" onFocus="javascript:lvg_nav('{if $params.dynamic_module}{$rowData[$params.dynamic_module]}{else}{$pageData.bean.moduleDir}{/if}', '{$rowData.ID}', {if $act}'{$act}'{else}'e'{/if}, {$offset}, this)"><img border=0 src='{sugar_getimagepath file='edit_inline.gif'}'></a>{/if}</td>
 			{/if}
 			{counter start=0 name="colCounter" print=false assign="colCounter"}
 			{foreach from=$displayColumns key=col item=params}

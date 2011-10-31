@@ -37,7 +37,6 @@
 *}
 <script src="./modules/Administration/javascript/Administration.js"></script>
 <script src="./modules/Administration/javascript/Async.js"></script>
-<script src="./include/JSON.js"></script>
 
 <div>
 	{$mod.LBL_REPAIRXSS_INSTRUCTIONS}

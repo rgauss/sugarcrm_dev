@@ -82,7 +82,7 @@ $subpanel_layout = array(
 	  'remove_button' => 
 	  array (
 	    'vname' => 'LBL_REMOVE',
-	    'widget_class' => 'SubPanelRemoveButton',
+	    'widget_class' => 'SubPanelRemoveButtonAccount',
 	    'width' => '4%',
 	    'default' => true,
 	  ),

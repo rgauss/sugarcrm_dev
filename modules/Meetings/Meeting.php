@@ -122,6 +122,9 @@ class Meeting extends SugarBean {
 			$this->field_name_map[$field['name']] = $field;
 		}
 //		$this->fill_in_additional_detail_fields();
+        if(!empty($GLOBALS['app_list_strings']['duration_intervals'])) {
+            $this->minutes_values = $GLOBALS['app_list_strings']['duration_intervals'];
+        }
 	}
 
 	/**
@@ -436,17 +439,11 @@ class Meeting extends SugarBean {
 		//make sure we grab the localized version of the contact name, if a contact is provided
 		if (!empty($this->contact_id)) {
 			global $locale;
-			$query  = "SELECT first_name, last_name, salutation, title FROM contacts ";
-			$query .= "WHERE id='$this->contact_id' AND deleted=0";
-			$result = $this->db->limitQuery($query,0,1,true," Error filling in contact name fields: ");
-
-			// Get the contact name.
-			$row = $this->db->fetchByAssoc($result);
-
-			if($row != null)
-			{
-				$this->contact_name = $locale->getLocaleFormattedName($row['first_name'], $row['last_name'], $row['salutation'], $row['title']);
-			}
+            // Bug# 46125 - make first name, last name, salutation and title of Contacts respect field level ACLs
+            $contact_temp = new Contact();
+            $contact_temp->retrieve($this->contact_id);
+            $contact_temp->_create_proper_name_field();
+            $this->contact_name = $contact_temp->full_name;
 		}
 
         $meeting_fields['CONTACT_ID'] = $this->contact_id;
@@ -725,16 +722,58 @@ class Meeting extends SugarBean {
 } // end class def
 
 // External API integration, for the dropdown list of what external API's are available
-function getMeetingsExternalApiDropDown($focus = null, $name = null, $value = null, $view = null) {
-    require_once('include/externalAPI/ExternalAPIFactory.php');
+//TODO: do we really need focus, name and view params for this function
+function getMeetingsExternalApiDropDown($focus = null, $name = null, $value = null, $view = null)
+{
+	global $dictionary, $app_list_strings;
 
-    $apiList = ExternalAPIFactory::getModuleDropDown('Meetings');
-    $apiList = array_merge(array('Sugar'=>$GLOBALS['app_list_strings']['eapm_list']['Sugar']),$apiList);
-    if(!empty($value) && empty($apiList[$value])){
-        $apiList[$value] = $value;
+	$cacheKeyName = 'meetings_type_drop_down';
+
+    $apiList = sugar_cache_retrieve($cacheKeyName);
+    if ($apiList === null)
+    {
+        require_once('include/externalAPI/ExternalAPIFactory.php');
+
+        $apiList = ExternalAPIFactory::getModuleDropDown('Meetings');
+        $apiList = array_merge(array('Sugar'=>$GLOBALS['app_list_strings']['eapm_list']['Sugar']), $apiList);
+        sugar_cache_put($cacheKeyName, $apiList);
     }
-    return $apiList;
 
+	if(!empty($value) && empty($apiList[$value]))
+	{
+		$apiList[$value] = $value;
+    }
+	//bug 46294: adding list of options to dropdown list
+    $apiList = array_merge(getMeetingTypeOptions($dictionary, $app_list_strings), $apiList);
+
+	return $apiList;
 }
 
-?>
+/**
+ * Meeting Type Options Array for dropdown list
+ * @param array $dictionary - getting type name
+ * @param array $app_list_strings - getting type options
+ * @return array Meeting Type Options Array for dropdown list
+ */
+function getMeetingTypeOptions($dictionary, $app_list_strings)
+{
+	$result = array();
+
+    // getting name of meeting type to fill dropdown list by its values
+    if (isset($dictionary['Meeting']['fields']['type']['options']))
+	{
+    	$typeName = $dictionary['Meeting']['fields']['type']['options'];
+
+        if (!empty($app_list_strings[$typeName]))
+		{
+        	$typeList = $app_list_strings[$typeName];
+
+            foreach ($typeList as $key => $value)
+			{
+				$result[$value] = $value;
+            }
+        }
+    }
+
+    return $result;
+}

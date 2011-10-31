@@ -53,8 +53,8 @@
 		<td align="right"><input type="hidden" name="action" value="index"/>
 			<input type="hidden" name="query" value="true"/>
 			<input type="hidden" name="module" value="Cases" />
-		<input title="{APP.LBL_SEARCH_BUTTON_TITLE}" accessKey="{APP.LBL_SEARCH_BUTTON_KEY}" class="button" type="submit" name="button" value="{APP.LBL_SEARCH_BUTTON_LABEL}"/>
-		<input title="{APP.LBL_CLEAR_BUTTON_TITLE}" accessKey="{APP.LBL_CLEAR_BUTTON_KEY}" onclick="clear_form(this.form);" class="button" type="button" name="clear" value=" {APP.LBL_CLEAR_BUTTON_LABEL} "/>
+		<input title="{APP.LBL_SEARCH_BUTTON_TITLE}" accessKey="{APP.LBL_SEARCH_BUTTON_KEY}" class="button" type="submit" name="button" value="{APP.LBL_SEARCH_BUTTON_LABEL}" id="search_form_submit"/>
+		<input title="{APP.LBL_CLEAR_BUTTON_TITLE}" accessKey="{APP.LBL_CLEAR_BUTTON_KEY}" onclick="clear_form(this.form);" class="button" type="button" name="clear" value=" {APP.LBL_CLEAR_BUTTON_LABEL} " id="search_form_clear"/>
 		<br>
 		<a href='index.php?module=Cases&action=index&advanced=true' class="tabFormAdvLink">{ADVANCED_SEARCH_PNG}</a>&nbsp;<a href='index.php?module=Cases&action=index&advanced=true' class="tabFormAdvLink">{APP.LNK_ADVANCED_SEARCH}</a>
 		</td>

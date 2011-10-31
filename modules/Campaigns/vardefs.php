@@ -237,6 +237,8 @@ $dictionary['Campaign'] = array ('audited'=>true,
             'relationship' => 'campaign_leads',
             'source'=>'non-db',
 		    'vname' => 'LBL_LEADS',
+            'link_class' => 'ProspectLink',
+            'link_file' => 'modules/Campaigns/ProspectLink.php'
         ),
 
         'opportunities'=> array (
@@ -252,6 +254,8 @@ $dictionary['Campaign'] = array ('audited'=>true,
             'relationship' => 'campaign_contacts',
             'source'=>'non-db',
 		    'vname' => 'LBL_CONTACTS',
+            'link_class' => 'ProspectLink',
+            'link_file' => 'modules/Campaigns/ProspectLink.php'
         ),
         'accounts'=> array (
             'name' => 'accounts',
@@ -259,6 +263,8 @@ $dictionary['Campaign'] = array ('audited'=>true,
             'relationship' => 'campaign_accounts',
             'source'=>'non-db',
 		    'vname' => 'LBL_ACCOUNTS',
+            'link_class' => 'ProspectLink',
+            'link_file' => 'modules/Campaigns/ProspectLink.php'
         ),
 
 

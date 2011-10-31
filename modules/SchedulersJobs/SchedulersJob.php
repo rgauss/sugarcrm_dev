@@ -64,16 +64,35 @@ class SchedulersJob extends SugarBean {
 	 * Sole constructor.
 	 */
 	function SchedulersJob($init=true) {
-		parent::SugarBean();
-
-		if($init) {
-
-			$user = new User();
-			$user->retrieve('1'); // Scheduler jobs run as Admin
-			$this->user = $user;
-		}
-
-	}
+        parent::SugarBean();
+        if($init) {
+            $user = new User();
+            //check is default admin exists
+            $adminId = $this->db->getOne(
+                'SELECT id FROM users WHERE id=\'1\' AND is_admin=1 AND deleted=0 AND status=\'Active\'',
+                true, 
+                'Error retrieving Admin account info'
+            );
+            if (false === $adminId) {//retrive other admin
+                $adminId = $this->db->getOne(
+                    'SELECT id FROM users WHERE is_admin=1 AND deleted=0 AND status=\'Active\'',
+                    true, 
+                    'Error retrieving Admin account info'
+                );
+                if ($adminId) {
+                    $user->retrieve($adminId);
+                } else {
+                    $GLOBALS['log']->fatal('No Admin account found!');
+                    return false;
+                }
+                
+            } else {
+                $user->retrieve('1'); // Scheduler jobs run as default Admin
+            }
+            $this->user = $user;
+        }
+    }
+	
 
 	///////////////////////////////////////////////////////////////////////////
 	////	SCHEDULERSJOB HELPER FUNCTIONS

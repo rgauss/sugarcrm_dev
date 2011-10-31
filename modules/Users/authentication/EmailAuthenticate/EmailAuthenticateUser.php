@@ -128,32 +128,18 @@ class EmailAuthenticateUser extends SugarAuthenticateUser {
 		else {
 			$current_language = $_SESSION['authenticated_user_language'];
 		}
-        $mail_settings = new Administration();
-        $mail_settings->retrieveSettings('mail');
-	
+        $notify_mail->Subject = 'Sugar Token';
+        $notify_mail->Body = 'Your sugar session authentication token  is: ' . $password;
+        $notify_mail->setMailerForSystem();
+        $notify_mail->From = 'no-reply@sugarcrm.com';
+        $notify_mail->FromName = 'Sugar Authentication';
 
-		        $notify_mail->Subject = 'Sugar Token';
-				$notify_mail->Body = 'Your sugar session authentication token  is: ' . $password;
-				if ($mail_settings->settings['mail_sendtype'] == "SMTP") {
-					$notify_mail->Mailer = "smtp";
-					$notify_mail->Host = $mail_settings->settings['mail_smtpserver'];
-					$notify_mail->Port = $mail_settings->settings['mail_smtpport'];
-					if ($mail_settings->settings['mail_smtpauth_req']) {
-						$notify_mail->SMTPAuth = TRUE;
-						$notify_mail->Username = $mail_settings->settings['mail_smtpuser'];
-						$notify_mail->Password = $mail_settings->settings['mail_smtppass'];
-					}
-				}
-
-				$notify_mail->From = 'no-reply@sugarcrm.com';
-				$notify_mail->FromName = 'Sugar Authentication';
-
-				if(!$notify_mail->Send()) {
-					$GLOBALS['log']->warn("Notifications: error sending e-mail (method: {$notify_mail->Mailer}), (error: {$notify_mail->ErrorInfo})");
-				}
-				else {
-					$GLOBALS['log']->info("Notifications: e-mail successfully sent");
-				}
+        if(!$notify_mail->Send()) {
+            $GLOBALS['log']->warn("Notifications: error sending e-mail (method: {$notify_mail->Mailer}), (error: {$notify_mail->ErrorInfo})");
+        }
+        else {
+            $GLOBALS['log']->info("Notifications: e-mail successfully sent");
+        }
 			
 			
 		

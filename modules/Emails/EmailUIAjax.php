@@ -59,6 +59,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 
   $showFolders = unserialize(base64_decode($current_user->getPreference('showFolders', 'Emails')));
 
+ if (isset($_REQUEST['emailUIAction'])) {
   switch($_REQUEST['emailUIAction']) {
 
 
@@ -722,7 +723,7 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
             	$out['meta']['email']['toaddrs'] = $email->et->generateExpandableAddrs($out['meta']['email']['toaddrs']);
         		if(!empty($out['meta']['email']['cc_addrs'])) {
                     $ccs = $email->et->generateExpandableAddrs($out['meta']['email']['cc_addrs']);
-        		    $out['meta']['cc'] = <<<eoq
+        		    $out['meta']['email']['cc'] = <<<eoq
         				<tr>
         					<td NOWRAP valign="top" class="displayEmailLabel">
         						{$app_strings['LBL_EMAIL_CC']}:
@@ -1215,15 +1216,17 @@ eoq;
         $GLOBALS['log']->debug("********** EMAIL 2.0 - Asynchronous - at: deleteIeAccount");
         if(isset($_REQUEST['group_id']) && $_REQUEST['group_id'] == $current_user->id) {
             $ret = array();
+            $updateFolders = array();
         	$ret['id'] = $_REQUEST['ie_id'];
             $out = $json->encode($ret);
             $ie->hardDelete($_REQUEST['ie_id']);
             $out = $json->encode(array('id' => $_REQUEST['ie_id']));
             echo $out;
 
-            foreach($showFolders as $id) {
-                if($id != $_REQUEST['ie_id'])
-                $updateFolders[] = $id;
+            foreach ($showFolders as $id) {
+                if ($id != $_REQUEST['ie_id']) {
+                    $updateFolders[] = $id;
+                }
             }
 
             $showStore = base64_encode(serialize($updateFolders));
@@ -1606,7 +1609,8 @@ eoq;
         $GLOBALS['log']->debug("********** EMAIL 2.0 - Asynchronous - at: default");
         echo "NOOP";
         break;
-  }
+  } // switch
+ } // if
 
 
 

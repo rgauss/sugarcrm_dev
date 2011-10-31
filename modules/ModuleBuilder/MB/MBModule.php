@@ -631,7 +631,12 @@ class MBModule
         $this->mblanguage->save ( $this->key_name, $duplicate, true) ;
     }
 
-    function renameMetaData ($new_dir, $old_name)
+    /**
+     * Rename module name in metadata
+     * @param string $new_dir
+     * @param string $old_name
+     */
+    public function renameMetaData ($new_dir, $old_name)
     {
         $GLOBALS [ 'log' ]->debug ( 'MBModule.php->renameMetaData: new_dir=' . $new_dir ) ;
         if (! file_exists ( $new_dir ))
@@ -648,20 +653,46 @@ class MBModule
                 if (is_file ( $new_dir . '/' . $e ))
                 {
                     $contents = file_get_contents ( $new_dir . '/' . $e ) ;
-                    $contents = preg_replace ( '/(\$module_name[ ]*=[ ]*\')(.*)(\'[ ]*;)/', '$1' . $this->key_name . '$3', $contents ) ;
-                    $contents = preg_replace ( '/(\$_module_name[ ]*=[ ]*\')(.*)(\'[ ]*;)/', '$1' . strtolower ( $this->key_name ) . '$3', $contents ) ;
-                    $contents = preg_replace ( '/(\$MODULE_NAME[ ]*=[ ]*\')(.*)(\'[ ]*;)/', '$1' . strtoupper ( $this->key_name ) . '$3', $contents ) ;
-                    $contents = preg_replace ( '/(\$object_name[ ]*=[ ]*\')(.*)(\'[ ]*;)/', '$1' . $this->key_name . '$3', $contents ) ;
-                    $contents = preg_replace ( '/(\$_object_name[ ]*=[ ]*\')(.*)(\'[ ]*;)/', '$1' . strtolower ( $this->key_name ) . '$3', $contents ) ;
-                    $contents = preg_replace ( '/(\$OBJECT_NAME[ ]*=[ ]*\')(.*)(\'[ ]*;)/', '$1' . strtoupper ( $this->key_name ) . '$3', $contents ) ;
-                    $contents = str_replace  ( "{$old_name}_", $this->key_name . "_", $contents ) ;
+                    $search_array = array(
+                        '/(\$module_name[ ]*=[ ]*\').*(\'[ ]*;)/',
+                        '/(\$_module_name[ ]*=[ ]*\').*(\'[ ]*;)/',
+                        '/(\$MODULE_NAME[ ]*=[ ]*\').*(\'[ ]*;)/',
+                        '/(\$object_name[ ]*=[ ]*\').*(\'[ ]*;)/',
+                        '/(\$_object_name[ ]*=[ ]*\').*(\'[ ]*;)/',
+                        '/(\$OBJECT_NAME[ ]*=[ ]*\').*(\'[ ]*;)/'
+                    );
+                    $replace_array = array(
+                        '$1' . $this->key_name . '$2',
+                        '$1' . strtolower ( $this->key_name ) . '$2',
+                        '$1' . strtoupper ( $this->key_name ) . '$2',
+                        '$1' . $this->key_name . '$2',
+                        '$1' . strtolower ( $this->key_name ) . '$2',
+                        '$1' . strtoupper ( $this->key_name ) . '$2',
+                    );
+                    $contents = preg_replace($search_array, $replace_array, $contents);
+                    $search_array = array(
+                        "{$old_name}_",
+                        "{$old_name}Dashlet"
+                    );
+                    $replace_array = array(
+                        $this->key_name . '_',
+                        $this->key_name . 'Dashlet'
+                    );
+                    $contents = str_replace($search_array, $replace_array, $contents );
+                    
+                    
+                    if ("relationships.php" == $e) 
+                    {
+                        //bug 39598 Relationship Name Is Not Updated If Module Name Is Changed In Module Builder
+                        $contents = str_replace  ( "'{$old_name}'", "'{$this->key_name}'" , $contents ) ;
+                    }
+                    
                     $fp = sugar_fopen ( $new_dir . '/' . $e, 'w' ) ;
                     fwrite ( $fp, $contents ) ;
                     fclose ( $fp ) ;
                 }
             }
         }
-
     }
 
     function copy ($new_name)

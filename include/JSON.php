@@ -44,6 +44,14 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
  * Contributor(s): ______________________________________..
  ********************************************************************************/
 
+/**
+ * This class used to perform json encode / decode functions but has now been replaced by
+ * the built in php.
+ *
+ * Note: We no longer eval our json so there is no more need for security envelopes. The parameter
+ * has been left for backwards compatibility.
+ */
+
 class JSON
 {
 
@@ -52,16 +60,12 @@ class JSON
      *
      * @param string $string
      * @param bool $addSecurityEnvelope defaults to false
+     * @param bool $encodeSpecial
      * @return string 
      */
     public static function encode($string, $addSecurityEnvelope = false, $encodeSpecial = false)
     {
         $encodedString = json_encode($string);
-        
-        if($addSecurityEnvelope) {
-            $encodedString = "while(1);/*" . $encodedString . "*/";
-        }
-
 
         if ($encodeSpecial)
         {
@@ -80,20 +84,11 @@ class JSON
      *
      * @param string $string
      * @param bool $examineEnvelope Default false, true to extract and verify envelope
+     * @param bool $assoc
      * @return string 
      */
     public static function decode($string, $examineEnvelope=false, $assoc = true)
     {
-        if ($examineEnvelope) {
-            $meta = json_decode($string,true);
-            if($meta['asychronous_key'] != $_SESSION['asychronous_key']) {
-                $GLOBALS['log']->fatal("*** SECURITY: received asynchronous call with invalid ['asychronous_key'] value. Possible CSRF attack.");
-                return '';
-            }
-
-            return $meta['jsonObject'];
-        }
-
         return json_decode($string,$assoc);
     }
 

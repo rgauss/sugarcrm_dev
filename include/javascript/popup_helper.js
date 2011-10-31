@@ -39,7 +39,8 @@ var passthru_data=Object();if(typeof(request_data.passthru_data)!='undefined')
 var form_name=request_data.form_name;var field_to_name_array=request_data.field_to_name_array;var call_back_function=eval("window.opener."+request_data.call_back_function);var array_contents=Array();for(var the_key in field_to_name_array)
 {if(the_key!='toJSON')
 {var the_name=field_to_name_array[the_key];var the_value='';if(module!=''&&id!='')
-{if((the_key.toUpperCase()=='USER_NAME'||the_key.toUpperCase()=='LAST_NAME'||the_key.toUpperCase()=='FIRST_NAME')&&typeof(is_show_fullname)!='undefined'&&is_show_fullname&&form_name!='search_form'){the_value=associated_row_data['FULL_NAME'];}
+{if(associated_row_data['DOCUMENT_NAME']&&the_key.toUpperCase()=="NAME"){the_value=associated_row_data['DOCUMENT_NAME'];}
+else if((the_key.toUpperCase()=='USER_NAME'||the_key.toUpperCase()=='LAST_NAME'||the_key.toUpperCase()=='FIRST_NAME')&&typeof(is_show_fullname)!='undefined'&&is_show_fullname&&form_name!='search_form'){the_value=associated_row_data['FULL_NAME'];}
 else{the_value=associated_row_data[the_key.toUpperCase()];}}
 if(typeof(the_value)=='string'){the_value=the_value.replace(/\r\n|\n|\r/g,'\\n');}
 array_contents.push('"'+the_name+'":"'+the_value+'"');}}
@@ -67,3 +68,4 @@ if(typeof SUGAR.util.additionalDetailsCache[spanId]!='undefined')
 return oReturn(SUGAR.util.additionalDetailsCache[spanId]['body'],SUGAR.util.additionalDetailsCache[spanId]['caption'],SUGAR.util.additionalDetailsCache[spanId]['width'],SUGAR.util.additionalDetailsCache[spanId]['theme']);if(typeof SUGAR.util.additionalDetailsCalls[spanId]!='undefined')
 return;ajaxStatus.showStatus(SUGAR.language.get('app_strings','LBL_LOADING'));url='index.php?module='+module+'&action='+action+'&'+params;SUGAR.util.additionalDetailsCalls[spanId]=YAHOO.util.Connect.asyncRequest('GET',url,{success:success,failure:success});return false;}
 SUGAR.util.additionalDetailsRpcCall=window.setTimeout('toggle_more_go()',250);}
+YAHOO.util.Event.onDOMReady(function(){if(window.document.forms['popup_query_form'].request_data.value==""){window.document.forms['popup_query_form'].request_data.value=YAHOO.lang.JSON.stringify(window.opener.get_popup_request_data());}});

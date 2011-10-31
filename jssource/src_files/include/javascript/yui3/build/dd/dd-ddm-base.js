@@ -1,9 +1,9 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dd-ddm-base', function(Y) {
 
@@ -53,6 +53,15 @@ YUI.add('dd-ddm-base', function(Y) {
             value: 1000
         },
         /**
+        * @attribute throttleTime
+        * @description The number of milliseconds to throttle the mousemove event. Default: 150
+        * @type Number
+        */        
+        throttleTime: {
+            //value: 150
+            value: -1
+        },
+        /**
         * @attribute dragMode
         * @description This attribute only works if the dd-drop module is active. It will set the dragMode (point, intersect, strict) of all future Drag instances. 
         * @type String
@@ -68,6 +77,7 @@ YUI.add('dd-ddm-base', function(Y) {
     };
 
     Y.extend(DDMBase, Y.Base, {
+        _createPG: function() {},
         /**
         * @property _active
         * @description flag set when we activate our first drag, so DDM can start listening for events.
@@ -103,7 +113,7 @@ YUI.add('dd-ddm-base', function(Y) {
         * @description The PREFIX to attach to all DD CSS class names
         * @type {String}
         */
-        CSS_PREFIX: 'yui-dd',
+        CSS_PREFIX: Y.ClassNameManager.getClassName('dd'),
         _activateTargets: function() {},        
         /**
         * @private
@@ -156,10 +166,11 @@ YUI.add('dd-ddm-base', function(Y) {
         * @description Add the document listeners.
         */
         _setupListeners: function() {
+            this._createPG();
             this._active = true;
-            var doc = Y.get(document);
-            doc.on('mousemove', Y.bind(this._move, this));
-            //Y.Event.nativeAdd(document, 'mousemove', Y.bind(this._move, this));
+
+            var doc = Y.one(Y.config.doc);
+            doc.on('mousemove', Y.throttle(Y.bind(this._move, this), this.get('throttleTime')));
             doc.on('mouseup', Y.bind(this._end, this));
         },
         /**
@@ -257,7 +268,7 @@ YUI.add('dd-ddm-base', function(Y) {
         */
         getDrag: function(node) {
             var drag = false,
-                n = Y.get(node);
+                n = Y.one(node);
             if (n instanceof Y.Node) {
                 Y.each(this._drags, function(v, k) {
                     if (n.compareTo(v.get('node'))) {
@@ -266,6 +277,64 @@ YUI.add('dd-ddm-base', function(Y) {
                 });
             }
             return drag;
+        },
+        /**
+        * @method swapPosition
+        * @description Swap the position of 2 nodes based on their CSS positioning.
+        * @param {Node} n1 The first node to swap
+        * @param {Node} n2 The first node to swap
+        * @return {Node}
+        */
+        swapPosition: function(n1, n2) {
+            n1 = Y.DD.DDM.getNode(n1);
+            n2 = Y.DD.DDM.getNode(n2);
+            var xy1 = n1.getXY(),
+                xy2 = n2.getXY();
+
+            n1.setXY(xy2);
+            n2.setXY(xy1);
+            return n1;
+        },
+        /**
+        * @method getNode
+        * @description Return a node instance from the given node, selector string or Y.Base extended object.
+        * @param {Node/Object/String} n The node to resolve.
+        * @return {Node}
+        */
+        getNode: function(n) {
+            if (n && n.get) {
+                if (Y.Widget && (n instanceof Y.Widget)) {
+                    n = n.get('boundingBox');
+                } else {
+                    n = n.get('node');
+                }
+            } else {
+                n = Y.one(n);
+            }
+            return n;
+        },
+        /**
+        * @method swapNode
+        * @description Swap the position of 2 nodes based on their DOM location.
+        * @param {Node} n1 The first node to swap
+        * @param {Node} n2 The first node to swap
+        * @return {Node}
+        */
+        swapNode: function(n1, n2) {
+            n1 = Y.DD.DDM.getNode(n1);
+            n2 = Y.DD.DDM.getNode(n2);
+            var p = n2.get('parentNode'),
+                s = n2.get('nextSibling');
+
+            if (s == n1) {
+                p.insertBefore(n1, n2);
+            } else if (n2 == n1.get('nextSibling')) {
+                p.insertBefore(n2, n1);
+            } else {
+                n1.get('parentNode').replaceChild(n2, n1);
+                p.insertBefore(n1, s);
+            }
+            return n1;
         }
     });
 
@@ -286,4 +355,4 @@ YUI.add('dd-ddm-base', function(Y) {
 
 
 
-}, '3.0.0' ,{requires:['node', 'base'], skinnable:false});
+}, '3.3.0' ,{requires:['node', 'base', 'yui-throttle', 'classnamemanager'], skinnable:false});

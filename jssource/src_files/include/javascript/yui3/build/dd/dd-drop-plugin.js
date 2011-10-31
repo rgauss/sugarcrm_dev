@@ -1,20 +1,20 @@
 /*
-Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+Copyright (c) 2010, Yahoo! Inc. All rights reserved.
 Code licensed under the BSD License:
-http://developer.yahoo.net/yui/license.txt
-version: 3.0.0
-build: 1549
+http://developer.yahoo.com/yui/license.html
+version: 3.3.0
+build: 3167
 */
 YUI.add('dd-drop-plugin', function(Y) {
 
 
        /**
-        * This is a simple Drop plugin that can be attached to a Node via the plug method.
+        * Simple Drop plugin that can be attached to a Node via the plug method.
         * @module dd
         * @submodule dd-drop-plugin
         */
        /**
-        * This is a simple Drop plugin that can be attached to a Node via the plug method.
+        * Simple Drop plugin that can be attached to a Node via the plug method.
         * @class Drop
         * @extends DD.Drop
         * @constructor
@@ -49,4 +49,4 @@ YUI.add('dd-drop-plugin', function(Y) {
 
 
 
-}, '3.0.0' ,{requires:['dd-drop'], skinnable:false});
+}, '3.3.0' ,{skinnable:false, requires:['dd-drop']});
